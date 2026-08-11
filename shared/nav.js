@@ -127,22 +127,21 @@
     </header>`;
 
   const modalHtml = `
-    <div class="modal-fundo" id="perfil-menu">
-      <div class="modal" style="max-width:340px;">
-        <div class="modal-cabecalho">
-          <span class="modal-titulo">Meu Perfil</span>
-          <button class="modal-fechar" id="perfil-fechar" aria-label="Fechar">&times;</button>
-        </div>
-        <div class="modal-corpo">
-          <p style="margin-bottom:8px;"><strong>Nome:</strong> <span id="perfil-nome-detalhe"></span></p>
-          <p style="margin-bottom:8px;"><strong>Código:</strong> <span id="perfil-codigo-detalhe"></span></p>
-          <p style="margin-bottom:8px;"><strong>Cargo:</strong> <span id="perfil-cargo-detalhe"></span></p>
-          <p><strong>Nível de Acesso:</strong> <span id="perfil-nivel-detalhe"></span></p>
-        </div>
-        <div class="modal-rodape">
-          <button class="btn btn-vermelho btn-sm" id="perfil-sair">Terminar Sessão</button>
-        </div>
+    <div class="perfil-dropdown" id="perfil-menu" style="display:none;">
+      <div class="perfil-dropdown-cabecalho">
+        <span>Meu Perfil</span>
+        <button class="modal-fechar" id="perfil-fechar" aria-label="Fechar">&times;</button>
       </div>
+      <div class="perfil-dropdown-corpo">
+        <p><strong>Nome:</strong> <span id="perfil-nome-detalhe"></span></p>
+        <p><strong>Código:</strong> <span id="perfil-codigo-detalhe"></span></p>
+        <p><strong>Cargo:</strong> <span id="perfil-cargo-detalhe"></span></p>
+        <p><strong>Nível:</strong> <span id="perfil-nivel-detalhe"></span></p>
+      </div>
+      <div class="perfil-dropdown-rodape">
+        <button class="btn btn-vermelho btn-sm" id="perfil-sair" style="width:100%;">Terminar Sessão</button>
+      </div>
+    </div>`;
     </div>`;
 
   function montar() {
@@ -215,21 +214,25 @@
   }
 
   function ativarEventos() {
-    const nav = document.querySelector('.sidebar-nav');
-    if (nav) {
-      nav.addEventListener('click', function (e) {
-        const btn = e.target.closest('[data-alvo]');
-        if (!btn) return;
-        e.preventDefault();
-        const submenu = document.getElementById(btn.getAttribute('data-alvo'));
-        if (!submenu) return;
-        const aberto = submenu.classList.contains('visivel');
-        document.querySelectorAll('.sidebar-submenu').forEach(s => s.classList.remove('visivel'));
-        document.querySelectorAll('[data-alvo]').forEach(b => { b.classList.remove('ativo'); b.setAttribute('aria-expanded', 'false'); });
-        if (!aberto) {
-          submenu.classList.add('visivel');
-          btn.classList.add('ativo');
-          btn.setAttribute('aria-expanded', 'true');
+    const perfilBotao = document.getElementById('perfil-botao');
+    const perfilMenu = document.getElementById('perfil-menu');
+    const perfilFechar = document.getElementById('perfil-fechar');
+    
+    if (perfilBotao && perfilMenu) {
+      perfilBotao.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const aberto = perfilMenu.style.display === 'block';
+        perfilMenu.style.display = aberto ? 'none' : 'block';
+      });
+      
+      if (perfilFechar) {
+        perfilFechar.addEventListener('click', () => { perfilMenu.style.display = 'none'; });
+      }
+
+      // Fecha ao clicar fora
+      document.addEventListener('click', (e) => {
+        if (!perfilMenu.contains(e.target) && !perfilBotao.contains(e.target)) {
+          perfilMenu.style.display = 'none';
         }
       });
     }
