@@ -11,10 +11,12 @@
   <script src="shared/auth.js"></script>
   <script src="shared/tema.js"></script>
   <script>
-    /* Auth guard — bloqueia render se não logado */
-    if (typeof verificarSessao === 'function') {
-      var _u = verificarSessao();
-      if (!_u) { window.location.replace('login.html'); }
+    /* AUTH DESATIVADO TEMPORARIAMENTE — usar utilizador mock */
+    if (!verificarSessao()) {
+      localStorage.setItem('dss_user', JSON.stringify({
+        id: 'mock', name: 'Filomeno', email: 'dm0069@danmo.co.mz',
+        role: 'Administrador', department: 'Direcção', active: true
+      }));
     }
   </script>
 </head>
