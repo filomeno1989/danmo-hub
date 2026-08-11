@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="pt" data-tema="claro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ordens de Serviço — Danmo Service System</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script>
+    /* AUTH DESATIVADO TEMPORARIAMENTE — usar utilizador mock */
+    if (!verificarSessao()) {
+      localStorage.setItem('dss_user', JSON.stringify({
+        id: 'mock', name: 'Filomeno', email: 'dm0069@danmo.co.mz',
+        role: 'Administrador', department: 'Direcção', active: true
+      }));
+    }
+  </script>
+</head>
+<body>
+
+  <!-- ═══════ TOPBAR ═══════ -->
+  <header class="topbar">
+    <div class="topbar-logo">
+      <img src="../shared/logos/danmo-logo.png" alt="Logo Danmo Service System" width="36" height="36">
+      <div class="logo-texto">Danmo Service System, Lda</div>
+    </div>
+
+    <div class="topbar-centro">
+      <span class="topbar-data" id="topbar-data"></span>
+      <span class="topbar-relogio" id="topbar-relogio"></span>
+    </div>
+
+    <div class="topbar-direita">
+      <button class="topbar-tema-btn" id="btn-tema" aria-label="Alternar tema" title="Claro / Escuro">&#9790;</button>
+      <button class="topbar-notif-btn" id="btn-notif" aria-label="Notificações" title="Notificações">
+        &#128276;
+        <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
+      </button>
+      <div class="topbar-perfil" id="perfil-botao" tabindex="0" role="button" aria-label="Menu do utilizador">
+        <div class="avatar" id="topbar-avatar">?</div>
+        <div class="perfil-info">
+          <span class="perfil-nome" id="topbar-nome">Utilizador</span>
+          <span class="perfil-funcao" id="topbar-funcao">---</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════ LAYOUT ═══════ -->
+  <div class="layout">
+
+    <!-- ═══════ SIDEBAR ═══════ -->
+    <nav class="sidebar" id="sidebar" aria-label="Menu principal">
+      <ul class="sidebar-nav" role="menubar">
+
+        <li class="sidebar-modulo">
+          <a href="../index.html" class="sidebar-modulo-btn" role="menuitem">
+            <span class="modulo-icon">&#9776;</span>
+            <span class="modulo-label">Página Inicial</span>
+          </a>
+        </li>
+
+        <div class="sidebar-separador"></div>
+
+        <li class="sidebar-modulo">
+          <button class="sidebar-modulo-btn aberto" data-alvo="sub-oficina" aria-expanded="true">
+            <span class="modulo-icon">&#9881;</span>
+            <span class="modulo-label">Oficina &amp; Manutenção</span>
+            <span class="modulo-seta">&#9654;</span>
+          </button>
+          <div class="sidebar-submenu visivel" id="sub-oficina">
+            <a href="visao-geral.html">Visão Geral</a>
+            <a href="ordens-servico.html" class="ativo">Ordens de Serviço</a>
+            <a href="checklist.html">Checklist</a>
+            <a href="equipamentos.html">Equipamentos</a>
+          </div>
+        </li>
+
+        <li class="sidebar-modulo">
+          <button class="sidebar-modulo-btn" data-alvo="sub-rh" aria-expanded="false">
+            <span class="modulo-icon">&#9786;</span>
+            <span class="modulo-label">Recursos Humanos</span>
+            <span class="modulo-seta">&#9654;</span>
+          </button>
+          <div class="sidebar-submenu" id="sub-rh">
+            <a href="../rh/funcionarios.html">Funcionários</a>
+            <a href="../rh/ferias.html">Férias</a>
+            <a href="../rh/departamentos.html">Departamentos</a>
+          </div>
+        </li>
+
+        <li class="sidebar-modulo">
+          <button class="sidebar-modulo-btn" data-alvo="sub-hst" aria-expanded="false">
+            <span class="modulo-icon">&#9762;</span>
+            <span class="modulo-label">HST</span>
+            <span class="modulo-seta">&#9654;</span>
+          </button>
+          <div class="sidebar-submenu" id="sub-hst">
+            <a href="../hst/inspecoes.html">Inspeções</a>
+            <a href="../hst/riscos.html">Riscos</a>
+            <a href="../hst/incidentes.html">Incidentes</a>
+            <a href="../hst/treinamentos.html">Treinamentos</a>
+          </div>
+        </li>
+
+        <li class="sidebar-modulo">
+          <button class="sidebar-modulo-btn" data-alvo="sub-billing" aria-expanded="false">
+            <span class="modulo-icon">&#9830;</span>
+            <span class="modulo-label">Billing</span>
+            <span class="modulo-seta">&#9654;</span>
+          </button>
+          <div class="sidebar-submenu" id="sub-billing">
+            <a href="../billing/faturas.html">Faturas</a>
+            <a href="../billing/clientes.html">Clientes</a>
+            <a href="../billing/pagamentos.html">Pagamentos</a>
+          </div>
+        </li>
+
+        <li class="sidebar-modulo">
+          <button class="sidebar-modulo-btn" data-alvo="sub-stock" aria-expanded="false">
+            <span class="modulo-icon">&#9638;</span>
+            <span class="modulo-label">Stock</span>
+            <span class="modulo-seta">&#9654;</span>
+          </button>
+          <div class="sidebar-submenu" id="sub-stock">
+            <a href="../stock/entradas.html">Entradas</a>
+            <a href="../stock/movimentos.html">Movimentos</a>
+            <a href="../stock/fornecedores.html">Fornecedores</a>
+          </div>
+        </li>
+
+        <li class="sidebar-modulo">
+          <button class="sidebar-modulo-btn" data-alvo="sub-fundo" aria-expanded="false">
+            <span class="modulo-icon">&#9670;</span>
+            <span class="modulo-label">Fundo Local</span>
+            <span class="modulo-seta">&#9654;</span>
+          </button>
+          <div class="sidebar-submenu" id="sub-fundo">
+            <a href="../fundo-local/pedidos.html">Pedidos</a>
+            <a href="../fundo-local/aprovacoes.html">Aprovações</a>
+            <a href="../fundo-local/desembolsos.html">Desembolsos</a>
+          </div>
+        </li>
+
+        <li class="sidebar-modulo">
+          <button class="sidebar-modulo-btn" data-alvo="sub-escalas" aria-expanded="false">
+            <span class="modulo-icon">&#9776;</span>
+            <span class="modulo-label">Escalas</span>
+            <span class="modulo-seta">&#9654;</span>
+          </button>
+          <div class="sidebar-submenu" id="sub-escalas">
+            <a href="../escalas/escalas.html">Escala Mensal</a>
+            <a href="../escalas/tipos-turno.html">Tipos de Turno</a>
+          </div>
+        </li>
+
+        <div class="sidebar-separador"></div>
+
+        <li class="sidebar-modulo">
+          <button class="sidebar-modulo-btn" id="btn-sair" style="color: var(--cor-vermelho-danmo);">
+            <span class="modulo-icon">&#10006;</span>
+            <span class="modulo-label">Terminar Sessão</span>
+          </button>
+        </li>
+
+      </ul>
+    </nav>
+
+    <!-- ═══════ CONTEÚDO PRINCIPAL ═══════ -->
+    <main class="main" id="conteudo-principal">
+      <p class="pagina-subtitulo">Ordens de Serviço</p>
+
+      <!-- ── Barra de Ações ── -->
+      <div class="painel" style="padding:16px 20px; display:flex; flex-wrap:wrap; align-items:center; gap:12px;">
+        <button class="btn btn-verde" id="btn-nova-ordem">Nova Ordem</button>
+
+        <select class="campo-form" id="filtro-status" style="min-width:150px;">
+          <option value="">Todos os Estados</option>
+          <option value="pending">Pendente</option>
+          <option value="in_progress">Em Curso</option>
+          <option value="completed">Concluída</option>
+          <option value="cancelled">Cancelada</option>
+        </select>
+
+        <select class="campo-form" id="filtro-prioridade" style="min-width:140px;">
+          <option value="">Todas as Prioridades</option>
+          <option value="high">Alta</option>
+          <option value="medium">Média</option>
+          <option value="low">Baixa</option>
+        </select>
+
+        <input type="text" class="campo-form" id="filtro-pesquisa" placeholder="Pesquisar..." style="min-width:200px; flex:1;">
+      </div>
+
+      <!-- ── Tabela de Ordens de Serviço ── -->
+      <div class="painel">
+        <div class="tabela-container">
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th>Nº</th>
+                <th>Equipamento</th>
+                <th>Descrição</th>
+                <th>Prioridade</th>
+                <th>Estado</th>
+                <th>Solicitado por</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-ordens">
+              <tr><td colspan="7" class="tabela-vazia">A carregar ordens de serviço...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ═══════ Modal — Nova Ordem de Serviço ═══════ -->
+  <div class="modal-fundo" id="modal-nova-ordem">
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo">Nova Ordem de Serviço</span>
+        <button class="modal-fechar" id="modal-nova-ordem-fechar" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <form id="form-nova-ordem" novalidate>
+          <div class="campo-grupo">
+            <label class="campo-label" for="campo-equipamento">Equipamento <span style="color:var(--cor-vermelho-danmo);">*</span></label>
+            <select class="campo-form" id="campo-equipamento" required>
+              <option value="">A carregar equipamentos...</option>
+            </select>
+          </div>
+
+          <div class="campo-grupo">
+            <label class="campo-label" for="campo-descricao">Descrição <span style="color:var(--cor-vermelho-danmo);">*</span></label>
+            <textarea class="campo-form" id="campo-descricao" rows="4" placeholder="Descreva o problema ou serviço necessário..." required></textarea>
+          </div>
+
+          <div class="campo-grupo">
+            <label class="campo-label" for="campo-prioridade">Prioridade <span style="color:var(--cor-vermelho-danmo);">*</span></label>
+            <select class="campo-form" id="campo-prioridade" required>
+              <option value="">Selecione...</option>
+              <option value="high">Alta</option>
+              <option value="medium">Média</option>
+              <option value="low">Baixa</option>
+            </select>
+          </div>
+
+          <div class="campo-grupo">
+            <label class="campo-label" for="campo-solicitante">Solicitado por <span style="color:var(--cor-vermelho-danmo);">*</span></label>
+            <input type="text" class="campo-form" id="campo-solicitante" placeholder="Nome do solicitante" required>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+            <button type="button" class="btn" id="btn-cancelar-ordem">Cancelar</button>
+            <button type="submit" class="btn btn-verde">Criar Ordem</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ Modal Perfil ═══════ -->
+  <div class="modal-fundo" id="perfil-menu">
+    <div class="modal" style="max-width:340px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo">Meu Perfil</span>
+        <button class="modal-fechar" id="perfil-fechar" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <p style="margin-bottom:8px;"><strong>Nome:</strong> <span id="perfil-nome-detalhe"></span></p>
+        <p style="margin-bottom:8px;"><strong>E-mail:</strong> <span id="perfil-email-detalhe"></span></p>
+        <p style="margin-bottom:8px;"><strong>Função:</strong> <span id="perfil-role-detalhe"></span></p>
+        <p><strong>Departamento:</strong> <span id="perfil-dept-detalhe"></span></p>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-vermelho btn-sm" id="perfil-sair">Terminar Sessão</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ SCRIPTS ═══════ -->
+  <script src="../shared/utils.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    /* ── Verificar dependências ── */
+    if (typeof obterUtilizador !== 'function' || typeof db === 'undefined') {
+      document.getElementById('conteudo-principal').innerHTML =
+        '<div class="estado-vazio"><div class="vazio-icone">&#9888;</div>' +
+        '<div class="vazio-texto">Erro ao carregar os scripts do sistema. Verifique se os ficheiros em <code>shared/</code> estão corretos.</div></div>';
+      return;
+    }
+
+    var utilizador = obterUtilizador();
+
+    /* ═══ RELÓGIO COMPLETO: dia da semana + data + hora ═══ */
+    var DIAS_SEMANA = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+    var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+    function atualizarRelogio() {
+      var agora = new Date();
+      var h = String(agora.getHours()).padStart(2, '0');
+      var m = String(agora.getMinutes()).padStart(2, '0');
+      var s = String(agora.getSeconds()).padStart(2, '0');
+      var diaSemana = DIAS_SEMANA[agora.getDay()];
+      var dia = agora.getDate();
+      var mes = MESES[agora.getMonth()];
+      var ano = agora.getFullYear();
+
+      var elRelogio = document.getElementById('topbar-relogio');
+      var elData = document.getElementById('topbar-data');
+      if (elRelogio) elRelogio.textContent = h + ':' + m + ':' + s;
+      if (elData) elData.textContent = diaSemana + ', ' + dia + ' de ' + mes + ' de ' + ano;
+    }
+    atualizarRelogio();
+    setInterval(atualizarRelogio, 1000);
+
+    /* ═══ PERFIL NA TOPBAR ═══ */
+    if (utilizador) {
+      var avatar = document.getElementById('topbar-avatar');
+      var nomeEl = document.getElementById('topbar-nome');
+      var funcaoEl = document.getElementById('topbar-funcao');
+
+      if (avatar) avatar.textContent = (utilizador.name || '?').charAt(0).toUpperCase();
+      if (nomeEl) nomeEl.textContent = utilizador.name || 'Utilizador';
+      if (funcaoEl) funcaoEl.textContent = utilizador.role || '---';
+
+      var pNome = document.getElementById('perfil-nome-detalhe');
+      var pEmail = document.getElementById('perfil-email-detalhe');
+      var pRole = document.getElementById('perfil-role-detalhe');
+      var pDept = document.getElementById('perfil-dept-detalhe');
+      if (pNome) pNome.textContent = utilizador.name || '—';
+      if (pEmail) pEmail.textContent = utilizador.email || '—';
+      if (pRole) pRole.textContent = utilizador.role || '—';
+      if (pDept) pDept.textContent = utilizador.department || '—';
+    }
+
+    /* ═══ MAPAS DE BADGES ═══ */
+    var MAPA_ESTADO = {
+      'pending':     { texto: 'Pendente',    classe: 'badge-aviso' },
+      'in_progress': { texto: 'Em Curso',    classe: 'badge-info' },
+      'completed':   { texto: 'Concluída',   classe: 'badge-sucesso' },
+      'cancelled':   { texto: 'Cancelada',   classe: 'badge-erro' }
+    };
+
+    var MAPA_PRIORIDADE = {
+      'high':   { texto: 'Alta',  classe: 'badge-erro' },
+      'medium': { texto: 'Média', classe: 'badge-aviso' },
+      'low':    { texto: 'Baixa', classe: 'badge-info' }
+    };
+
+    function badgeEstado(mapa, valor) {
+      var info = mapa[valor] || { texto: valor || '—', classe: '' };
+      return '<span class="badge ' + info.classe + '">' + escaparHTML(info.texto) + '</span>';
+    }
+
+    /* ═══ DADOS EM MEMÓRIA ═══ */
+    var todasOrdens = [];
+    var mapaEquipamentos = {};  // id -> nome
+
+    /* ═══ CARREGAR EQUIPAMENTOS (para select + mapa) ═══ */
+    async function carregarEquipamentos() {
+      try {
+        var { data: equipamentos, error } = await db
+          .from('equipment')
+          .select('id, name')
+          .eq('active', true)
+          .order('name', { ascending: true });
+
+        if (error) {
+          console.error('Erro equipamentos:', error);
+          mostrarToast('Erro ao carregar equipamentos.', 'erro');
+          return [];
+        }
+
+        var lista = equipamentos || [];
+
+        /* Preencher mapa id->nome */
+        mapaEquipamentos = {};
+        lista.forEach(function(eq) {
+          mapaEquipamentos[eq.id] = eq.name;
+        });
+
+        /* Preencher select do formulário */
+        var select = document.getElementById('campo-equipamento');
+        if (select) {
+          select.innerHTML = '';
+          var optVazia = document.createElement('option');
+          optVazia.value = '';
+          optVazia.textContent = 'Selecione um equipamento...';
+          select.appendChild(optVazia);
+          lista.forEach(function(eq) {
+            var opt = document.createElement('option');
+            opt.value = eq.id;
+            opt.textContent = eq.name;
+            select.appendChild(opt);
+          });
+        }
+
+        return lista;
+      } catch (err) {
+        console.error('Erro equipamentos:', err);
+        mostrarToast('Erro ao carregar equipamentos.', 'erro');
+        return [];
+      }
+    }
+
+    /* ═══ CARREGAR ORDENS DE SERVIÇO ═══ */
+    async function loadOrders() {
+      var tbody = document.getElementById('tabela-ordens');
+      if (!tbody) return;
+
+      try {
+        var resultados = await Promise.all([
+          db
+            .from('maintenance_requests')
+            .select('id, equipment_id, description, status, priority, requested_by, created_at')
+            .order('created_at', { ascending: false }),
+          db
+            .from('equipment')
+            .select('id, name')
+            .eq('active', true)
+          .order('name', { ascending: true })
+        ]);
+
+        var ordens = resultados[0].data || [];
+        var equipamentos = resultados[1].data || [];
+
+        /* Construir mapa de equipamentos */
+        mapaEquipamentos = {};
+        equipamentos.forEach(function(eq) {
+          mapaEquipamentos[eq.id] = eq.name;
+        });
+
+        /* Preencher select do formulário */
+        var select = document.getElementById('campo-equipamento');
+        if (select) {
+          select.innerHTML = '';
+          var optVazia = document.createElement('option');
+          optVazia.value = '';
+          optVazia.textContent = 'Selecione um equipamento...';
+          select.appendChild(optVazia);
+          equipamentos.forEach(function(eq) {
+            var opt = document.createElement('option');
+            opt.value = eq.id;
+            opt.textContent = eq.name;
+            select.appendChild(opt);
+          });
+        }
+
+        if (resultados[0].error) {
+          console.error('Erro ordens:', resultados[0].error);
+          tbody.innerHTML = '<tr><td colspan="7" class="tabela-vazia">Erro ao carregar ordens de serviço.</td></tr>';
+          mostrarToast('Erro ao carregar ordens de serviço.', 'erro');
+          return;
+        }
+
+        todasOrdens = ordens;
+        renderizarOrdens();
+
+      } catch (err) {
+        console.error('Erro ordens:', err);
+        tbody.innerHTML = '<tr><td colspan="7" class="tabela-vazia">Erro ao carregar ordens de serviço.</td></tr>';
+        mostrarToast('Erro ao carregar ordens de serviço.', 'erro');
+      }
+    }
+
+    /* ═══ RENDERIZAR TABELA (com filtros) ═══ */
+    function renderizarOrdens() {
+      var tbody = document.getElementById('tabela-ordens');
+      if (!tbody) return;
+
+      var filtroStatus = (document.getElementById('filtro-status') || {}).value || '';
+      var filtroPrioridade = (document.getElementById('filtro-prioridade') || {}).value || '';
+      var filtroPesquisa = ((document.getElementById('filtro-pesquisa') || {}).value || '').trim().toLowerCase();
+
+      var filtradas = todasOrdens.filter(function(o) {
+        if (filtroStatus && o.status !== filtroStatus) return false;
+        if (filtroPrioridade && o.priority !== filtroPrioridade) return false;
+        if (filtroPesquisa) {
+          var nomeEquip = mapaEquipamentos[o.equipment_id] || '';
+          var texto = (nomeEquip + ' ' + (o.description || '') + ' ' + (o.requested_by || '')).toLowerCase();
+          if (texto.indexOf(filtroPesquisa) === -1) return false;
+        }
+        return true;
+      });
+
+      if (filtradas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="tabela-vazia">Nenhuma ordem de serviço encontrada.</td></tr>';
+        return;
+      }
+
+      var html = '';
+      filtradas.forEach(function(o) {
+        var nomeEquip = escaparHTML(mapaEquipamentos[o.equipment_id] || o.equipment_id || '—');
+        var descricao = escaparHTML(o.description || '—');
+        if (descricao.length > 80) descricao = descricao.substring(0, 80) + '...';
+
+        html += '<tr>' +
+          '<td>' + escaparHTML(String(o.id)) + '</td>' +
+          '<td>' + nomeEquip + '</td>' +
+          '<td title="' + escaparHTML(o.description || '') + '">' + descricao + '</td>' +
+          '<td>' + badgeEstado(MAPA_PRIORIDADE, o.priority) + '</td>' +
+          '<td>' + badgeEstado(MAPA_ESTADO, o.status) + '</td>' +
+          '<td>' + escaparHTML(o.requested_by || '—') + '</td>' +
+          '<td>' + formataData(o.created_at, true) + '</td>' +
+          '</tr>';
+      });
+      tbody.innerHTML = html;
+    }
+
+    /* ═══ ABRIR / FECHAR MODAL ═══ */
+    function abrirModalOrdem() {
+      document.getElementById('modal-nova-ordem').classList.add('visivel');
+    }
+
+    function fecharModalOrdem() {
+      document.getElementById('modal-nova-ordem').classList.remove('visivel');
+      document.getElementById('form-nova-ordem').reset();
+    }
+
+    /* ═══ CRIAR NOVA ORDEM ═══ */
+    async function criarOrdem(e) {
+      e.preventDefault();
+
+      var equipmentId = document.getElementById('campo-equipamento').value;
+      var description = document.getElementById('campo-descricao').value.trim();
+      var priority = document.getElementById('campo-prioridade').value;
+      var requestedBy = document.getElementById('campo-solicitante').value.trim();
+
+      /* Validação */
+      if (!equipmentId) {
+        mostrarToast('Selecione um equipamento.', 'aviso');
+        return;
+      }
+      if (!description) {
+        mostrarToast('Preencha a descrição.', 'aviso');
+        return;
+      }
+      if (!priority) {
+        mostrarToast('Selecione a prioridade.', 'aviso');
+        return;
+      }
+      if (!requestedBy) {
+        mostrarToast('Indique o nome do solicitante.', 'aviso');
+        return;
+      }
+
+      try {
+        var { data, error } = await db
+          .from('maintenance_requests')
+          .insert({
+            equipment_id: equipmentId,
+            description: description,
+            priority: priority,
+            requested_by: requestedBy,
+            status: 'pending'
+          })
+          .select('id, equipment_id, description, status, priority, requested_by, created_at')
+          .single();
+
+        if (error) {
+          console.error('Erro ao criar ordem:', error);
+          mostrarToast('Erro ao criar ordem de serviço: ' + error.message, 'erro');
+          return;
+        }
+
+        mostrarToast('Ordem de serviço criada com sucesso!', 'sucesso');
+        fecharModalOrdem();
+
+        /* Adicionar à lista local e re-renderizar */
+        todasOrdens.unshift(data);
+        renderizarOrdens();
+
+      } catch (err) {
+        console.error('Erro ao criar ordem:', err);
+        mostrarToast('Erro ao criar ordem de serviço.', 'erro');
+      }
+    }
+
+    /* ═══ CARREGAMENTO INICIAL ═══ */
+    loadOrders();
+
+    /* ═══ DELEGAÇÃO DE EVENTOS ═══ */
+
+    /* Sidebar submenus */
+    document.querySelector('.sidebar-nav').addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-alvo]');
+      if (!btn) return;
+      e.preventDefault();
+      var alvoId = btn.getAttribute('data-alvo');
+      var submenu = document.getElementById(alvoId);
+      if (!submenu) return;
+      var aberto = submenu.classList.contains('visivel');
+      document.querySelectorAll('.sidebar-submenu').forEach(function(s) { s.classList.remove('visivel'); });
+      document.querySelectorAll('[data-alvo]').forEach(function(b) { b.classList.remove('aberto'); b.setAttribute('aria-expanded','false'); });
+      if (!aberto) {
+        submenu.classList.add('visivel');
+        btn.classList.add('aberto');
+        btn.setAttribute('aria-expanded','true');
+      }
+    });
+
+    /* Tema */
+    document.getElementById('btn-tema').addEventListener('click', function() { alternarTema(); });
+
+    /* Sair */
+    document.getElementById('btn-sair').addEventListener('click', function() { terminarSessao(); });
+
+    /* Perfil — abrir */
+    document.getElementById('perfil-botao').addEventListener('click', function() {
+      document.getElementById('perfil-menu').classList.add('visivel');
+    });
+    /* Perfil — fechar */
+    document.getElementById('perfil-fechar').addEventListener('click', function() {
+      document.getElementById('perfil-menu').classList.remove('visivel');
+    });
+    document.getElementById('perfil-sair').addEventListener('click', function() { terminarSessao(); });
+    document.getElementById('perfil-menu').addEventListener('click', function(e) {
+      if (e.target === this) this.classList.remove('visivel');
+    });
+
+    /* Nova Ordem — abrir modal */
+    document.getElementById('btn-nova-ordem').addEventListener('click', function() {
+      abrirModalOrdem();
+    });
+
+    /* Modal Nova Ordem — fechar */
+    document.getElementById('modal-nova-ordem-fechar').addEventListener('click', function() {
+      fecharModalOrdem();
+    });
+    document.getElementById('btn-cancelar-ordem').addEventListener('click', function() {
+      fecharModalOrdem();
+    });
+    document.getElementById('modal-nova-ordem').addEventListener('click', function(e) {
+      if (e.target === this) fecharModalOrdem();
+    });
+
+    /* Formulário — submit */
+    document.getElementById('form-nova-ordem').addEventListener('submit', criarOrdem);
+
+    /* Filtros */
+    document.getElementById('filtro-status').addEventListener('change', renderizarOrdens);
+    document.getElementById('filtro-prioridade').addEventListener('change', renderizarOrdens);
+    document.getElementById('filtro-pesquisa').addEventListener('input', renderizarOrdens);
+
+  })();
+  </script>
+</body>
+</html>

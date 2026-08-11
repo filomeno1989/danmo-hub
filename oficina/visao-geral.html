@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Danmo Service System, Lda — Gestão</title>
-  <link rel="icon" href="shared/logos/danmo-logo.png" type="image/png">
-  <link rel="stylesheet" href="shared/style.css">
+  <title>Danmo Service System, Lda — Oficina & Manutenção — Visão Geral</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="shared/supabase.js"></script>
-  <script src="shared/auth.js"></script>
-  <script src="shared/tema.js"></script>
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
   <script>
     /* AUTH DESATIVADO TEMPORARIAMENTE — usar utilizador mock */
     if (!verificarSessao()) {
@@ -22,10 +22,10 @@
 </head>
 <body>
 
-  <!-- TOPBAR -->
+  <!-- ═══════ TOPBAR ═══════ -->
   <header class="topbar">
     <div class="topbar-logo">
-      <img src="shared/logos/danmo-logo.png" alt="Logo Danmo Service System" width="36" height="36">
+      <img src="../shared/logos/danmo-logo.png" alt="Logo Danmo Service System" width="36" height="36">
       <div class="logo-texto">Danmo Service System, Lda</div>
     </div>
 
@@ -50,15 +50,15 @@
     </div>
   </header>
 
-  <!-- LAYOUT -->
+  <!-- ═══════ LAYOUT ═══════ -->
   <div class="layout">
 
-    <!-- SIDEBAR -->
+    <!-- ═══════ SIDEBAR ═══════ -->
     <nav class="sidebar" id="sidebar" aria-label="Menu principal">
       <ul class="sidebar-nav" role="menubar">
 
         <li class="sidebar-modulo">
-          <a href="index.html" class="sidebar-modulo-btn ativo" role="menuitem">
+          <a href="../index.html" class="sidebar-modulo-btn" role="menuitem">
             <span class="modulo-icon">&#9776;</span>
             <span class="modulo-label">Página Inicial</span>
           </a>
@@ -67,16 +67,16 @@
         <div class="sidebar-separador"></div>
 
         <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-oficina" aria-expanded="false">
+          <button class="sidebar-modulo-btn aberto" data-alvo="sub-oficina" aria-expanded="true">
             <span class="modulo-icon">&#9881;</span>
             <span class="modulo-label">Oficina & Manutenção</span>
             <span class="modulo-seta">&#9654;</span>
           </button>
-          <div class="sidebar-submenu" id="sub-oficina">
-            <a href="oficina/visao-geral.html">Visão Geral</a>
-            <a href="oficina/ordens-servico.html">Ordens de Serviço</a>
-            <a href="oficina/checklist.html">Checklist</a>
-            <a href="oficina/equipamentos.html">Equipamentos</a>
+          <div class="sidebar-submenu visivel" id="sub-oficina">
+            <a href="visao-geral.html" class="ativo">Visão Geral</a>
+            <a href="ordens-servico.html">Ordens de Serviço</a>
+            <a href="checklist.html">Checklist</a>
+            <a href="equipamentos.html">Equipamentos</a>
           </div>
         </li>
 
@@ -87,9 +87,9 @@
             <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-rh">
-            <a href="rh/funcionarios.html">Funcionários</a>
-            <a href="rh/ferias.html">Férias</a>
-            <a href="rh/departamentos.html">Departamentos</a>
+            <a href="../rh/funcionarios.html">Funcionários</a>
+            <a href="../rh/ferias.html">Férias</a>
+            <a href="../rh/departamentos.html">Departamentos</a>
           </div>
         </li>
 
@@ -100,10 +100,10 @@
             <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-hst">
-            <a href="hst/inspecoes.html">Inspeções</a>
-            <a href="hst/riscos.html">Riscos</a>
-            <a href="hst/incidentes.html">Incidentes</a>
-            <a href="hst/treinamentos.html">Treinamentos</a>
+            <a href="../hst/inspecoes.html">Inspeções</a>
+            <a href="../hst/riscos.html">Riscos</a>
+            <a href="../hst/incidentes.html">Incidentes</a>
+            <a href="../hst/treinamentos.html">Treinamentos</a>
           </div>
         </li>
 
@@ -114,9 +114,9 @@
             <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-billing">
-            <a href="billing/faturas.html">Faturas</a>
-            <a href="billing/clientes.html">Clientes</a>
-            <a href="billing/pagamentos.html">Pagamentos</a>
+            <a href="../billing/faturas.html">Faturas</a>
+            <a href="../billing/clientes.html">Clientes</a>
+            <a href="../billing/pagamentos.html">Pagamentos</a>
           </div>
         </li>
 
@@ -127,9 +127,9 @@
             <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-stock">
-            <a href="stock/entradas.html">Entradas</a>
-            <a href="stock/movimentos.html">Movimentos</a>
-            <a href="stock/fornecedores.html">Fornecedores</a>
+            <a href="../stock/entradas.html">Entradas</a>
+            <a href="../stock/movimentos.html">Movimentos</a>
+            <a href="../stock/fornecedores.html">Fornecedores</a>
           </div>
         </li>
 
@@ -140,9 +140,9 @@
             <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-fundo">
-            <a href="fundo-local/pedidos.html">Pedidos</a>
-            <a href="fundo-local/aprovacoes.html">Aprovações</a>
-            <a href="fundo-local/desembolsos.html">Desembolsos</a>
+            <a href="../fundo-local/pedidos.html">Pedidos</a>
+            <a href="../fundo-local/aprovacoes.html">Aprovações</a>
+            <a href="../fundo-local/desembolsos.html">Desembolsos</a>
           </div>
         </li>
 
@@ -153,8 +153,8 @@
             <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-escalas">
-            <a href="escalas/escalas.html">Escala Mensal</a>
-            <a href="escalas/tipos-turno.html">Tipos de Turno</a>
+            <a href="../escalas/escalas.html">Escala Mensal</a>
+            <a href="../escalas/tipos-turno.html">Tipos de Turno</a>
           </div>
         </li>
 
@@ -170,62 +170,82 @@
       </ul>
     </nav>
 
-    <!-- CONTEÚDO PRINCIPAL -->
+    <!-- ═══════ CONTEÚDO PRINCIPAL ═══════ -->
     <main class="main" id="conteudo-principal">
-      <p class="pagina-subtitulo" id="saudacao">Bem-vindo ao sistema de gestão Danmo Service System, Lda</p>
+      <p class="pagina-subtitulo">Oficina & Manutenção</p>
 
-      <!-- KPI Cards -->
+      <!-- ── KPI Cards ── -->
       <div class="kpi-grid" id="kpi-grid">
         <div class="kpi-card verde">
           <div class="kpi-icone">&#9881;</div>
-          <div class="kpi-valor" id="kpi-equipamentos"><span class="kpi-carregando">A carregar...</span></div>
-          <div class="kpi-label">Equipamentos Ativos</div>
+          <div class="kpi-valor" id="kpi-total-equipamentos"><span class="kpi-carregando">A carregar...</span></div>
+          <div class="kpi-label">Total de Equipamentos</div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-icone">&#9786;</div>
-          <div class="kpi-valor" id="kpi-funcionarios"><span class="kpi-carregando">A carregar...</span></div>
-          <div class="kpi-label">Funcionários Ativos</div>
+        <div class="kpi-card verde">
+          <div class="kpi-icone">&#10003;</div>
+          <div class="kpi-valor" id="kpi-disponiveis"><span class="kpi-carregando">A carregar...</span></div>
+          <div class="kpi-label">Disponíveis</div>
         </div>
         <div class="kpi-card amarelo">
-          <div class="kpi-icone">&#9830;</div>
-          <div class="kpi-valor" id="kpi-faturas-pendentes"><span class="kpi-carregando">A carregar...</span></div>
-          <div class="kpi-label">Faturas Pendentes</div>
+          <div class="kpi-icone">&#128295;</div>
+          <div class="kpi-valor" id="kpi-em-manutencao"><span class="kpi-carregando">A carregar...</span></div>
+          <div class="kpi-label">Em Manutenção</div>
         </div>
         <div class="kpi-card vermelho">
-          <div class="kpi-icone">&#9762;</div>
-          <div class="kpi-valor" id="kpi-incidentes-abertos"><span class="kpi-carregando">A carregar...</span></div>
-          <div class="kpi-label">Incidentes Abertos</div>
-        </div>
-        <div class="kpi-card azul">
-          <div class="kpi-icone">&#9638;</div>
-          <div class="kpi-valor" id="kpi-stock-baixo"><span class="kpi-carregando">A carregar...</span></div>
-          <div class="kpi-label">Itens com Stock Baixo</div>
+          <div class="kpi-icone">&#9888;</div>
+          <div class="kpi-valor" id="kpi-ordens-pendentes"><span class="kpi-carregando">A carregar...</span></div>
+          <div class="kpi-label">Ordens Pendentes</div>
         </div>
       </div>
 
-      <!-- Atividade Recente -->
+      <!-- ── Disponibilidade da Frota ── -->
       <div class="painel">
-        <h2 class="painel-titulo">Atividade Recente</h2>
+        <h2 class="painel-titulo">&#128663; Disponibilidade da Frota</h2>
         <div class="tabela-container">
           <table class="tabela">
             <thead>
               <tr>
-                <th>Módulo</th>
-                <th>Ação</th>
-                <th>Descrição</th>
-                <th>Data</th>
+                <th>Equipamento</th>
+                <th>Categoria</th>
+                <th>Marca / Modelo</th>
+                <th>Localização</th>
+                <th>Estado</th>
               </tr>
             </thead>
-            <tbody id="tabela-atividade">
-              <tr><td colspan="4" class="tabela-vazia">A carregar atividades...</td></tr>
+            <tbody id="tabela-frota">
+              <tr><td colspan="5" class="tabela-vazia">A carregar equipamentos...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
+
+      <!-- ── Ordens de Serviço Recentes ── -->
+      <div class="painel">
+        <h2 class="painel-titulo">&#128221; Ordens de Serviço Recentes</h2>
+        <div class="tabela-container">
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th>Nº</th>
+                <th>Equipamento</th>
+                <th>Descrição</th>
+                <th>Prioridade</th>
+                <th>Estado</th>
+                <th>Solicitado por</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-ordens">
+              <tr><td colspan="7" class="tabela-vazia">A carregar ordens de serviço...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </main>
   </div>
 
-  <!-- Modal Perfil -->
+  <!-- ═══════ Modal Perfil ═══════ -->
   <div class="modal-fundo" id="perfil-menu">
     <div class="modal" style="max-width:340px;">
       <div class="modal-cabecalho">
@@ -244,13 +264,13 @@
     </div>
   </div>
 
-  <!-- SCRIPTS -->
-  <script src="shared/utils.js"></script>
+  <!-- ═══════ SCRIPTS ═══════ -->
+  <script src="../shared/utils.js"></script>
   <script>
   (function() {
     'use strict';
 
-    /* ── Verificar se as dependências carregaram ── */
+    /* ── Verificar dependências ── */
     if (typeof obterUtilizador !== 'function' || typeof db === 'undefined') {
       document.getElementById('conteudo-principal').innerHTML =
         '<div class="estado-vazio"><div class="vazio-icone">&#9888;</div>' +
@@ -287,44 +307,62 @@
       var avatar = document.getElementById('topbar-avatar');
       var nomeEl = document.getElementById('topbar-nome');
       var funcaoEl = document.getElementById('topbar-funcao');
-      var saudacao = document.getElementById('saudacao');
 
       if (avatar) avatar.textContent = (utilizador.name || '?').charAt(0).toUpperCase();
       if (nomeEl) nomeEl.textContent = utilizador.name || 'Utilizador';
       if (funcaoEl) funcaoEl.textContent = utilizador.role || '---';
-      if (saudacao) {
-        var hora = new Date().getHours();
-        var txt = hora < 12 ? 'Bom dia' : hora < 17 ? 'Boa tarde' : 'Boa noite';
-        saudacao.textContent = txt + ', ' + (utilizador.name || '') + '. Bem-vindo ao sistema de gestão Danmo Service System, Lda';
-      }
 
-      /* Detalhes no modal */
-    var pNome = document.getElementById('perfil-nome-detalhe');
-    var pEmail = document.getElementById('perfil-email-detalhe');
-    var pRole = document.getElementById('perfil-role-detalhe');
-    var pDept = document.getElementById('perfil-dept-detalhe');
-    if (pNome) pNome.textContent = utilizador.name || '—';
-    if (pEmail) pEmail.textContent = utilizador.email || '—';
-    if (pRole) pRole.textContent = utilizador.role || '—';
-    if (pDept) pDept.textContent = utilizador.department || '—';
+      var pNome = document.getElementById('perfil-nome-detalhe');
+      var pEmail = document.getElementById('perfil-email-detalhe');
+      var pRole = document.getElementById('perfil-role-detalhe');
+      var pDept = document.getElementById('perfil-dept-detalhe');
+      if (pNome) pNome.textContent = utilizador.name || '—';
+      if (pEmail) pEmail.textContent = utilizador.email || '—';
+      if (pRole) pRole.textContent = utilizador.role || '—';
+      if (pDept) pDept.textContent = utilizador.department || '—';
     }
 
-    /* ═══ KPIs — Promise.all (5 queries em paralelo) ═══ */
+    /* ═══ MAPA DE ESTADOS DO EQUIPAMENTO ═══ */
+    var MAPA_ESTADO_EQUIPAMENTO = {
+      'available':   { texto: 'Disponível',    classe: 'badge-sucesso' },
+      'in_use':      { texto: 'Em Uso',        classe: 'badge-info' },
+      'maintenance': { texto: 'Em Manutenção', classe: 'badge-aviso' },
+      'broken':      { texto: 'Avariado',      classe: 'badge-erro' },
+      'decommissioned': { texto: 'Desativado', classe: 'badge-erro' }
+    };
+
+    var MAPA_ESTADO_ORDEM = {
+      'pending':    { texto: 'Pendente',      classe: 'badge-aviso' },
+      'in_progress': { texto: 'Em Curso',     classe: 'badge-info' },
+      'completed':  { texto: 'Concluída',     classe: 'badge-sucesso' },
+      'cancelled':  { texto: 'Cancelada',     classe: 'badge-erro' }
+    };
+
+    var MAPA_PRIORIDADE = {
+      'low':    { texto: 'Baixa',  classe: 'badge-info' },
+      'medium': { texto: 'Média',  classe: 'badge-aviso' },
+      'high':   { texto: 'Alta',   classe: 'badge-erro' }
+    };
+
+    function badgeEstado(mapa, valor) {
+      var info = mapa[valor] || { texto: valor || '—', classe: '' };
+      return '<span class="badge ' + info.classe + '">' + escaparHTML(info.texto) + '</span>';
+    }
+
+    /* ═══ KPIs — Promise.all (4 queries em paralelo) ═══ */
     async function carregarKPIs() {
       try {
         var resultados = await Promise.all([
           db.from('equipment').select('id', { count: 'exact', head: true }).eq('active', true),
-          db.from('funcionarios').select('id', { count: 'exact', head: true }).eq('active', true),
-          db.from('invoices').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-          db.from('incidents').select('id', { count: 'exact', head: true }).eq('status', 'open'),
-          db.from('stock_entries').select('id', { count: 'exact', head: true }).lt('quantity', 10)
+          db.from('equipment').select('id', { count: 'exact', head: true }).eq('active', true).eq('status', 'available'),
+          db.from('equipment').select('id', { count: 'exact', head: true }).eq('active', true).eq('status', 'maintenance'),
+          db.from('maintenance_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending')
         ]);
 
-        preencherKPI('kpi-equipamentos',      resultados[0]);
-        preencherKPI('kpi-funcionarios',      resultados[1]);
-        preencherKPI('kpi-faturas-pendentes', resultados[2]);
-        preencherKPI('kpi-incidentes-abertos', resultados[3]);
-        preencherKPI('kpi-stock-baixo',       resultados[4]);
+        preencherKPI('kpi-total-equipamentos', resultados[0]);
+        preencherKPI('kpi-disponiveis',      resultados[1]);
+        preencherKPI('kpi-em-manutencao',     resultados[2]);
+        preencherKPI('kpi-ordens-pendentes',  resultados[3]);
       } catch (err) {
         console.error('Erro KPIs:', err);
         mostrarToast('Erro ao carregar indicadores. Verifique a ligação.', 'erro');
@@ -342,7 +380,97 @@
       el.textContent = res.count !== null ? res.count : 0;
     }
 
+    /* ═══ TABELA — Disponibilidade da Frota ═══ */
+    async function carregarFrota() {
+      var tbody = document.getElementById('tabela-frota');
+      if (!tbody) return;
+
+      try {
+        var { data: equipamentos, error } = await db
+          .from('equipment')
+          .select('id, name, category, brand, model, status, active, location')
+          .eq('active', true)
+          .order('name', { ascending: true });
+
+        if (error) {
+          console.error('Erro equipamentos:', error);
+          tbody.innerHTML = '<tr><td colspan="5" class="tabela-vazia">Erro ao carregar equipamentos.</td></tr>';
+          mostrarToast('Erro ao carregar equipamentos.', 'erro');
+          return;
+        }
+
+        if (!equipamentos || equipamentos.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="tabela-vazia">Nenhum equipamento encontrado.</td></tr>';
+          return;
+        }
+
+        var html = '';
+        equipamentos.forEach(function(eq) {
+          var marcaModelo = [eq.brand, eq.model].filter(Boolean).join(' / ') || '—';
+          html += '<tr>' +
+            '<td>' + escaparHTML(eq.name || '—') + '</td>' +
+            '<td>' + escaparHTML(eq.category || '—') + '</td>' +
+            '<td>' + escaparHTML(marcaModelo) + '</td>' +
+            '<td>' + escaparHTML(eq.location || '—') + '</td>' +
+            '<td>' + badgeEstado(MAPA_ESTADO_EQUIPAMENTO, eq.status) + '</td>' +
+            '</tr>';
+        });
+        tbody.innerHTML = html;
+      } catch (err) {
+        console.error('Erro frota:', err);
+        tbody.innerHTML = '<tr><td colspan="5" class="tabela-vazia">Erro ao carregar equipamentos.</td></tr>';
+        mostrarToast('Erro ao carregar a frota.', 'erro');
+      }
+    }
+
+    /* ═══ TABELA — Ordens de Serviço Recentes ═══ */
+    async function carregarOrdens() {
+      var tbody = document.getElementById('tabela-ordens');
+      if (!tbody) return;
+
+      try {
+        var { data: ordens, error } = await db
+          .from('maintenance_requests')
+          .select('id, equipment_id, description, status, priority, requested_by, created_at')
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (error) {
+          console.error('Erro ordens:', error);
+          tbody.innerHTML = '<tr><td colspan="7" class="tabela-vazia">Erro ao carregar ordens de serviço.</td></tr>';
+          mostrarToast('Erro ao carregar ordens de serviço.', 'erro');
+          return;
+        }
+
+        if (!ordens || ordens.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="tabela-vazia">Nenhuma ordem de serviço encontrada.</td></tr>';
+          return;
+        }
+
+        var html = '';
+        ordens.forEach(function(o) {
+          html += '<tr>' +
+            '<td>' + escaparHTML(o.id) + '</td>' +
+            '<td>' + escaparHTML(o.equipment_id || '—') + '</td>' +
+            '<td>' + escaparHTML(o.description || '—') + '</td>' +
+            '<td>' + badgeEstado(MAPA_PRIORIDADE, o.priority) + '</td>' +
+            '<td>' + badgeEstado(MAPA_ESTADO_ORDEM, o.status) + '</td>' +
+            '<td>' + escaparHTML(o.requested_by || '—') + '</td>' +
+            '<td>' + formataData(o.created_at, true) + '</td>' +
+            '</tr>';
+        });
+        tbody.innerHTML = html;
+      } catch (err) {
+        console.error('Erro ordens:', err);
+        tbody.innerHTML = '<tr><td colspan="7" class="tabela-vazia">Erro ao carregar ordens de serviço.</td></tr>';
+        mostrarToast('Erro ao carregar ordens de serviço.', 'erro');
+      }
+    }
+
+    /* ═══ CARREGAR TUDO EM PARALELO ═══ */
     carregarKPIs();
+    carregarFrota();
+    carregarOrdens();
 
     /* ═══ DELEGAÇÃO DE EVENTOS ═══ */
 
