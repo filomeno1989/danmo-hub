@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — Danmo Oficina</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="../shared/style.css" />
+  <link rel="stylesheet" href="../shared/oficina.css" />
   <style>
     .filtros-bar { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:20px; }
     .filtros-bar .form-group { margin:0; min-width:140px; }
@@ -232,11 +233,11 @@
     </div>
   </div>
 
-  <script src="supabase.js"></script>
-  <script src="auth.js"></script>
-  <script src="utils.js"></script>
-  <script src="tema.js"></script>
-  <script src="nav.js"></script>
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
   <script>
     renderNavbarOficina('dashboard');
 
