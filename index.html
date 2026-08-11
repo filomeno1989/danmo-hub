@@ -3,385 +3,138 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Danmo Service System, Lda — Gestão</title>
+  <title>Portal Danmo Service System, Lda</title>
   <link rel="icon" href="shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="shared/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="shared/supabase.js"></script>
   <script src="shared/auth.js"></script>
   <script src="shared/tema.js"></script>
   <script>
-    /* AUTH DESATIVADO TEMPORARIAMENTE — usar utilizador mock */
+    /* AUTH: se não houver sessão válida, cria uma sessão mock de desenvolvimento.
+       TODO: remover este bloco assim que confirmares que o login.html -> utilizadores
+       está a funcionar em produção, e usar protegerPagina() em vez disto. */
     if (!verificarSessao()) {
       localStorage.setItem('dss_user', JSON.stringify({
-        id: 'mock', name: 'Filomeno', email: 'dm0069@danmo.co.mz',
-        role: 'Administrador', department: 'Direcção', active: true
+        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
+        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
       }));
     }
   </script>
 </head>
 <body>
 
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <div class="topbar-logo">
-      <img src="shared/logos/danmo-logo.png" alt="Logo Danmo Service System" width="36" height="36">
-      <div class="logo-texto">Danmo Service System, Lda</div>
-    </div>
+  <div id="navbar"></div>
 
-    <div class="topbar-centro">
-      <span class="topbar-data" id="topbar-data"></span>
-      <span class="topbar-relogio" id="topbar-relogio"></span>
-    </div>
+  <main class="main" id="conteudo-principal">
+    <p class="pagina-titulo">Painel Operacional Central</p>
+    <p class="pagina-subtitulo" id="saudacao">Consolidação de dados em tempo real — Danmo Service System, Lda</p>
 
-    <div class="topbar-direita">
-      <button class="topbar-tema-btn" id="btn-tema" aria-label="Alternar tema" title="Claro / Escuro">&#9790;</button>
-      <button class="topbar-notif-btn" id="btn-notif" aria-label="Notificações" title="Notificações">
-        &#128276;
-        <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
-      </button>
-      <div class="topbar-perfil" id="perfil-botao" tabindex="0" role="button" aria-label="Menu do utilizador">
-        <div class="avatar" id="topbar-avatar">?</div>
-        <div class="perfil-info">
-          <span class="perfil-nome" id="topbar-nome">Utilizador</span>
-          <span class="perfil-funcao" id="topbar-funcao">---</span>
-        </div>
+    <!-- KPIs -->
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="kpi-card verde">
+        <div class="kpi-icone">&#128666;</div>
+        <div class="kpi-valor" id="kpi-maquinas"><span class="kpi-carregando">A carregar...</span></div>
+        <div class="kpi-label">Total Máquinas</div>
+      </div>
+      <div class="kpi-card amarelo">
+        <div class="kpi-icone">&#128736;</div>
+        <div class="kpi-valor" id="kpi-frotas"><span class="kpi-carregando">A carregar...</span></div>
+        <div class="kpi-label">Total Frotas / Categorias</div>
+      </div>
+      <div class="kpi-card azul">
+        <div class="kpi-icone">&#128101;</div>
+        <div class="kpi-valor" id="kpi-colaboradores"><span class="kpi-carregando">A carregar...</span></div>
+        <div class="kpi-label">Colaboradores Danmo</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icone">&#127891;</div>
+        <div class="kpi-valor" id="kpi-estagiarios"><span class="kpi-carregando">A carregar...</span></div>
+        <div class="kpi-label">Estagiários</div>
+      </div>
+      <div class="kpi-card vermelho">
+        <div class="kpi-icone">&#129309;</div>
+        <div class="kpi-valor" id="kpi-empresas"><span class="kpi-carregando">A carregar...</span></div>
+        <div class="kpi-label">Empresas / Clientes Servidos</div>
       </div>
     </div>
-  </header>
 
-  <!-- LAYOUT -->
-  <div class="layout">
-
-    <!-- SIDEBAR -->
-    <nav class="sidebar" id="sidebar" aria-label="Menu principal">
-      <ul class="sidebar-nav" role="menubar">
-
-        <li class="sidebar-modulo">
-          <a href="index.html" class="sidebar-modulo-btn ativo" role="menuitem">
-            <span class="modulo-icon">&#9776;</span>
-            <span class="modulo-label">Página Inicial</span>
-          </a>
-        </li>
-
-        <div class="sidebar-separador"></div>
-
-        <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-oficina" aria-expanded="false">
-            <span class="modulo-icon">&#9881;</span>
-            <span class="modulo-label">Oficina & Manutenção</span>
-            <span class="modulo-seta">&#9654;</span>
-          </button>
-          <div class="sidebar-submenu" id="sub-oficina">
-            <a href="oficina/visao-geral.html">Visão Geral</a>
-            <a href="oficina/ordens-servico.html">Ordens de Serviço</a>
-            <a href="oficina/checklist.html">Checklist</a>
-            <a href="oficina/equipamentos.html">Equipamentos</a>
-          </div>
-        </li>
-
-        <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-rh" aria-expanded="false">
-            <span class="modulo-icon">&#9786;</span>
-            <span class="modulo-label">Recursos Humanos</span>
-            <span class="modulo-seta">&#9654;</span>
-          </button>
-          <div class="sidebar-submenu" id="sub-rh">
-            <a href="rh/funcionarios.html">Funcionários</a>
-            <a href="rh/ferias.html">Férias</a>
-            <a href="rh/departamentos.html">Departamentos</a>
-          </div>
-        </li>
-
-        <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-hst" aria-expanded="false">
-            <span class="modulo-icon">&#9762;</span>
-            <span class="modulo-label">HST</span>
-            <span class="modulo-seta">&#9654;</span>
-          </button>
-          <div class="sidebar-submenu" id="sub-hst">
-            <a href="hst/inspecoes.html">Inspeções</a>
-            <a href="hst/riscos.html">Riscos</a>
-            <a href="hst/incidentes.html">Incidentes</a>
-            <a href="hst/treinamentos.html">Treinamentos</a>
-          </div>
-        </li>
-
-        <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-billing" aria-expanded="false">
-            <span class="modulo-icon">&#9830;</span>
-            <span class="modulo-label">Billing</span>
-            <span class="modulo-seta">&#9654;</span>
-          </button>
-          <div class="sidebar-submenu" id="sub-billing">
-            <a href="billing/faturas.html">Faturas</a>
-            <a href="billing/clientes.html">Clientes</a>
-            <a href="billing/pagamentos.html">Pagamentos</a>
-          </div>
-        </li>
-
-        <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-stock" aria-expanded="false">
-            <span class="modulo-icon">&#9638;</span>
-            <span class="modulo-label">Stock</span>
-            <span class="modulo-seta">&#9654;</span>
-          </button>
-          <div class="sidebar-submenu" id="sub-stock">
-            <a href="stock/entradas.html">Entradas</a>
-            <a href="stock/movimentos.html">Movimentos</a>
-            <a href="stock/fornecedores.html">Fornecedores</a>
-          </div>
-        </li>
-
-        <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-fundo" aria-expanded="false">
-            <span class="modulo-icon">&#9670;</span>
-            <span class="modulo-label">Fundo Local</span>
-            <span class="modulo-seta">&#9654;</span>
-          </button>
-          <div class="sidebar-submenu" id="sub-fundo">
-            <a href="fundo-local/pedidos.html">Pedidos</a>
-            <a href="fundo-local/aprovacoes.html">Aprovações</a>
-            <a href="fundo-local/desembolsos.html">Desembolsos</a>
-          </div>
-        </li>
-
-        <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-escalas" aria-expanded="false">
-            <span class="modulo-icon">&#9776;</span>
-            <span class="modulo-label">Escalas</span>
-            <span class="modulo-seta">&#9654;</span>
-          </button>
-          <div class="sidebar-submenu" id="sub-escalas">
-            <a href="escalas/escalas.html">Escala Mensal</a>
-            <a href="escalas/tipos-turno.html">Tipos de Turno</a>
-          </div>
-        </li>
-
-        <div class="sidebar-separador"></div>
-
-        <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" id="btn-sair" style="color: var(--cor-vermelho-danmo);">
-            <span class="modulo-icon">&#10006;</span>
-            <span class="modulo-label">Terminar Sessão</span>
-          </button>
-        </li>
-
-      </ul>
-    </nav>
-
-    <!-- CONTEÚDO PRINCIPAL -->
-    <main class="main" id="conteudo-principal">
-      <p class="pagina-subtitulo" id="saudacao">Bem-vindo ao sistema de gestão Danmo Service System, Lda</p>
-
-      <!-- KPI Cards -->
-      <div class="kpi-grid" id="kpi-grid">
-        <div class="kpi-card verde">
-          <div class="kpi-icone">&#9881;</div>
-          <div class="kpi-valor" id="kpi-equipamentos"><span class="kpi-carregando">A carregar...</span></div>
-          <div class="kpi-label">Equipamentos Ativos</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-icone">&#9786;</div>
-          <div class="kpi-valor" id="kpi-funcionarios"><span class="kpi-carregando">A carregar...</span></div>
-          <div class="kpi-label">Funcionários Ativos</div>
-        </div>
-        <div class="kpi-card amarelo">
-          <div class="kpi-icone">&#9830;</div>
-          <div class="kpi-valor" id="kpi-faturas-pendentes"><span class="kpi-carregando">A carregar...</span></div>
-          <div class="kpi-label">Faturas Pendentes</div>
-        </div>
-        <div class="kpi-card vermelho">
-          <div class="kpi-icone">&#9762;</div>
-          <div class="kpi-valor" id="kpi-incidentes-abertos"><span class="kpi-carregando">A carregar...</span></div>
-          <div class="kpi-label">Incidentes Abertos</div>
-        </div>
-        <div class="kpi-card azul">
-          <div class="kpi-icone">&#9638;</div>
-          <div class="kpi-valor" id="kpi-stock-baixo"><span class="kpi-carregando">A carregar...</span></div>
-          <div class="kpi-label">Itens com Stock Baixo</div>
-        </div>
-      </div>
-
-      <!-- Atividade Recente -->
-      <div class="painel">
-        <h2 class="painel-titulo">Atividade Recente</h2>
-        <div class="tabela-container">
-          <table class="tabela">
-            <thead>
-              <tr>
-                <th>Módulo</th>
-                <th>Ação</th>
-                <th>Descrição</th>
-                <th>Data</th>
-              </tr>
-            </thead>
-            <tbody id="tabela-atividade">
-              <tr><td colspan="4" class="tabela-vazia">A carregar atividades...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <!-- Modal Perfil -->
-  <div class="modal-fundo" id="perfil-menu">
-    <div class="modal" style="max-width:340px;">
-      <div class="modal-cabecalho">
-        <span class="modal-titulo">Meu Perfil</span>
-        <button class="modal-fechar" id="perfil-fechar" aria-label="Fechar">&times;</button>
-      </div>
-      <div class="modal-corpo">
-        <p style="margin-bottom:8px;"><strong>Nome:</strong> <span id="perfil-nome-detalhe"></span></p>
-        <p style="margin-bottom:8px;"><strong>E-mail:</strong> <span id="perfil-email-detalhe"></span></p>
-        <p style="margin-bottom:8px;"><strong>Função:</strong> <span id="perfil-role-detalhe"></span></p>
-        <p><strong>Departamento:</strong> <span id="perfil-dept-detalhe"></span></p>
-      </div>
-      <div class="modal-rodape">
-        <button class="btn btn-vermelho btn-sm" id="perfil-sair">Terminar Sessão</button>
+    <!-- Atividade Recente -->
+    <div class="painel">
+      <h2 class="painel-titulo">Atividade Recente</h2>
+      <div class="tabela-container">
+        <table class="tabela">
+          <thead>
+            <tr>
+              <th>Módulo</th>
+              <th>Ação</th>
+              <th>Descrição</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-atividade">
+            <tr><td colspan="4" class="tabela-vazia">Sem atividade recente registada ainda.</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-  </div>
+  </main>
 
   <!-- SCRIPTS -->
   <script src="shared/utils.js"></script>
+  <script src="shared/nav.js"></script>
   <script>
-  (function() {
+  (function () {
     'use strict';
 
-    /* ── Verificar se as dependências carregaram ── */
-    if (typeof obterUtilizador !== 'function' || typeof db === 'undefined') {
-      document.getElementById('conteudo-principal').innerHTML =
-        '<div class="estado-vazio"><div class="vazio-icone">&#9888;</div>' +
-        '<div class="vazio-texto">Erro ao carregar os scripts do sistema. Verifique se os ficheiros em <code>shared/</code> estão corretos.</div></div>';
-      return;
-    }
-
     var utilizador = obterUtilizador();
-
-    /* ═══ RELÓGIO COMPLETO: dia da semana + data + hora ═══ */
-    var DIAS_SEMANA = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
-    var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
-    function atualizarRelogio() {
-      var agora = new Date();
-      var h = String(agora.getHours()).padStart(2, '0');
-      var m = String(agora.getMinutes()).padStart(2, '0');
-      var s = String(agora.getSeconds()).padStart(2, '0');
-      var diaSemana = DIAS_SEMANA[agora.getDay()];
-      var dia = agora.getDate();
-      var mes = MESES[agora.getMonth()];
-      var ano = agora.getFullYear();
-
-      var elRelogio = document.getElementById('topbar-relogio');
-      var elData = document.getElementById('topbar-data');
-      if (elRelogio) elRelogio.textContent = h + ':' + m + ':' + s;
-      if (elData) elData.textContent = diaSemana + ', ' + dia + ' de ' + mes + ' de ' + ano;
-    }
-    atualizarRelogio();
-    setInterval(atualizarRelogio, 1000);
-
-    /* ═══ PERFIL NA TOPBAR ═══ */
-    if (utilizador) {
-      var avatar = document.getElementById('topbar-avatar');
-      var nomeEl = document.getElementById('topbar-nome');
-      var funcaoEl = document.getElementById('topbar-funcao');
-      var saudacao = document.getElementById('saudacao');
-
-      if (avatar) avatar.textContent = (utilizador.name || '?').charAt(0).toUpperCase();
-      if (nomeEl) nomeEl.textContent = utilizador.name || 'Utilizador';
-      if (funcaoEl) funcaoEl.textContent = utilizador.role || '---';
-      if (saudacao) {
-        var hora = new Date().getHours();
-        var txt = hora < 12 ? 'Bom dia' : hora < 17 ? 'Boa tarde' : 'Boa noite';
-        saudacao.textContent = txt + ', ' + (utilizador.name || '') + '. Bem-vindo ao sistema de gestão Danmo Service System, Lda';
-      }
-
-      /* Detalhes no modal */
-    var pNome = document.getElementById('perfil-nome-detalhe');
-    var pEmail = document.getElementById('perfil-email-detalhe');
-    var pRole = document.getElementById('perfil-role-detalhe');
-    var pDept = document.getElementById('perfil-dept-detalhe');
-    if (pNome) pNome.textContent = utilizador.name || '—';
-    if (pEmail) pEmail.textContent = utilizador.email || '—';
-    if (pRole) pRole.textContent = utilizador.role || '—';
-    if (pDept) pDept.textContent = utilizador.department || '—';
+    var saudacao = document.getElementById('saudacao');
+    if (saudacao && utilizador) {
+      var hora = new Date().getHours();
+      var txt = hora < 12 ? 'Bom dia' : hora < 17 ? 'Boa tarde' : 'Boa noite';
+      saudacao.textContent = txt + ', ' + (utilizador.nome || '') + '. Bem-vindo ao Portal Danmo Service System, Lda';
     }
 
-    /* ═══ KPIs — Promise.all (5 queries em paralelo) ═══ */
+    /* ═══ KPIs — tabelas reais confirmadas ═══
+       equipment              -> Total Máquinas          (coluna: active)
+       categorias_equipamento -> Total Frotas/Categorias  (coluna: ativo)
+       collaborators          -> Colaboradores / Estagiários (coluna: active, categoria)
+       clientes                -> Empresas Servidas
+
+       TODO CONFIRMAR: o valor exacto de 'categoria' usado para estagiários
+       (ex: 'Estagiário'). Ajustar o filtro abaixo se for diferente. */
     async function carregarKPIs() {
       try {
-        var resultados = await Promise.all([
-          db.from('equipment').select('id', { count: 'exact', head: true }).eq('active', true),
-          db.from('funcionarios').select('id', { count: 'exact', head: true }).eq('active', true),
-          db.from('invoices').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-          db.from('incidents').select('id', { count: 'exact', head: true }).eq('status', 'open'),
-          db.from('stock_entries').select('id', { count: 'exact', head: true }).lt('quantity', 10)
+        const [equip, categ, colabs, clientes] = await Promise.all([
+          db.get('equipment', { active: true }),
+          db.get('categorias_equipamento', { ativo: true }),
+          db.get('collaborators', { active: true }),
+          db.get('clientes')
         ]);
 
-        preencherKPI('kpi-equipamentos',      resultados[0]);
-        preencherKPI('kpi-funcionarios',      resultados[1]);
-        preencherKPI('kpi-faturas-pendentes', resultados[2]);
-        preencherKPI('kpi-incidentes-abertos', resultados[3]);
-        preencherKPI('kpi-stock-baixo',       resultados[4]);
+        preencherKPI('kpi-maquinas', equip.length);
+        preencherKPI('kpi-frotas', categ.length);
+        preencherKPI('kpi-colaboradores', colabs.length);
+        preencherKPI('kpi-empresas', clientes.length);
+
+        const estagiarios = colabs.filter(function (c) {
+          return (c.categoria || '').toLowerCase().indexOf('estagi') !== -1;
+        });
+        preencherKPI('kpi-estagiarios', estagiarios.length);
+
       } catch (err) {
-        console.error('Erro KPIs:', err);
-        mostrarToast('Erro ao carregar indicadores. Verifique a ligação.', 'erro');
+        console.error('Erro ao carregar KPIs:', err);
+        if (typeof mostrarToast === 'function') {
+          mostrarToast('Erro ao carregar indicadores. Verifique a ligação.', 'erro');
+        }
       }
     }
 
-    function preencherKPI(id, res) {
-      var el = document.getElementById(id);
-      if (!el) return;
-      if (res.error) {
-        el.textContent = '0';
-        console.warn('KPI ' + id + ':', res.error.message);
-        return;
-      }
-      el.textContent = res.count !== null ? res.count : 0;
+    function preencherKPI(id, valor) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = valor;
     }
 
     carregarKPIs();
-
-    /* ═══ DELEGAÇÃO DE EVENTOS ═══ */
-
-    /* Sidebar submenus */
-    document.querySelector('.sidebar-nav').addEventListener('click', function(e) {
-      var btn = e.target.closest('[data-alvo]');
-      if (!btn) return;
-      e.preventDefault();
-      var alvoId = btn.getAttribute('data-alvo');
-      var submenu = document.getElementById(alvoId);
-      if (!submenu) return;
-      var aberto = submenu.classList.contains('visivel');
-      document.querySelectorAll('.sidebar-submenu').forEach(function(s) { s.classList.remove('visivel'); });
-      document.querySelectorAll('[data-alvo]').forEach(function(b) { b.classList.remove('aberto'); b.setAttribute('aria-expanded','false'); });
-      if (!aberto) {
-        submenu.classList.add('visivel');
-        btn.classList.add('aberto');
-        btn.setAttribute('aria-expanded','true');
-      }
-    });
-
-    /* Tema */
-    document.getElementById('btn-tema').addEventListener('click', function() { alternarTema(); });
-
-    /* Sair */
-    document.getElementById('btn-sair').addEventListener('click', function() { terminarSessao(); });
-
-    /* Perfil */
-    document.getElementById('perfil-botao').addEventListener('click', function() {
-      document.getElementById('perfil-menu').classList.add('visivel');
-    });
-    document.getElementById('perfil-fechar').addEventListener('click', function() {
-      document.getElementById('perfil-menu').classList.remove('visivel');
-    });
-    document.getElementById('perfil-sair').addEventListener('click', function() { terminarSessao(); });
-    document.getElementById('perfil-menu').addEventListener('click', function(e) {
-      if (e.target === this) this.classList.remove('visivel');
-    });
-
   })();
   </script>
 </body>
