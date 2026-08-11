@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Danmo Hub — Login</title>
-  <link rel="icon" href="shared/logos/danmo-favicon.png" type="image/png">
+  <title>Danmo Service System, Lda — Login</title>
+  <link rel="icon" href="shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="shared/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="shared/supabase.js"></script>
   <script src="shared/tema.js"></script>
   <style>
-    /* Estilos específicos da página de login */
     .login-pagina {
       min-height: 100vh;
       display: flex;
@@ -24,20 +23,16 @@
     .login-pagina::before {
       content: '';
       position: absolute;
-      top: -40%;
-      right: -20%;
-      width: 600px;
-      height: 600px;
+      top: -40%; right: -20%;
+      width: 600px; height: 600px;
       border-radius: 50%;
       background: rgba(0,150,57,0.08);
     }
     .login-pagina::after {
       content: '';
       position: absolute;
-      bottom: -30%;
-      left: -10%;
-      width: 500px;
-      height: 500px;
+      bottom: -30%; left: -10%;
+      width: 500px; height: 500px;
       border-radius: 50%;
       background: rgba(245,158,11,0.06);
     }
@@ -46,46 +41,16 @@
       border-radius: var(--raio-lg);
       box-shadow: var(--sombra-lg);
       padding: 40px 36px;
-      width: 100%;
-      max-width: 400px;
-      position: relative;
-      z-index: 1;
+      width: 100%; max-width: 400px;
+      position: relative; z-index: 1;
     }
-    .login-logo {
-      text-align: center;
-      margin-bottom: 28px;
-    }
-    .login-logo img {
-      height: 56px;
-      margin: 0 auto 12px;
-    }
-    .login-logo h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--cor-texto);
-    }
-    .login-logo h1 span {
-      color: var(--cor-ambar);
-    }
-    .login-logo p {
-      font-size: var(--tamanho-sm);
-      color: var(--cor-texto-sec);
-      margin-top: 4px;
-    }
-    .login-form .form-grupo {
-      margin-bottom: 18px;
-    }
-    .login-form .form-input {
-      padding: 11px 14px;
-      font-size: var(--tamanho-base);
-    }
-    .login-btn {
-      width: 100%;
-      padding: 12px;
-      font-size: var(--tamanho-base);
-      font-weight: 700;
-      margin-top: 6px;
-    }
+    .login-logo { text-align: center; margin-bottom: 28px; }
+    .login-logo img { height: 56px; margin: 0 auto 12px; }
+    .login-logo h1 { font-size: 1.3rem; font-weight: 700; color: var(--cor-texto); }
+    .login-logo p { font-size: var(--tamanho-sm); color: var(--cor-texto-sec); margin-top: 4px; }
+    .login-form .form-grupo { margin-bottom: 18px; }
+    .login-form .form-input { padding: 11px 14px; font-size: var(--tamanho-base); }
+    .login-btn { width: 100%; padding: 12px; font-size: var(--tamanho-base); font-weight: 700; margin-top: 6px; }
     .login-erro {
       background: var(--cor-erro-bg);
       color: var(--cor-erro);
@@ -95,116 +60,73 @@
       margin-bottom: 16px;
       display: none;
     }
-    .login-erro.visivel {
-      display: block;
-    }
-    .login-rodape {
-      text-align: center;
-      margin-top: 20px;
-      font-size: var(--tamanho-xs);
-      color: var(--cor-texto-sec);
-    }
+    .login-erro.visivel { display: block; }
+    .login-rodape { text-align: center; margin-top: 20px; font-size: var(--tamanho-xs); color: var(--cor-texto-sec); }
     .login-tema-btn {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      z-index: 10;
+      position: absolute; top: 16px; right: 16px; z-index: 10;
       background: rgba(255,255,255,0.1);
       border: 1px solid rgba(255,255,255,0.2);
       color: #FFFFFF;
-      width: 40px;
-      height: 40px;
+      width: 40px; height: 40px;
       border-radius: 50%;
-      cursor: pointer;
-      font-size: 1.2rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      cursor: pointer; font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
       transition: all var(--transicao);
     }
-    .login-tema-btn:hover {
-      background: rgba(255,255,255,0.2);
-      border-color: var(--cor-ambar);
-      color: var(--cor-ambar);
-    }
+    .login-tema-btn:hover { background: rgba(255,255,255,0.2); border-color: var(--cor-ambar); color: var(--cor-ambar); }
   </style>
 </head>
 <body>
   <div class="login-pagina">
-
-    <button class="login-tema-btn" id="btn-tema" aria-label="Mudar tema">
-      <i class="icon-moon"></i>
-    </button>
-
+    <button class="login-tema-btn" id="btn-tema" aria-label="Mudar tema">&#9790;</button>
     <div class="login-card">
       <div class="login-logo">
         <img src="shared/logos/danmo-logo.png" alt="Danmo Service System">
-        <h1>DANMO<span>HUB</span></h1>
+        <h1>Danmo Service System, Lda</h1>
         <p>Porto da Beira, Moçambique</p>
       </div>
-
       <div class="login-erro" id="login-erro" role="alert"></div>
-
       <form class="login-form" id="form-login" novalidate>
         <div class="form-grupo">
           <label class="form-label" for="login-email">E-mail</label>
           <input class="form-input" type="email" id="login-email"
-                 placeholder="seu.email@danmo.co.mz" required autocomplete="email"
-                 autofocus>
+                 placeholder="seu.email@danmo.co.mz" required autocomplete="email" autofocus>
         </div>
         <div class="form-grupo">
           <label class="form-label" for="login-senha">Senha</label>
           <input class="form-input" type="password" id="login-senha"
                  placeholder="Sua senha" required autocomplete="current-password">
         </div>
-        <button class="btn btn-ambar login-btn" type="submit" id="btn-login">
-          Entrar no Sistema
-        </button>
+        <button class="btn btn-ambar login-btn" type="submit" id="btn-login">Entrar no Sistema</button>
       </form>
-
-      <div class="login-rodape">
-        Danmo Service System, Lda &copy; 2026
-      </div>
+      <div class="login-rodape">Danmo Service System, Lda &copy; 2026</div>
     </div>
   </div>
-
   <script src="shared/utils.js"></script>
   <script src="shared/auth.js"></script>
   <script>
-    /* Se já está logado, redirecionar */
-    (function () {
-      var user = verificarSessao();
-      if (user) {
-        window.location.replace('index.html');
-      }
-    })();
-
+    /* Se já logado, redirecionar */
+    if (typeof verificarSessao === 'function' && verificarSessao()) {
+      window.location.replace('index.html');
+    }
     /* Tema */
-    document.getElementById('btn-tema').addEventListener('click', function () {
-      alternarTema();
-    });
-
+    document.getElementById('btn-tema').addEventListener('click', function() { alternarTema(); });
     /* Login */
-    document.getElementById('form-login').addEventListener('submit', function (e) {
+    document.getElementById('form-login').addEventListener('submit', function(e) {
       e.preventDefault();
       var email = document.getElementById('login-email').value;
       var senha = document.getElementById('login-senha').value;
       var erroEl = document.getElementById('login-erro');
       var btnLogin = document.getElementById('btn-login');
-
-      /* Validação básica */
       if (!email || !senha) {
         erroEl.textContent = 'Preencha o e-mail e a senha.';
         erroEl.classList.add('visivel');
         return;
       }
-
-      /* Desativar botão enquanto processa */
       btnLogin.disabled = true;
       btnLogin.textContent = 'A verificar...';
       erroEl.classList.remove('visivel');
-
-      iniciarSessao(email, senha).then(function (resultado) {
+      iniciarSessao(email, senha).then(function(resultado) {
         if (resultado.sucesso) {
           window.location.replace('index.html');
         } else {
@@ -214,7 +136,7 @@
           btnLogin.textContent = 'Entrar no Sistema';
           document.getElementById('login-senha').focus();
         }
-      }).catch(function () {
+      }).catch(function() {
         erroEl.textContent = 'Erro de ligação ao servidor. Tente novamente.';
         erroEl.classList.add('visivel');
         btnLogin.disabled = false;

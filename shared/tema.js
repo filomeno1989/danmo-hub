@@ -34,9 +34,7 @@ function alternarTema() {
 function atualizarIconeTema(tema) {
   const btn = document.getElementById('btn-tema');
   if (!btn) return;
-  btn.innerHTML = tema === 'escuro'
-    ? '<i class="icon-sun"></i>'
-    : '<i class="icon-moon"></i>';
+  btn.textContent = tema === 'escuro' ? '\u2600' : '\u263E';
   btn.setAttribute('aria-label', tema === 'escuro' ? 'Mudar para tema claro' : 'Mudar para tema escuro');
 }
 

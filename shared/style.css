@@ -153,27 +153,74 @@ img { max-width: 100%; display: block; }
   width: auto;
 }
 .topbar-logo .logo-texto {
-  font-size: var(--tamanho-xl);
+  font-size: var(--tamanho-sm);
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   color: #FFFFFF;
 }
 .topbar-logo .logo-texto span {
   color: var(--cor-ambar);
 }
 
-.topbar-direita {
+.topbar-centro {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
+  flex: 1;
+  gap: 0;
+}
+
+.topbar-data {
+  font-size: var(--tamanho-xs);
+  color: #94A3B8;
+  line-height: 1.2;
 }
 
 .topbar-relogio {
-  font-size: var(--tamanho-sm);
+  font-size: var(--tamanho-lg);
   font-variant-numeric: tabular-nums;
-  color: #CBD5E1;
-  min-width: 70px;
-  text-align: right;
+  color: #FFFFFF;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.topbar-direita {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-notif-btn {
+ position: relative;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #FFFFFF;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all var(--transicao);
+}
+.topbar-notif-btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: var(--cor-ambar);
+}
+.notif-badge {
+  position: absolute;
+  top: -2px; right: -2px;
+  background: var(--cor-vermelho-danmo);
+  color: #FFFFFF;
+  font-size: 0.6rem;
+  font-weight: 700;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .topbar-tema-btn {
@@ -221,10 +268,24 @@ img { max-width: 100%; display: block; }
   font-weight: 700;
   font-size: var(--tamanho-sm);
 }
+.topbar-perfil .perfil-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
 .topbar-perfil .perfil-nome {
   font-size: var(--tamanho-sm);
   color: #E2E8F0;
-  max-width: 120px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.topbar-perfil .perfil-funcao {
+  font-size: var(--tamanho-xs);
+  color: #94A3B8;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Danmo Hub — Portal de Gestão</title>
-  <link rel="icon" href="shared/logos/danmo-favicon.png" type="image/png">
+  <title>Danmo Service System, Lda — Gestão</title>
+  <link rel="icon" href="shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="shared/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="shared/supabase.js"></script>
@@ -12,155 +12,154 @@
   <script src="shared/tema.js"></script>
   <script>
     /* Auth guard — bloqueia render se não logado */
-    (function () {
-      var user = verificarSessao();
-      if (!user) {
-        window.location.replace('login.html');
-      }
-    })();
+    if (typeof verificarSessao === 'function') {
+      var _u = verificarSessao();
+      if (!_u) { window.location.replace('login.html'); }
+    }
   </script>
 </head>
 <body>
 
-  <!-- ═══ TOPBAR ═══ -->
+  <!-- TOPBAR -->
   <header class="topbar">
     <div class="topbar-logo">
-      <img src="shared/logos/danmo-logo.png" alt="Danmo Service System" width="36" height="36">
-      <div class="logo-texto">DANMO<span>HUB</span></div>
+      <img src="shared/logos/danmo-logo.png" alt="Logo Danmo Service System" width="36" height="36">
+      <div class="logo-texto">Danmo Service System, Lda</div>
     </div>
+
+    <div class="topbar-centro">
+      <span class="topbar-data" id="topbar-data"></span>
+      <span class="topbar-relogio" id="topbar-relogio"></span>
+    </div>
+
     <div class="topbar-direita">
-      <span class="topbar-relogio" id="relogio" aria-label="Hora atual"></span>
-      <button class="topbar-tema-btn" id="btn-tema" aria-label="Mudar tema" title="Alternar tema">
-        <i class="icon-moon"></i>
+      <button class="topbar-tema-btn" id="btn-tema" aria-label="Alternar tema" title="Claro / Escuro">&#9790;</button>
+      <button class="topbar-notif-btn" id="btn-notif" aria-label="Notificações" title="Notificações">
+        &#128276;
+        <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
       </button>
-      <div class="topbar-perfil" id="perfil-dropdown" tabindex="0" role="button" aria-haspopup="true" aria-label="Menu do perfil">
-        <div class="avatar" id="perfil-avatar">?</div>
-        <span class="perfil-nome" id="perfil-nome">Utilizador</span>
+      <div class="topbar-perfil" id="perfil-botao" tabindex="0" role="button" aria-label="Menu do utilizador">
+        <div class="avatar" id="topbar-avatar">?</div>
+        <div class="perfil-info">
+          <span class="perfil-nome" id="topbar-nome">Utilizador</span>
+          <span class="perfil-funcao" id="topbar-funcao">---</span>
+        </div>
       </div>
     </div>
   </header>
 
-  <!-- ═══ LAYOUT ═══ -->
+  <!-- LAYOUT -->
   <div class="layout">
 
-    <!-- ═══ SIDEBAR ═══ -->
+    <!-- SIDEBAR -->
     <nav class="sidebar" id="sidebar" aria-label="Menu principal">
       <ul class="sidebar-nav" role="menubar">
 
-        <!-- Dashboard (página atual) -->
         <li class="sidebar-modulo">
           <a href="index.html" class="sidebar-modulo-btn ativo" role="menuitem">
-            <span class="modulo-icon">⌂</span>
-            <span class="modulo-label">Dashboard</span>
+            <span class="modulo-icon">&#9776;</span>
+            <span class="modulo-label">Página Inicial</span>
           </a>
         </li>
 
         <div class="sidebar-separador"></div>
 
-        <!-- OFICINA -->
         <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-oficina" aria-expanded="false" role="menuitem">
-            <span class="modulo-icon">⚙</span>
+          <button class="sidebar-modulo-btn" data-alvo="sub-oficina" aria-expanded="false">
+            <span class="modulo-icon">&#9881;</span>
             <span class="modulo-label">Oficina</span>
-            <span class="modulo-seta">▶</span>
+            <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-oficina">
-            <a href="oficina/equipamentos.html" role="menuitem">Equipamentos</a>
-            <a href="oficina/solicitacoes.html" role="menuitem">Solicitações</a>
-            <a href="oficina/pecas.html" role="menuitem">Peças</a>
+            <a href="oficina/equipamentos.html">Equipamentos</a>
+            <a href="oficina/solicitacoes.html">Solicitações</a>
+            <a href="oficina/pecas.html">Peças</a>
           </div>
         </li>
 
-        <!-- RH -->
         <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-rh" aria-expanded="false" role="menuitem">
-            <span class="modulo-icon">☺</span>
+          <button class="sidebar-modulo-btn" data-alvo="sub-rh" aria-expanded="false">
+            <span class="modulo-icon">&#9786;</span>
             <span class="modulo-label">Recursos Humanos</span>
-            <span class="modulo-seta">▶</span>
+            <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-rh">
-            <a href="rh/funcionarios.html" role="menuitem">Funcionários</a>
-            <a href="rh/ferias.html" role="menuitem">Férias</a>
-            <a href="rh/departamentos.html" role="menuitem">Departamentos</a>
+            <a href="rh/funcionarios.html">Funcionários</a>
+            <a href="rh/ferias.html">Férias</a>
+            <a href="rh/departamentos.html">Departamentos</a>
           </div>
         </li>
 
-        <!-- HST -->
         <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-hst" aria-expanded="false" role="menuitem">
-            <span class="modulo-icon">☢</span>
+          <button class="sidebar-modulo-btn" data-alvo="sub-hst" aria-expanded="false">
+            <span class="modulo-icon">&#9762;</span>
             <span class="modulo-label">HST</span>
-            <span class="modulo-seta">▶</span>
+            <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-hst">
-            <a href="hst/inspecoes.html" role="menuitem">Inspeções</a>
-            <a href="hst/riscos.html" role="menuitem">Riscos</a>
-            <a href="hst/incidentes.html" role="menuitem">Incidentes</a>
-            <a href="hst/treinamentos.html" role="menuitem">Treinamentos</a>
+            <a href="hst/inspecoes.html">Inspeções</a>
+            <a href="hst/riscos.html">Riscos</a>
+            <a href="hst/incidentes.html">Incidentes</a>
+            <a href="hst/treinamentos.html">Treinamentos</a>
           </div>
         </li>
 
-        <!-- BILLING -->
         <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-billing" aria-expanded="false" role="menuitem">
-            <span class="modulo-icon">♦</span>
+          <button class="sidebar-modulo-btn" data-alvo="sub-billing" aria-expanded="false">
+            <span class="modulo-icon">&#9830;</span>
             <span class="modulo-label">Billing</span>
-            <span class="modulo-seta">▶</span>
+            <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-billing">
-            <a href="billing/faturas.html" role="menuitem">Faturas</a>
-            <a href="billing/clientes.html" role="menuitem">Clientes</a>
-            <a href="billing/pagamentos.html" role="menuitem">Pagamentos</a>
+            <a href="billing/faturas.html">Faturas</a>
+            <a href="billing/clientes.html">Clientes</a>
+            <a href="billing/pagamentos.html">Pagamentos</a>
           </div>
         </li>
 
-        <!-- STOCK -->
         <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-stock" aria-expanded="false" role="menuitem">
-            <span class="modulo-icon">▦</span>
+          <button class="sidebar-modulo-btn" data-alvo="sub-stock" aria-expanded="false">
+            <span class="modulo-icon">&#9638;</span>
             <span class="modulo-label">Stock</span>
-            <span class="modulo-seta">▶</span>
+            <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-stock">
-            <a href="stock/entradas.html" role="menuitem">Entradas</a>
-            <a href="stock/movimentos.html" role="menuitem">Movimentos</a>
-            <a href="stock/fornecedores.html" role="menuitem">Fornecedores</a>
+            <a href="stock/entradas.html">Entradas</a>
+            <a href="stock/movimentos.html">Movimentos</a>
+            <a href="stock/fornecedores.html">Fornecedores</a>
           </div>
         </li>
 
-        <!-- FUNDO LOCAL -->
         <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-fundo" aria-expanded="false" role="menuitem">
-            <span class="modulo-icon">◆</span>
+          <button class="sidebar-modulo-btn" data-alvo="sub-fundo" aria-expanded="false">
+            <span class="modulo-icon">&#9670;</span>
             <span class="modulo-label">Fundo Local</span>
-            <span class="modulo-seta">▶</span>
+            <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-fundo">
-            <a href="fundo-local/pedidos.html" role="menuitem">Pedidos</a>
-            <a href="fundo-local/aprovacoes.html" role="menuitem">Aprovações</a>
-            <a href="fundo-local/desembolsos.html" role="menuitem">Desembolsos</a>
+            <a href="fundo-local/pedidos.html">Pedidos</a>
+            <a href="fundo-local/aprovacoes.html">Aprovações</a>
+            <a href="fundo-local/desembolsos.html">Desembolsos</a>
           </div>
         </li>
 
-        <!-- ESCALAS -->
         <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" data-alvo="sub-escalas" aria-expanded="false" role="menuitem">
-            <span class="modulo-icon">☷</span>
+          <button class="sidebar-modulo-btn" data-alvo="sub-escalas" aria-expanded="false">
+            <span class="modulo-icon">&#9776;</span>
             <span class="modulo-label">Escalas</span>
-            <span class="modulo-seta">▶</span>
+            <span class="modulo-seta">&#9654;</span>
           </button>
           <div class="sidebar-submenu" id="sub-escalas">
-            <a href="escalas/escalas.html" role="menuitem">Escala Mensal</a>
-            <a href="escalas/tipos-turno.html" role="menuitem">Tipos de Turno</a>
+            <a href="escalas/escalas.html">Escala Mensal</a>
+            <a href="escalas/tipos-turno.html">Tipos de Turno</a>
           </div>
         </li>
 
         <div class="sidebar-separador"></div>
 
-        <!-- SAIR -->
         <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" id="btn-sair" role="menuitem" style="color: var(--cor-vermelho-danmo);">
-            <span class="modulo-icon">✖</span>
+          <button class="sidebar-modulo-btn" id="btn-sair" style="color: var(--cor-vermelho-danmo);">
+            <span class="modulo-icon">&#10006;</span>
             <span class="modulo-label">Terminar Sessão</span>
           </button>
         </li>
@@ -168,42 +167,40 @@
       </ul>
     </nav>
 
-    <!-- ═══ CONTEÚDO PRINCIPAL ═══ -->
+    <!-- CONTEÚDO PRINCIPAL -->
     <main class="main" id="conteudo-principal">
-
-      <h1 class="pagina-titulo">Dashboard</h1>
-      <p class="pagina-subtitulo" id="saudacao">Bem-vindo ao sistema de gestão Danmo Service System</p>
+      <p class="pagina-subtitulo" id="saudacao">Bem-vindo ao sistema de gestão Danmo Service System, Lda</p>
 
       <!-- KPI Cards -->
       <div class="kpi-grid" id="kpi-grid">
         <div class="kpi-card verde">
-          <div class="kpi-icone">⚙</div>
+          <div class="kpi-icone">&#9881;</div>
           <div class="kpi-valor" id="kpi-equipamentos"><span class="kpi-carregando">A carregar...</span></div>
           <div class="kpi-label">Equipamentos Ativos</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-icone">☺</div>
+          <div class="kpi-icone">&#9786;</div>
           <div class="kpi-valor" id="kpi-funcionarios"><span class="kpi-carregando">A carregar...</span></div>
           <div class="kpi-label">Funcionários Ativos</div>
         </div>
         <div class="kpi-card amarelo">
-          <div class="kpi-icone">♦</div>
+          <div class="kpi-icone">&#9830;</div>
           <div class="kpi-valor" id="kpi-faturas-pendentes"><span class="kpi-carregando">A carregar...</span></div>
           <div class="kpi-label">Faturas Pendentes</div>
         </div>
         <div class="kpi-card vermelho">
-          <div class="kpi-icone">☢</div>
+          <div class="kpi-icone">&#9762;</div>
           <div class="kpi-valor" id="kpi-incidentes-abertos"><span class="kpi-carregando">A carregar...</span></div>
           <div class="kpi-label">Incidentes Abertos</div>
         </div>
         <div class="kpi-card azul">
-          <div class="kpi-icone">▦</div>
+          <div class="kpi-icone">&#9638;</div>
           <div class="kpi-valor" id="kpi-stock-baixo"><span class="kpi-carregando">A carregar...</span></div>
           <div class="kpi-label">Itens com Stock Baixo</div>
         </div>
       </div>
 
-      <!-- Painel de Atividade Recente -->
+      <!-- Atividade Recente -->
       <div class="painel">
         <h2 class="painel-titulo">Atividade Recente</h2>
         <div class="tabela-container">
@@ -222,21 +219,20 @@
           </table>
         </div>
       </div>
-
     </main>
   </div>
 
-  <!-- Menu de perfil dropdown -->
+  <!-- Modal Perfil -->
   <div class="modal-fundo" id="perfil-menu">
-    <div class="modal" style="max-width: 320px;">
+    <div class="modal" style="max-width:340px;">
       <div class="modal-cabecalho">
         <span class="modal-titulo">Meu Perfil</span>
         <button class="modal-fechar" id="perfil-fechar" aria-label="Fechar">&times;</button>
       </div>
       <div class="modal-corpo">
-        <p><strong>Nome:</strong> <span id="perfil-nome-detalhe"></span></p>
-        <p><strong>E-mail:</strong> <span id="perfil-email-detalhe"></span></p>
-        <p><strong>Função:</strong> <span id="perfil-role-detalhe"></span></p>
+        <p style="margin-bottom:8px;"><strong>Nome:</strong> <span id="perfil-nome-detalhe"></span></p>
+        <p style="margin-bottom:8px;"><strong>E-mail:</strong> <span id="perfil-email-detalhe"></span></p>
+        <p style="margin-bottom:8px;"><strong>Função:</strong> <span id="perfil-role-detalhe"></span></p>
         <p><strong>Departamento:</strong> <span id="perfil-dept-detalhe"></span></p>
       </div>
       <div class="modal-rodape">
@@ -245,149 +241,145 @@
     </div>
   </div>
 
-  <!-- ═══ SCRIPTS ═══ -->
+  <!-- SCRIPTS -->
   <script src="shared/utils.js"></script>
   <script>
-    /* ── Utilizador logado ── */
+  (function() {
+    'use strict';
+
+    /* ── Verificar se as dependências carregaram ── */
+    if (typeof obterUtilizador !== 'function' || typeof db === 'undefined') {
+      document.getElementById('conteudo-principal').innerHTML =
+        '<div class="estado-vazio"><div class="vazio-icone">&#9888;</div>' +
+        '<div class="vazio-texto">Erro ao carregar os scripts do sistema. Verifique se os ficheiros em <code>shared/</code> estão corretos.</div></div>';
+      return;
+    }
+
     var utilizador = obterUtilizador();
 
-    /* ── Relógio ── */
+    /* ═══ RELÓGIO COMPLETO: dia da semana + data + hora ═══ */
+    var DIAS_SEMANA = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+    var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
     function atualizarRelogio() {
       var agora = new Date();
       var h = String(agora.getHours()).padStart(2, '0');
       var m = String(agora.getMinutes()).padStart(2, '0');
       var s = String(agora.getSeconds()).padStart(2, '0');
-      var relogio = document.getElementById('relogio');
-      if (relogio) relogio.textContent = h + ':' + m + ':' + s;
+      var diaSemana = DIAS_SEMANA[agora.getDay()];
+      var dia = agora.getDate();
+      var mes = MESES[agora.getMonth()];
+      var ano = agora.getFullYear();
+
+      var elRelogio = document.getElementById('topbar-relogio');
+      var elData = document.getElementById('topbar-data');
+      if (elRelogio) elRelogio.textContent = h + ':' + m + ':' + s;
+      if (elData) elData.textContent = diaSemana + ', ' + dia + ' de ' + mes + ' de ' + ano;
     }
     atualizarRelogio();
     setInterval(atualizarRelogio, 1000);
 
-    /* ── Perfil na topbar ── */
+    /* ═══ PERFIL NA TOPBAR ═══ */
     if (utilizador) {
-      var avatar = document.getElementById('perfil-avatar');
-      var nomeEl = document.getElementById('perfil-nome');
+      var avatar = document.getElementById('topbar-avatar');
+      var nomeEl = document.getElementById('topbar-nome');
+      var funcaoEl = document.getElementById('topbar-funcao');
       var saudacao = document.getElementById('saudacao');
-      if (avatar) {
-        avatar.textContent = (utilizador.name || '?').charAt(0).toUpperCase();
-      }
-      if (nomeEl) {
-        nomeEl.textContent = utilizador.name || 'Utilizador';
-      }
+
+      if (avatar) avatar.textContent = (utilizador.name || '?').charAt(0).toUpperCase();
+      if (nomeEl) nomeEl.textContent = utilizador.name || 'Utilizador';
+      if (funcaoEl) funcaoEl.textContent = utilizador.role || '---';
       if (saudacao) {
         var hora = new Date().getHours();
-        var saud = hora < 12 ? 'Bom dia' : hora < 17 ? 'Boa tarde' : 'Boa noite';
-        saudacao.textContent = saud + ', ' + (utilizador.name || 'Utilizador') + '. Bem-vindo ao Danmo Hub.';
+        var txt = hora < 12 ? 'Bom dia' : hora < 17 ? 'Boa tarde' : 'Boa noite';
+        saudacao.textContent = txt + ', ' + (utilizador.name || '') + '. Bem-vindo ao sistema de gestão Danmo Service System, Lda';
       }
-      /* Detalhes do perfil no modal */
-      var pNome = document.getElementById('perfil-nome-detalhe');
-      var pEmail = document.getElementById('perfil-email-detalhe');
-      var pRole = document.getElementById('perfil-role-detalhe');
-      var pDept = document.getElementById('perfil-dept-detalhe');
-      if (pNome) pNome.textContent = utilizador.name || '—';
-      if (pEmail) pEmail.textContent = utilizador.email || '—';
-      if (pRole) pRole.textContent = utilizador.role || '—';
-      if (pDept) pDept.textContent = utilizador.department || '—';
+
+      /* Detalhes no modal */
+    var pNome = document.getElementById('perfil-nome-detalhe');
+    var pEmail = document.getElementById('perfil-email-detalhe');
+    var pRole = document.getElementById('perfil-role-detalhe');
+    var pDept = document.getElementById('perfil-dept-detalhe');
+    if (pNome) pNome.textContent = utilizador.name || '—';
+    if (pEmail) pEmail.textContent = utilizador.email || '—';
+    if (pRole) pRole.textContent = utilizador.role || '—';
+    if (pDept) pDept.textContent = utilizador.department || '—';
     }
 
-    /* ── KPIs via Promise.all (5 queries em paralelo) ── */
+    /* ═══ KPIs — Promise.all (5 queries em paralelo) ═══ */
     async function carregarKPIs() {
       try {
         var resultados = await Promise.all([
-          /* 1. Equipamentos ativos */
           db.from('equipment').select('id', { count: 'exact', head: true }).eq('active', true),
-
-          /* 2. Funcionários ativos */
           db.from('funcionarios').select('id', { count: 'exact', head: true }).eq('active', true),
-
-          /* 3. Faturas pendentes */
           db.from('invoices').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-
-          /* 4. Incidentes abertos */
           db.from('incidents').select('id', { count: 'exact', head: true }).eq('status', 'open'),
-
-          /* 5. Stock baixo (quantidade < 10) */
           db.from('stock_entries').select('id', { count: 'exact', head: true }).lt('quantity', 10)
         ]);
 
-        preencherKPI('kpi-equipamentos',     resultados[0]);
-        preencherKPI('kpi-funcionarios',     resultados[1]);
+        preencherKPI('kpi-equipamentos',      resultados[0]);
+        preencherKPI('kpi-funcionarios',      resultados[1]);
         preencherKPI('kpi-faturas-pendentes', resultados[2]);
         preencherKPI('kpi-incidentes-abertos', resultados[3]);
         preencherKPI('kpi-stock-baixo',       resultados[4]);
-
       } catch (err) {
-        console.error('Erro ao carregar KPIs:', err);
-        mostrarToast('Erro ao carregar indicadores.', 'erro');
+        console.error('Erro KPIs:', err);
+        mostrarToast('Erro ao carregar indicadores. Verifique a ligação.', 'erro');
       }
     }
 
-    function preencherKPI(elementId, resultado) {
-      var elem = document.getElementById(elementId);
-      if (!elem) return;
-      if (resultado.error) {
-        elem.textContent = '—';
+    function preencherKPI(id, res) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (res.error) {
+        el.textContent = '0';
+        console.warn('KPI ' + id + ':', res.error.message);
         return;
       }
-      var count = resultado.count !== null ? resultado.count : 0;
-      elem.textContent = count;
+      el.textContent = res.count !== null ? res.count : 0;
     }
 
     carregarKPIs();
 
-    /* ── Delegação de Eventos (sem onclick inline) ── */
+    /* ═══ DELEGAÇÃO DE EVENTOS ═══ */
 
-    /* Sidebar: abrir/fechar submenus */
-    document.querySelector('.sidebar-nav').addEventListener('click', function (e) {
+    /* Sidebar submenus */
+    document.querySelector('.sidebar-nav').addEventListener('click', function(e) {
       var btn = e.target.closest('[data-alvo]');
       if (!btn) return;
       e.preventDefault();
       var alvoId = btn.getAttribute('data-alvo');
       var submenu = document.getElementById(alvoId);
       if (!submenu) return;
-      var estavaAberto = submenu.classList.contains('visivel');
-      /* Fechar todos os submenus */
-      document.querySelectorAll('.sidebar-submenu').forEach(function (sm) {
-        sm.classList.remove('visivel');
-      });
-      document.querySelectorAll('[data-alvo]').forEach(function (b) {
-        b.classList.remove('aberto');
-        b.setAttribute('aria-expanded', 'false');
-      });
-      /* Abrir o clicado (se não estava aberto) */
-      if (!estavaAberto) {
+      var aberto = submenu.classList.contains('visivel');
+      document.querySelectorAll('.sidebar-submenu').forEach(function(s) { s.classList.remove('visivel'); });
+      document.querySelectorAll('[data-alvo]').forEach(function(b) { b.classList.remove('aberto'); b.setAttribute('aria-expanded','false'); });
+      if (!aberto) {
         submenu.classList.add('visivel');
         btn.classList.add('aberto');
-        btn.setAttribute('aria-expanded', 'true');
+        btn.setAttribute('aria-expanded','true');
       }
     });
 
     /* Tema */
-    document.getElementById('btn-tema').addEventListener('click', function () {
-      alternarTema();
-    });
+    document.getElementById('btn-tema').addEventListener('click', function() { alternarTema(); });
 
     /* Sair */
-    document.getElementById('btn-sair').addEventListener('click', function () {
-      terminarSessao();
-    });
+    document.getElementById('btn-sair').addEventListener('click', function() { terminarSessao(); });
 
-    /* Perfil dropdown */
-    document.getElementById('perfil-dropdown').addEventListener('click', function () {
+    /* Perfil */
+    document.getElementById('perfil-botao').addEventListener('click', function() {
       document.getElementById('perfil-menu').classList.add('visivel');
     });
-    document.getElementById('perfil-fechar').addEventListener('click', function () {
+    document.getElementById('perfil-fechar').addEventListener('click', function() {
       document.getElementById('perfil-menu').classList.remove('visivel');
     });
-    document.getElementById('perfil-sair').addEventListener('click', function () {
-      terminarSessao();
+    document.getElementById('perfil-sair').addEventListener('click', function() { terminarSessao(); });
+    document.getElementById('perfil-menu').addEventListener('click', function(e) {
+      if (e.target === this) this.classList.remove('visivel');
     });
-    /* Fechar modal ao clicar no fundo */
-    document.getElementById('perfil-menu').addEventListener('click', function (e) {
-      if (e.target === this) {
-        this.classList.remove('visivel');
-      }
-    });
+
+  })();
   </script>
 </body>
 </html>
