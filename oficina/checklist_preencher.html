@@ -181,8 +181,6 @@
   <script src="../shared/tema.js"></script>
   <script src="../shared/nav.js"></script>
   <script>
-    renderNavbarOficina('ordens');
-
     const params = new URLSearchParams(window.location.search);
     const checklistId = params.get('id');
     if (!checklistId) { alert('Checklist não especificado.'); window.location.href = 'ordens.html'; }
