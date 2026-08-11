@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Entrar — Danmo Service System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+<script src="shared/tema.js"></script>
+<script src="shared/supabase.js"></script>
+<script src="shared/auth.js"></script>
+<style>
+  body {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+    background: var(--navy, #0a1628);
+    font-family: 'Source Sans 3', sans-serif;
+  }
+  .login-box {
+    width: 100%; max-width: 380px;
+    background: var(--navy2, #0f2044);
+    border: 1px solid var(--border, #1e3a6e);
+    border-radius: 16px; padding: 36px 32px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.4);
+  }
+  .login-logo {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin-bottom: 28px;
+  }
+  .login-logo .logo-box {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: #0d1830; border: 1px solid var(--border, #1e3a6e);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .login-logo .logo-box span { font-weight: 800; font-size: 18px; letter-spacing: -1px; }
+  .login-logo .logo-box .d { color: var(--danmo-green, #009639); }
+  .login-logo .logo-box .m { color: var(--danmo-red, #E30613); }
+  .login-logo .logo-box::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px;
+    background: linear-gradient(90deg, var(--danmo-green, #009639), var(--danmo-yellow, #FFD100), var(--danmo-red, #E30613));
+  }
+  .login-brand { text-align: center; }
+  .login-brand h1 { font-size: 18px; font-weight: 800; margin-bottom: 2px; }
+  .login-brand h1 span { color: var(--danmo-green, #009639); }
+  .login-brand p { font-size: 11px; color: var(--steel, #94a3b8); }
+  .login-form .form-group { margin-bottom: 16px; }
+  .login-form .form-label { margin-bottom: 6px; }
+  .login-form .form-input {
+    padding: 11px 14px; font-size: 14px; border-radius: 10px;
+  }
+  .login-btn {
+    width: 100%; padding: 12px; border-radius: 10px; border: none;
+    background: var(--amber, #f59e0b); color: #000;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: all .15s ease;
+  }
+  .login-btn:hover { background: var(--amber2, #d97706); transform: translateY(-1px); }
+  .login-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  .login-error {
+    display: none; text-align: center; font-size: 12px; color: var(--red, #ef4444);
+    margin-bottom: 14px; padding: 8px; border-radius: 8px;
+    background: rgba(239,68,68,.1);
+  }
+  .login-footer {
+    text-align: center; margin-top: 20px; font-size: 11px; color: var(--steel2, #64748b);
+  }
+</style>
+</head>
+<body>
+
+<div class="login-box">
+  <div class="login-logo">
+    <div class="logo-box"><span class="d">D</span><span class="m">M</span></div>
+  </div>
+  <div class="login-brand">
+    <h1>Portal <span>Danmo</span></h1>
+    <p>Danmo Service System, Lda — Porto da Beira</p>
+  </div>
+
+  <div class="login-error" id="loginError"></div>
+
+  <form class="login-form" id="loginForm">
+    <div class="form-group">
+      <label class="form-label" for="loginUser">Código de Utilizador</label>
+      <input class="form-input" type="text" id="loginUser" placeholder="Ex: DM0069" autocomplete="username" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="loginPass">Senha</label>
+      <input class="form-input" type="password" id="loginPass" placeholder="Sua senha" autocomplete="current-password" required>
+    </div>
+    <button class="login-btn" type="submit" id="loginBtn">Entrar no Sistema</button>
+  </form>
+
+  <div class="login-footer">
+    Sistema de Gestão Operacional Integrada<br>
+    Porto da Beira · Sofala · Moçambique
+  </div>
+</div>
+
+<script>
+  /* Se já está logado, redirecionar */
+  if (AUTH.isLogged()) {
+    window.location.replace('index.html');
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const errEl = document.getElementById('loginError');
+    const usuario = document.getElementById('loginUser').value.trim();
+    const senha = document.getElementById('loginPass').value;
+
+    if (!usuario || !senha) {
+      errEl.textContent = 'Preencha todos os campos.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'A verificar...';
+    errEl.style.display = 'none';
+
+    try {
+      const user = await AUTH.login(usuario, senha);
+      if (user) {
+        window.location.replace('index.html');
+      } else {
+        errEl.textContent = 'Código ou senha incorretos.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Entrar no Sistema';
+      }
+    } catch (err) {
+      errEl.textContent = 'Erro de ligação. Tente novamente.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Entrar no Sistema';
+    }
+  });
+</script>
+
+</body>
+</html>

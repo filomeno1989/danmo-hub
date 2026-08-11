@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Portal Danmo Service System — Gestão Operacional Integrada">
+<title>Portal Danmo Service System, Lda</title>
+
+<!-- Preconnect para fontes -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Design System Partilhado -->
+<link rel="stylesheet" href="shared/style.css">
+
+<!-- Tema (no head para evitar FOUC) -->
+<script src="shared/tema.js"></script>
+
+<!-- Supabase + Auth (síncronos para auth guard) -->
+<script src="shared/supabase.js"></script>
+<script src="shared/auth.js"></script>
+<script>
+  /* ---- AUTH GUARD: bloqueia render sem sessão ---- */
+  if (!AUTH.isLogged()) {
+    window.location.replace('login.html');
+  }
+  /* ---- Base path para links relativos ---- */
+  var HUB_BASE = '';
+</script>
+
+<style>
+  /* ==========================================================================
+     ESTILOS ESPECÍFICOS DO PORTAL MÃE
+     Os estilos base (botões, cards, badges, forms, tabelas) vêm de shared/style.css
+     ========================================================================== */
+  :root {
+    --bg-app:       #0a1628;
+    --bg-panel:     #0d1b30;
+    --bg-panel-alt: #101f38;
+    --border-soft:  #16243f;
+    --radius-lg:    14px;
+    --radius-sm:    10px;
+  }
+
+  /* ---- SKIP LINK (acessibilidade) ---- */
+  .skip-link {
+    position: absolute; top: -100px; left: 16px; z-index: 9999;
+    background: var(--amber); color: #000; padding: 8px 16px;
+    border-radius: 0 0 8px 8px; font-weight: 700; font-size: 13px;
+  }
+  .skip-link:focus { top: 0; }
+
+  /* ===================== TOPBAR ===================== */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 64px; z-index: 50;
+    background: #070f22; border-bottom: 1px solid var(--border, #1e3a6e);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 14px; }
+  .menu-toggle {
+    display: none; color: var(--steel, #94a3b8); font-size: 20px; line-height: 1;
+  }
+
+  /* ---- Logo Box ---- */
+  .logo-box {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: #0d1830; border: 1px solid var(--border, #1e3a6e);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .logo-box span { font-weight: 800; font-size: 15px; letter-spacing: -1px; }
+  .logo-box .d { color: var(--danmo-green, #009639); }
+  .logo-box .m { color: var(--danmo-red, #E30613); }
+  .logo-box::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+    background: linear-gradient(90deg, var(--danmo-green, #009639), var(--danmo-yellow, #FFD100), var(--danmo-red, #E30613));
+  }
+
+  .brand-name { font-weight: 800; font-size: 15px; letter-spacing: .2px; }
+  .brand-name .hi { color: var(--danmo-green, #009639); }
+  .brand-sub { font-size: 11px; color: var(--steel, #94a3b8); margin-top: 1px; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px;
+    background: rgba(0,150,57,.12); color: var(--danmo-green, #009639);
+    border: 1px solid rgba(0,150,57,.3); margin-left: 8px;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danmo-green, #009639); }
+  @media (prefers-reduced-motion: no-preference) {
+    .status-pill .dot { animation: pulse 2s infinite; }
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  /* ---- Centro da topbar ---- */
+  .topbar-center {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--bg-panel-alt, #101f38); border: 1px solid var(--border, #1e3a6e);
+    padding: 7px 16px; border-radius: 99px;
+  }
+  .topbar-center .sep { width: 1px; height: 14px; background: var(--border, #1e3a6e); }
+  .loc, .clock { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; }
+  .loc { color: var(--danmo-green, #009639); }
+  .clock { color: var(--steel, #94a3b8); font-variant-numeric: tabular-nums; font-family: 'Source Sans 3', monospace; }
+  .clock svg { stroke: var(--danmo-yellow, #FFD100); }
+  .loc svg { stroke: var(--danmo-red, #E30613); }
+
+  /* ---- Direita da topbar ---- */
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--bg-panel-alt, #101f38); border: 1px solid var(--border, #1e3a6e);
+    color: var(--steel, #94a3b8); display: flex; align-items: center; justify-content: center;
+    position: relative; transition: all .15s ease;
+  }
+  .icon-btn:hover { color: var(--text, #e2e8f0); border-color: var(--navy3, #1a3a6e); }
+  .notif-dot {
+    position: absolute; top: 6px; right: 7px; width: 7px; height: 7px;
+    border-radius: 50%; background: var(--danmo-red, #E30613); border: 1.5px solid #070f22;
+  }
+  .vdiv { width: 1px; height: 24px; background: var(--border, #1e3a6e); margin: 0 4px; }
+  .profile { display: flex; align-items: center; gap: 10px; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--danmo-green, #009639), #0d7a49);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; color: #fff; position: relative;
+    border: 1px solid rgba(0,150,57,.4);
+  }
+  .profile-info { line-height: 1.25; }
+  .profile-name { font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .role-badge {
+    font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 5px;
+    background: rgba(245,158,11,.15); color: var(--amber, #f59e0b); border: 1px solid rgba(245,158,11,.3);
+  }
+  .profile-role { font-size: 10.5px; color: var(--steel, #94a3b8); }
+  .logout-btn { color: var(--steel2, #64748b); transition: color .15s ease; }
+  .logout-btn:hover { color: var(--danmo-red, #E30613); }
+
+  /* ===================== SIDEBAR ===================== */
+  .layout { display: flex; padding-top: 64px; min-height: 100vh; }
+
+  .sidebar {
+    width: 250px; flex-shrink: 0; position: fixed; top: 64px; bottom: 0; left: 0; z-index: 40;
+    background: #070f22; border-right: 1px solid var(--border, #1e3a6e);
+    overflow-y: auto; padding: 18px 14px; transition: transform .25s ease;
+  }
+  .nav-label {
+    font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--steel2, #64748b); padding: 0 10px; margin: 18px 0 8px;
+  }
+  .nav-label:first-child { margin-top: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 11px;
+    padding: 9px 10px; border-radius: var(--radius-sm, 10px); margin-bottom: 3px;
+    font-size: 12.5px; font-weight: 600; color: var(--steel, #94a3b8);
+    transition: all .15s ease; cursor: pointer;
+  }
+  .nav-item:hover { background: var(--bg-panel-alt, #101f38); color: var(--text, #e2e8f0); }
+  .nav-item.active {
+    background: var(--danmo-green, #009639); color: #fff;
+    box-shadow: 0 6px 16px -6px rgba(0,150,57,.55);
+  }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .nav-item .chev { margin-left: auto; width: 11px; height: 11px; transition: transform .2s ease; }
+  .nav-item.open .chev { transform: rotate(180deg); }
+  .submenu { max-height: 0; overflow: hidden; padding-left: 37px; transition: max-height .2s ease; }
+  .submenu.open { max-height: 200px; }
+  .submenu a {
+    display: block; padding: 7px 8px; font-size: 11.5px; color: var(--steel2, #64748b);
+    border-radius: 8px; transition: all .15s ease;
+  }
+  .submenu a:hover { color: var(--danmo-yellow, #FFD100); background: rgba(255,212,0,.06); }
+  .dev-tag {
+    margin-left: auto; font-size: 8.5px; font-weight: 800; padding: 1px 6px; border-radius: 5px;
+    background: rgba(245,158,11,.15); color: var(--amber, #f59e0b); border: 1px solid rgba(245,158,11,.3);
+  }
+  .sidebar-footer {
+    margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border-soft, #16243f);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 10.5px; color: var(--steel, #94a3b8); padding-left: 10px; padding-right: 10px;
+  }
+  .sidebar-footer .live { display: flex; align-items: center; gap: 6px; }
+  .sidebar-footer .live .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danmo-green, #009639); }
+
+  /* ---- Backdrop mobile ---- */
+  .sidebar-backdrop {
+    display: none; position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,.5); z-index: 39;
+  }
+  .sidebar-backdrop.active { display: block; }
+
+  /* ===================== MAIN ===================== */
+  .main { flex: 1; margin-left: 250px; padding: 24px 28px 40px; }
+
+  .page-head {
+    background: var(--bg-panel, #0d1b30); border: 1px solid var(--border, #1e3a6e);
+    border-radius: var(--radius-lg, 14px); padding: 20px 24px; margin-bottom: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+  .page-head h1 { font-size: 21px; font-weight: 800; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .page-head .tag {
+    font-size: 11px; font-weight: 700; color: var(--danmo-green, #009639);
+    background: rgba(0,150,57,.1); border: 1px solid rgba(0,150,57,.25);
+    padding: 3px 10px; border-radius: 99px;
+  }
+  .page-head p { font-size: 12.5px; color: var(--steel, #94a3b8); margin-top: 4px; }
+
+  /* ---- Panel genérico ---- */
+  .panel {
+    background: var(--bg-panel, #0d1b30); border: 1px solid var(--border, #1e3a6e);
+    border-radius: var(--radius-lg, 14px); padding: 20px 22px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .panel-head h2 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; }
+  .panel-head p { font-size: 11.5px; color: var(--steel, #94a3b8); margin-top: 2px; }
+  .empty-note {
+    font-size: 12px; color: var(--steel2, #64748b); padding: 30px 0; text-align: center;
+    border: 1px dashed var(--border, #1e3a6e); border-radius: var(--radius-sm, 10px); margin-top: 10px;
+  }
+
+  /* ---- Notificações dropdown ---- */
+  .notif-dropdown {
+    display: none; position: absolute; top: 44px; right: 0; width: 300px;
+    background: var(--bg-panel-alt, #101f38); border: 1px solid var(--border, #1e3a6e);
+    border-radius: 12px; padding: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.4); z-index: 60;
+  }
+  .notif-dropdown.active { display: block; }
+  .notif-dropdown h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--steel, #94a3b8); margin-bottom: 10px; }
+  .notif-item { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.04); font-size: 12px; color: var(--text2, #94a3b8); }
+  .notif-empty { text-align: center; color: var(--steel2, #64748b); font-size: 12px; padding: 16px 0; }
+
+  /* ===================== RESPONSIVO ===================== */
+  @media (max-width: 1200px) {
+    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 860px) {
+    .topbar-center { display: none; }
+    .menu-toggle { display: block; }
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); box-shadow: 20px 0 40px rgba(0,0,0,.4); }
+    .main { margin-left: 0; padding: 18px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .profile-info { display: none; }
+  }
+  @media (max-width: 480px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+    .page-head h1 { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Skip Link (acessibilidade) -->
+<a href="#main-content" class="skip-link">Saltar para o conteúdo</a>
+
+<!-- ===================== TOPBAR ===================== -->
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="logo-box" aria-hidden="true"><span class="d">D</span><span class="m">M</span></div>
+    <div>
+      <div class="brand-name">Portal <span class="hi">Danmo</span> Service System, Lda
+        <span class="status-pill"><span class="dot"></span>ONLINE</span>
+      </div>
+      <div class="brand-sub">Gestão Operacional Integrada — Porto da Beira</div>
+    </div>
+  </div>
+
+  <div class="topbar-center">
+    <div class="loc">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span>Beira Port</span>
+    </div>
+    <div class="sep"></div>
+    <div class="clock">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      <span id="liveClock">--/--/---- --:--:--</span>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <div style="position:relative;">
+      <button class="icon-btn" id="notifBtn" title="Notificações" aria-label="Notificações">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        <span class="notif-dot" id="notifDot" style="display:none;"></span>
+      </button>
+      <div class="notif-dropdown" id="notifDropdown">
+        <h3>Notificações</h3>
+        <div class="notif-empty">Sem notificações novas.</div>
+      </div>
+    </div>
+    <div class="vdiv"></div>
+    <div class="profile">
+      <div class="avatar" id="avatarInit" aria-hidden="true">??</div>
+      <div class="profile-info">
+        <div class="profile-name" id="profileName">— <span class="role-badge" id="profileNivel">—</span></div>
+        <div class="profile-role" id="profileRole">—</div>
+      </div>
+      <button class="icon-btn logout-btn" title="Sair da sessão" aria-label="Sair" onclick="AUTH.logout()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar" id="sidebar" role="navigation" aria-label="Navegação principal do portal">
+    <div class="nav-label">Geral</div>
+    <a href="index.html" class="nav-item active" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 13h4v8H3zM10 3h4v18h-4zM17 8h4v13h-4z"/></svg>
+      Painel Principal
+    </a>
+
+    <div class="nav-label">Módulos do Sistema</div>
+
+    <!-- Disponibilidade -->
+    <a href="oficina/disponibilidade.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="6" width="15" height="13" rx="1"/><path d="M16 10h4l3 3v6h-7z"/><circle cx="6" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg>
+      Disponibilidade Equip.
+    </a>
+
+    <!-- Oficina (submenu) -->
+    <div class="nav-item" data-toggle-sub="oficina">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6a2 2 0 0 0 2.8 2.8l6-6a4 4 0 0 0 5.4-5.4l-2.4 2.4-2-2z"/></svg>
+      Oficina & Manutenção
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="submenu" id="sub-oficina">
+      <a href="oficina/dashboard.html">Painel da Oficina</a>
+      <a href="oficina/ordens.html">Ordens de Serviço</a>
+      <a href="oficina/equipamentos.html">Equipamentos</a>
+      <a href="oficina/checklist_gestao.html">Checklists</a>
+      <a href="oficina/colaborador_metricas.html">Métricas</a>
+    </div>
+
+    <!-- Admin. Oficinal (submenu) -->
+    <div class="nav-item" data-toggle-sub="admin">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M14 9h1M14 13h1M10 21v-4h4v4"/></svg>
+      Admin. Oficinal
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="submenu" id="sub-admin">
+      <a href="rh/dashboard.html">RH & Quadro de Pessoal</a>
+      <a href="billing/dashboard.html">Faturas & Cotações</a>
+    </div>
+
+    <!-- Stock -->
+    <a href="stock/stock_dashboard.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+      Gestão de Stock
+    </a>
+
+    <!-- HST -->
+    <a href="hst/index.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/></svg>
+      Portal HST
+    </a>
+
+    <!-- Fundo Local -->
+    <a href="fundo-local/dashboard.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Fundo Local
+    </a>
+
+    <!-- Escalas -->
+    <a href="escalas/dashboard.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Escalas / Turnos
+      <span class="dev-tag">Dev</span>
+    </a>
+
+    <!-- Ferramentaria -->
+    <a href="#" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6a2 2 0 0 0 2.8 2.8l6-6a4 4 0 0 0 5.4-5.4l-2.4 2.4-2-2z"/></svg>
+      Ferramentaria
+      <span class="dev-tag">Dev</span>
+    </a>
+
+    <!-- Gestão & Registos -->
+    <a href="#" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      Gestão & Registos
+      <span class="dev-tag">Dev</span>
+    </a>
+
+    <div class="sidebar-footer">
+      <span class="live"><span class="dot"></span>Sistema Conectado</span>
+      <span>Base Beira Port</span>
+    </div>
+  </aside>
+
+  <!-- Backdrop mobile -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- ===================== MAIN ===================== -->
+  <main class="main" id="main-content">
+
+    <div class="page-head">
+      <h1>Painel Operacional Central <span class="tag">Visão Geral</span></h1>
+      <p>Consolidação de dados em tempo real — Danmo Service System, Lda</p>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+
+      <div class="kpi-card kpi--green">
+        <div class="kpi-top" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span class="kpi-label">Total Máquinas</span>
+          <div class="kpi-icon" style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(0,150,57,.15);color:#009639;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="15" height="13" rx="1"/><path d="M16 10h4l3 3v6h-7z"/><circle cx="6" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiMaquinas">—</div>
+        <div class="kpi-foot">Equipamentos cadastrados</div>
+      </div>
+
+      <div class="kpi-card kpi--yellow">
+        <div class="kpi-top" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span class="kpi-label">Total Frotas / Categorias</span>
+          <div class="kpi-icon" style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(255,212,0,.15);color:#FFD100;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiFrotas">\u2014</div>
+        <div class="kpi-foot">Categorias de equipamento</div>
+      </div>
+
+      <div class="kpi-card kpi--blue">
+        <div class="kpi-top" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span class="kpi-label">Colaboradores Danmo</span>
+          <div class="kpi-icon" style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(59,130,246,.15);color:#3b82f6;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiColaboradores">\u2014</div>
+        <div class="kpi-foot">Quadro de efetivos ativo</div>
+      </div>
+
+      <div class="kpi-card kpi--teal">
+        <div class="kpi-top" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span class="kpi-label">Estagiários</span>
+          <div class="kpi-icon" style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(20,184,166,.15);color:#14b8a6;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1 3 3 6 3s6-2 6-3v-5"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiEstagiarios">\u2014</div>
+        <div class="kpi-foot">Em formação</div>
+      </div>
+
+      <div class="kpi-card kpi--red">
+        <div class="kpi-top" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span class="kpi-label">Clientes / Empresas</span>
+          <div class="kpi-icon" style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(227,6,19,.15);color:#E30613;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m11 17 2 2 4-4"/><path d="M3 5h18M3 12h18M3 19h18"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiEmpresas">\u2014</div>
+        <div class="kpi-foot">Registos ativos</div>
+      </div>
+
+    </div>
+
+    <!-- Secção: Próximas Etapas -->
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Próximas Etapas</h2>
+          <p>Distribuição por setor técnico, quadro por unidade, e tabela de empresas parceiras</p>
+        </div>
+      </div>
+      <div class="empty-note">Avançamos para aqui depois de migrar todos os módulos para o Portal.</div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Utils (funções partilhadas) -->
+<script src="shared/utils.js"></script>
+
+<script>
+/* ==========================================================================
+   PORTAL MÃE — LÓGICA
+   ========================================================================== */
+
+/* ---- Relógio ao vivo ---- */
+function updateClock() {
+  const n = new Date();
+  const p = v => String(v).padStart(2, '0');
+  document.getElementById('liveClock').textContent =
+    p(n.getDate()) + '/' + p(n.getMonth() + 1) + '/' + n.getFullYear() + ' ' +
+    p(n.getHours()) + ':' + p(n.getMinutes()) + ':' + p(n.getSeconds());
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ---- Perfil do utilizador logado ---- */
+function carregarPerfil() {
+  const user = AUTH.getUser();
+  if (!user) return;
+  document.getElementById('profileName').innerHTML =
+    user.nome + ' <span class="role-badge">' + (user.nivel || '').toUpperCase() + '</span>';
+  document.getElementById('profileRole').textContent =
+    (user.cargo || user.nivel || '') + ' · ' + (user.usuario || '');
+  document.getElementById('avatarInit').textContent = iniciais(user.nome);
+}
+carregarPerfil();
+
+/* ---- Sidebar: toggle mobile + acordeão ---- */
+const sidebar = document.getElementById('sidebar');
+const backdrop = document.getElementById('sidebarBackdrop');
+
+document.getElementById('menuToggle').addEventListener('click', () => {
+  sidebar.classList.toggle('open');
+  backdrop.classList.toggle('active');
+});
+backdrop.addEventListener('click', () => {
+  sidebar.classList.remove('open');
+  backdrop.classList.remove('active');
+});
+
+/* Delegação de eventos para submenus (sem onclick inline) */
+document.querySelectorAll('[data-toggle-sub]').forEach(el => {
+  el.addEventListener('click', () => {
+    const name = el.dataset.toggleSub;
+    const sub = document.getElementById('sub-' + name);
+    if (sub) sub.classList.toggle('open');
+    el.classList.toggle('open');
+  });
+});
+
+/* Persistir estado do acordeão via URL */
+(function restaurarSubmenus() {
+  const path = window.location.pathname;
+  if (path.includes('/oficina/')) {
+    const sub = document.getElementById('sub-oficina');
+    const tgl = document.querySelector('[data-toggle-sub="oficina"]');
+    if (sub) sub.classList.add('open');
+    if (tgl) tgl.classList.add('open');
+  }
+  if (path.includes('/rh/') || path.includes('/billing/')) {
+    const sub = document.getElementById('sub-admin');
+    const tgl = document.querySelector('[data-toggle-sub="admin"]');
+    if (sub) sub.classList.add('open');
+    if (tgl) tgl.classList.add('open');
+  }
+})();
+
+/* ---- Notificações dropdown ---- */
+document.getElementById('notifBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('notifDropdown').classList.toggle('active');
+});
+document.addEventListener('click', () => {
+  document.getElementById('notifDropdown').classList.remove('active');
+});
+
+/* ---- Tema: criar painel flutuante ---- */
+tema.criarPainel();
+
+/* ==========================================================================
+   KPIs — SUPABASE (queries paralelas com Promise.all)
+   Tabelas confirmadas após análise dos 7 repositórios:
+   - equipment (não “equipamentos”)
+   - categorias_equipamento (para contar frotas)
+   - collaborators (active=true, categoria para estagiários)
+   - clientes (ativo=true) — do módulo billing
+   ========================================================================== */
+
+function setKpi(id, estado, valor) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (estado === 'loading') {
+    el.textContent = '…';
+    el.classList.add('loading');
+    el.title = 'A carregar...';
+  } else if (estado === 'error') {
+    el.textContent = '!';
+    el.classList.remove('loading');
+    el.classList.add('error');
+    el.title = 'Erro ao carregar dados';
+  } else {
+    el.textContent = valor;
+    el.classList.remove('loading', 'error');
+    el.title = '';
+  }
+}
+
+async function carregarKPIs() {
+  /* Mostrar estado de loading */
+ ['kpiMaquinas','kpiFrotas','kpiColaboradores','kpiEstagiarios','kpiEmpresas'].forEach(id => setKpi(id, 'loading'));
+
+  try {
+    /* Todas as queries em paralelo (~300ms total em vez de ~1500ms) */
+    const [maquinas, categorias, colaboradores, clientes] = await Promise.all([
+      db.query('equipment', 'select=id,active&order=name.asc'),
+      db.query('categorias_equipamento', 'select=id,ativo&order=nome.asc'),
+      db.query('collaborators', 'select=id,name,categoria,active&order=name.asc'),
+      db.query('clientes', 'select=id,ativo&order=nome.asc')
+    ]);
+
+    /* 1. Total Máquinas (todos, ativos + inativos) */
+    setKpi('kpiMaquinas', 'ok', maquinas.length);
+
+    /* 2. Total Frotas / Categorias de equipamento */
+    const catsAtivas = categorias.filter(c => c.ativo !== false);
+    setKpi('kpiFrotas', 'ok', catsAtivas.length);
+
+    /* 3. Colaboradores ativos */
+    const ativos = colaboradores.filter(c => c.active === true);
+    setKpi('kpiColaboradores', 'ok', ativos.length);
+
+    /* 4. Estagiários (categoria contém "estagi" - case insensitive) */
+    const estagiarios = ativos.filter(c =>
+      (c.categoria || '').toLowerCase().includes('estagi')
+    );
+    setKpi('kpiEstagiarios', 'ok', estagiarios.length);
+
+    /* 5. Clientes / Empresas */
+    const clientesAtivos = clientes.filter(c => c.ativo !== false);
+    setKpi('kpiEmpresas', 'ok', clientesAtivos.length);
+
+  } catch (err) {
+    console.warn('KPIs — falhou ao carregar:', err);
+    ['kpiMaquinas','kpiFrotas','kpiColaboradores','kpiEstagiarios','kpiEmpresas'].forEach(id => setKpi(id, 'error'));
+  }
+}
+
+carregarKPIs();
+</script>
+
+</body>
+</html>
