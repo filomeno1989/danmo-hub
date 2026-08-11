@@ -1,81 +1,92 @@
-/* ==========================================================================
-   DANMO HUB — Autenticação (Partilhado)
-   Sessão única para todos os módulos — chave: danmo_hub_user
-   Tabelas: utilizadores (login), collaborators (dados do utilizador)
-   ========================================================================== */
+/**
+ * auth.js — Autenticação unificada (Danmo Hub)
+ * Todas as 7 aplicações usam ESTE ficheiro.
+ * Chave de sessão única: dss_user
+ * Última atualização: 2026-08-11
+ */
 
-const AUTH = (() => {
+const AUTH_KEY = 'dss_user';
 
-  /* ---- Chave unificada de sessão (todos os módulos) ---- */
-  const SESSION_KEY = 'danmo_hub_user';
-  let _user = null;
-
-  /* ---- Inicializar sessão a partir do sessionStorage ---- */
-  function init() {
-    try {
-      const raw = sessionStorage.getItem(SESSION_KEY);
-      if (raw) {
-        _user = JSON.parse(raw);
-        return true;
-      }
-    } catch (e) { /* ignorar */ }
-    return false;
+/**
+ * Guarda de autenticação — chamar no <head> de cada página protegida.
+ * Se não houver sessão válida, redireciona para login.html.
+ * Retorna o objeto do utilizador ou null.
+ */
+function verificarSessao() {
+  try {
+    const raw = localStorage.getItem(AUTH_KEY);
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    if (!user || !user.id) return null;
+    return user;
+  } catch {
+    localStorage.removeItem(AUTH_KEY);
+    return null;
   }
+}
 
-  /* ---- Login ---- */
-  async function login(usuario, senha) {
-    const users = await db.get('utilizadores', { usuario, senha, ativo: true });
-    if (!users || users.length === 0) return null;
-    const user = users[0];
-    _user = {
-      id:      user.id,
-      nome:    user.nome,
-      usuario: user.usuario,
-      cargo:   user.cargo || '',
-      nivel:   user.nivel || 'operador'
-    };
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(_user));
-    return _user;
+/**
+ * Bloqueia o render da página se não autenticado.
+ * Usar: if (!protegerPagina()) { /* página vai parar aqui */ }
+ * Retorna o utilizador logado ou null (e redireciona).
+ */
+function protegerPagina() {
+  const user = verificarSessao();
+  if (!user) {
+    window.location.replace('login.html');
+    return null;
   }
+  return user;
+}
 
-  /* ---- Logout ---- */
-  function logout() {
-    _user = null;
-    sessionStorage.removeItem(SESSION_KEY);
-    window.location.href = typeof HUB_BASE !== 'undefined' ? HUB_BASE + 'index.html' : 'index.html';
-  }
+/**
+ * Iniciar sessão — verifica credenciais na tabela 'users' do Supabase.
+ * Retorna { sucesso: true, utilizador: {...} } ou { sucesso: false, erro: '...' }
+ */
+async function iniciarSessao(email, senha) {
+  try {
+    const { data: utilizador, error } = await db
+      .from('users')
+      .select('id, name, email, role, department, active')
+      .eq('email', email.trim().toLowerCase())
+      .eq('password', senha)
+      .eq('active', true)
+      .single();
 
-  /* ---- Utilizador actual ---- */
-  function getUser()  { return _user; }
-  function nome()     { return _user ? _user.nome : ''; }
-  function nivel()    { return _user ? _user.nivel : ''; }
-  function id()       { return _user ? _user.id : null; }
-  function usuario()  { return _user ? _user.usuario : ''; }
-  function isLogged() { return _user !== null; }
-
-  /* ---- Verificações de nível ---- */
-  function isAdmin()   { return _user && _user.nivel === 'admin'; }
-  function isGestor()  { return _user && (_user.nivel === 'admin' || _user.nivel === 'gestor'); }
-
-  /* ---- Exigir autenticação (redireciona se não logado) ---- */
-  function exigir(niveisPermitidos) {
-    if (!isLogged()) {
-      window.location.href = typeof HUB_BASE !== 'undefined' ? HUB_BASE + 'index.html' : 'index.html';
-      return false;
+    if (error || !utilizador) {
+      return { sucesso: false, erro: 'E-mail ou senha incorretos.' };
     }
-    if (niveisPermitidos && Array.isArray(niveisPermitidos)) {
-      if (!niveisPermitidos.includes(_user.nivel)) {
-        alert('Sem permissão para aceder a esta página.');
-        logout();
-        return false;
-      }
-    }
-    return true;
+
+    /* Guardar sessão (sem guardar a senha) */
+    localStorage.setItem(AUTH_KEY, JSON.stringify(utilizador));
+    return { sucesso: true, utilizador };
+  } catch (err) {
+    console.error('Erro ao iniciar sessão:', err);
+    return { sucesso: false, erro: 'Erro de ligação. Tente novamente.' };
   }
+}
 
-  return { init, login, logout, getUser, nome, nivel, id, usuario, isLogged, isAdmin, isGestor, exigir };
+/**
+ * Terminar sessão — limpa localStorage e redireciona.
+ */
+function terminarSessao() {
+  localStorage.removeItem(AUTH_KEY);
+  window.location.replace('login.html');
+}
 
-})();
+/**
+ * Obtém o utilizador atual (null se não logado).
+ */
+function obterUtilizador() {
+  return verificarSessao();
+}
 
-/* Auto-inicializar */
-AUTH.init();
+/**
+ * Verifica se o utilizador tem uma das roles indicadas.
+ * Exemplo: temPermissao(['admin', 'gestor'])
+ */
+function temPermissao(rolesPermitidas) {
+  const user = obterUtilizador();
+  if (!user) return false;
+  return rolesPermitidas.includes(user.role);
+}
