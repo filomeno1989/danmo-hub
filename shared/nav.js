@@ -9,14 +9,10 @@
 (function () {
   'use strict';
 
-  /* ── Detetar o prefixo relativo (BASE) a partir do próprio <script src="..."> ──
-     Ex: incluído como "../shared/nav.js" -> BASE = "../"
-         incluído como "shared/nav.js"    -> BASE = ""                         */
   const scriptEl = document.currentScript || document.querySelector('script[src*="nav.js"]');
   const srcAttr = scriptEl ? scriptEl.getAttribute('src') : 'shared/nav.js';
   const BASE = srcAttr.replace(/shared\/nav\.js.*$/, '');
 
-  /* ── Estrutura dos módulos (ajustar links à medida que forem sendo criados) ── */
   const MODULOS = [
     { id: 'inicio', label: 'Painel Principal', icon: '&#9776;', href: 'index.html' },
 
@@ -32,8 +28,8 @@
 
     { id: 'admin', label: 'Admin. Oficinal', icon: '&#128188;', pasta: 'rh|financeiro',
       sub: [
-        { label: 'RH & Quadro de Pessoal',  href: 'rh/index.html' },
-        { label: 'Finanças & Faturas',      href: 'financeiro/index.html' }
+        { label: 'RH & Quadro de Pessoal',   href: 'rh/index.html' },
+        { label: 'Finanças & Faturas',       href: 'financeiro/index.html' }
       ] },
 
     { id: 'stock', label: 'Gestão de Stock', icon: '&#9638;', href: 'stock/index.html', pasta: 'stock' },
@@ -45,20 +41,19 @@
     { id: 'gestao', label: 'Gestão & Registos', icon: '&#9881;', href: '#', dev: true }
   ];
 
-  /* ── Detetar módulo ativo pela pasta atual ── */
   const caminhoAtual = window.location.pathname;
   function ehAtivo(mod) {
     if (!mod.pasta) return false;
     return mod.pasta.split('|').some(p => caminhoAtual.includes('/' + p + '/'));
   }
 
-  /* ── Construir HTML da Sidebar ── */
   function htmlModulo(mod) {
     if (mod.sub) {
       const aberto = ehAtivo(mod);
-      const subHtml = mod.sub.map(s =>
-        `<a href="${BASE}${s.href}">${s.label}</a>`
-      ).join('');
+      const subHtml = mod.sub.map(s => {
+        const subAtivo = caminhoAtual.endsWith(s.href) || caminhoAtual.includes(s.href);
+        return `<a href="${BASE}${s.href}" class="${subAtivo ? 'ativo' : ''}">${s.label}</a>`;
+      }).join('');
       return `
         <li class="sidebar-modulo">
           <button class="sidebar-modulo-btn${aberto ? ' ativo' : ''}" data-alvo="sub-${mod.id}" aria-expanded="${aberto}">
@@ -150,7 +145,6 @@
       </div>
     </div>`;
 
-  /* ── Injetar no DOM ── */
   function montar() {
     const alvo = document.getElementById('navbar');
     if (!alvo) {
@@ -160,8 +154,6 @@
     alvo.outerHTML = topbarHtml + '<div class="layout">' + sidebarHtml + '<div id="conteudo-principal-wrap"></div></div>';
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-    /* Mover o conteúdo original (tudo o que já estava a seguir ao <div id="navbar">)
-       para dentro do wrapper .layout, para que o CSS de .main/.sidebar funcione. */
     const wrap = document.getElementById('conteudo-principal-wrap');
     const layout = wrap.parentElement;
     let no = layout.nextSibling;
@@ -181,7 +173,6 @@
     ativarEventos();
   }
 
-  /* ── Relógio ── */
   const DIAS_SEMANA = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
   const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   function ativarRelogio() {
@@ -199,7 +190,6 @@
     setInterval(tick, 1000);
   }
 
-  /* ── Perfil na topbar + modal ── */
   function ativarPerfil() {
     if (typeof obterUtilizador !== 'function') return;
     const user = obterUtilizador();
@@ -224,7 +214,6 @@
     if (pNivel) pNivel.textContent = nivelLabel[user.nivel] || user.nivel || '—';
   }
 
-  /* ── Eventos (delegação) ── */
   function ativarEventos() {
     const nav = document.querySelector('.sidebar-nav');
     if (nav) {
@@ -268,30 +257,22 @@
       });
     }
 
-    /* Botão de menu mobile (hambúrguer) — criado só se ainda não existir */
     if (!document.getElementById('btn-menu-mobile')) {
       const btnMenu = document.createElement('button');
       btnMenu.id = 'btn-menu-mobile';
-      btnMenu.setAttribute('aria-label', 'Abrir menu');
+      btnMenu.setAttribute('aria-label', 'Alternar menu');
       btnMenu.innerHTML = '&#9776;';
-      btnMenu.style.cssText = 'display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;';
+      btnMenu.style.cssText = 'background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px;transition:color 0.2s;';
       const topbarLogo = document.querySelector('.topbar-logo');
       if (topbarLogo && topbarLogo.parentElement) {
         topbarLogo.parentElement.insertBefore(btnMenu, topbarLogo);
       }
       btnMenu.addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('aberta');
+        document.body.classList.toggle('sidebar-recolhida');
       });
-      const estilo = document.createElement('style');
-      estilo.textContent = `
-        @media (max-width: 1024px) {
-          #btn-menu-mobile { display: block !important; }
-        }`;
-      document.head.appendChild(estilo);
     }
   }
 
-  /* ── Arrancar assim que o DOM estiver pronto ── */
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', montar);
   } else {
