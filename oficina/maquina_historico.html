@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Histórico da Máquina — Danmo Oficina</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:20px; }
+    .timeline { list-style:none; margin-top:8px; }
+    .timeline li { padding:10px 12px; border-left:3px solid var(--amber); margin-bottom:6px; border-radius:0 4px 4px 0; background:rgba(255,255,255,0.03); font-size:13px; }
+    .timeline .meta { color:var(--text2); font-size:11px; margin-top:2px; }
+    .chart-wrap { position:relative; height:300px; margin-bottom:24px; }
+  </style>
+</head>
+<body>
+  <div id="navbar" class="navbar"></div>
+
+  <main class="main">
+    <div class="flex-between mt-16">
+      <div>
+        <h1 class="page-title" style="margin-bottom:4px" id="titulo-equip">—</h1>
+        <p class="page-sub" id="subtitulo-equip">—</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" id="btn-imprimir">🖨️ Imprimir</button>
+        <button class="btn btn-ghost" id="btn-pdf">📄 Guardar PDF</button>
+        <a href="equipamentos.html" class="btn btn-ghost">← Voltar</a>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Total Ordens de Serviço</div><div class="kpi-value" id="kpi-os">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Intervenções</div><div class="kpi-value" id="kpi-intervencoes">—</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Total Horas</div><div class="kpi-value" id="kpi-horas">—</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Dias na Oficina</div><div class="kpi-value" id="kpi-dias">—</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Peças Aplicadas</div><div class="kpi-value" id="kpi-pecas">—</div></div>
+    </div>
+
+    <!-- Gráfico Horas ao Longo do Tempo -->
+    <div class="card">
+      <div class="card-title">Horas de Trabalho ao Longo do Tempo</div>
+      <div class="chart-wrap">
+        <canvas id="chartHoras"></canvas>
+      </div>
+    </div>
+
+    <!-- Sumário de Peças -->
+    <div class="card">
+      <div class="card-title">Peças Aplicadas (Sumário)</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Peça</th><th>Qtd Total</th><th>Última Aplicação</th></tr>
+          </thead>
+          <tbody id="tbody-pecas-sumario">
+            <tr><td colspan="3">A carregar...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Timeline das Ordens de Serviço -->
+    <div class="card">
+      <div class="card-title">Histórico de Ordens de Serviço</div>
+      <ul class="timeline" id="timeline-os">
+        <li>A carregar...</li>
+      </ul>
+    </div>
+
+    <!-- Tabela de Intervenções -->
+    <div class="card">
+      <div class="card-title">Todas as Intervenções</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Data</th><th>OS</th><th>Descrição</th><th>Técnicos</th><th>Horas</th><th>Sector</th></tr>
+          </thead>
+          <tbody id="tbody-intervencoes">
+            <tr><td colspan="6">A carregar...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Colaboradores Envolvidos -->
+    <div class="card">
+      <div class="card-title">Técnicos que Trabalham Nesta Máquina</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Técnico</th><th>Código</th><th>Setor</th><th>Total Intervenções</th><th>Total Horas</th></tr>
+          </thead>
+          <tbody id="tbody-tecnicos">
+            <tr><td colspan="5">A carregar...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="utils.js"></script>
+  <script src="tema.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    renderNavbarOficina('equipamentos');
+
+    const params = new URLSearchParams(window.location.search);
+    const equipId = params.get('id');
+
+    if (!equipId) { alert('Máquina não especificada.'); window.location.href='equipamentos.html'; }
+
+    let equip = null, todasOS = [], todasIntervencoes = [], todasPecas = [], colabs = [], relacoes = [];
+
+    async function carregar() {
+      try {
+        // Equipamento
+        const eqList = await db.query('equipment', `select=*&id=eq.${equipId}`);
+        equip = eqList[0];
+        if (!equip) { alert('Máquina não encontrada.'); window.location.href='equipamentos.html'; return; }
+
+        document.getElementById('titulo-equip').textContent = equip.code || '—';
+        document.getElementById('subtitulo-equip').textContent = 
+          `${equip.fleet_type||'—'} — ${equip.group_name||'—'} — Adquirido em ${equip.year_acquired||'—'}`;
+
+        // Todas as OS desta máquina
+        todasOS = await db.query('ordens_servico', `select=*&equipment_id=eq.${equipId}&order=data_abertura.desc`);
+
+        // Colaboradores
+        colabs = await db.query('collaborators', 'select=*&active=eq.true');
+
+        // Record Collaborators (para vincular técnicos a intervenções)
+        relacoes = await db.query('record_collaborators', 'select=*');
+
+        // Todas as intervenções (vinculadas via os_id)
+        if (todasOS.length > 0) {
+          const osIds = todasOS.map(o => o.id);
+          const allIntervencoes = await db.query('records', 'select=*&order=shift_date.desc');
+          todasIntervencoes = allIntervencoes.filter(r => osIds.includes(r.os_id));
+        }
+
+        // Peças
+        if (todasOS.length > 0) {
+          const osIds = todasOS.map(o => o.id);
+          const allPecas = await db.query('os_pecas', 'select=*');
+          todasPecas = allPecas.filter(p => osIds.includes(p.os_id));
+        }
+
+        // Renderizar
+        renderKPIs();
+        renderTimelineOS();
+        await renderIntervencoesTabela();
+        renderPecasSumario();
+        await renderTecnicos();
+        renderGraficoHoras();
+      } catch (err) {
+        console.error('Erro ao carregar:', err);
+        alert('Erro ao carregar dados da máquina');
+      }
+    }
+
+    function renderKPIs() {
+      const diasNaOficina = todasOS.length > 0 
+        ? Math.floor((new Date() - new Date(todasOS[todasOS.length-1].data_abertura)) / 86400000)
+        : 0;
+      const totalHoras = todasIntervencoes.reduce((s, r) => s + (parseFloat(r.hours)||0), 0);
+      const totalPecas = todasPecas.length;
+
+      document.getElementById('kpi-os').textContent = todasOS.length;
+      document.getElementById('kpi-intervencoes').textContent = todasIntervencoes.length;
+      document.getElementById('kpi-horas').textContent = Math.round(totalHoras*100)/100 + 'h';
+      document.getElementById('kpi-dias').textContent = diasNaOficina;
+      document.getElementById('kpi-pecas').textContent = totalPecas;
+    }
+
+    function renderTimelineOS() {
+      const ul = document.getElementById('timeline-os');
+      if (!todasOS.length) { ul.innerHTML='<li>Nenhuma ordem de serviço registada.</li>'; return; }
+
+      ul.innerHTML = todasOS.map(os => {
+        const dias = Math.floor((new Date(os.data_fecho||new Date()) - new Date(os.data_abertura)) / 86400000);
+        return `<li>
+          <strong>${os.numero_obra || 'S/Nº'}</strong> — ${os.status_atual}
+          <div style="font-size:12px;color:var(--text2);margin-top:3px">
+            Abertura: ${formatarData(os.data_abertura)} | Duração: ${dias} dias | Sector: ${os.sector||'—'}
+          </div>
+          <div style="font-size:12px;color:var(--amber);margin-top:2px">${os.descricao_avaria||'—'}</div>
+        </li>`;
+      }).join('');
+    }
+
+    async function renderIntervencoesTabela() {
+      const tbody = document.getElementById('tbody-intervencoes');
+      if (!todasIntervencoes.length) {
+        tbody.innerHTML='<tr><td colspan="6">Nenhuma intervenção registada.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = todasIntervencoes.map(r => {
+        const os = todasOS.find(o => o.id === r.os_id) || {};
+        const idsColabs = relacoes.filter(rc => rc.record_id === r.id).map(rc => rc.collaborator_id);
+        const nomesColabs = idsColabs.map(id => {
+          const c = colabs.find(x => x.id === id);
+          return c ? c.name : '—';
+        }).join(', ') || '—';
+
+        return `<tr>
+          <td>${r.shift_date ? formatarData(r.shift_date) : '—'}</td>
+          <td><a href="os_detalhe.html?id=${r.os_id}" style="color:var(--amber)">${os.numero_obra||'S/Nº'}</a></td>
+          <td>${r.description||'—'}</td>
+          <td>${nomesColabs}</td>
+          <td>${r.hours||'—'}h</td>
+          <td>${os.sector||'—'}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderPecasSumario() {
+      const tbody = document.getElementById('tbody-pecas-sumario');
+      if (!todasPecas.length) {
+        tbody.innerHTML='<tr><td colspan="3">Nenhuma peça registada.</td></tr>';
+        return;
+      }
+
+      const mapa = {};
+      todasPecas.forEach(p => {
+        if (!mapa[p.peca]) mapa[p.peca] = { qtd: 0, ultima: null };
+        mapa[p.peca].qtd += p.quantidade || 1;
+        if (!mapa[p.peca].ultima || new Date(p.data) > new Date(mapa[p.peca].ultima)) {
+          mapa[p.peca].ultima = p.data;
+        }
+      });
+
+      tbody.innerHTML = Object.entries(mapa).map(([peca, info]) => `<tr>
+        <td>${peca}</td>
+        <td>${info.qtd}</td>
+        <td>${info.ultima ? formatarData(info.ultima) : '—'}</td>
+      </tr>`).join('');
+    }
+
+    async function renderTecnicos() {
+      const tbody = document.getElementById('tbody-tecnicos');
+      const mapa = {};
+      
+      todasIntervencoes.forEach(r => {
+        const idsColabs = relacoes.filter(rc => rc.record_id === r.id).map(rc => rc.collaborator_id);
+        idsColabs.forEach(id => {
+          const c = colabs.find(x => x.id === id);
+          if (!c) return;
+          if (!mapa[c.id]) mapa[c.id] = { colab: c, intervencoes: 0, horas: 0 };
+          mapa[c.id].intervencoes += 1;
+          mapa[c.id].horas += parseFloat(r.hours) || 0;
+        });
+      });
+
+      if (!Object.keys(mapa).length) {
+        tbody.innerHTML='<tr><td colspan="5">Nenhum técnico registado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = Object.values(mapa)
+        .sort((a,b) => b.horas - a.horas)
+        .map(m => `<tr>
+          <td>${m.colab.name}</td>
+          <td>${m.colab.code||'—'}</td>
+          <td>${m.colab.setor||'—'}</td>
+          <td>${m.intervencoes}</td>
+          <td>${Math.round(m.horas*100)/100}h</td>
+        </tr>`).join('');
+    }
+
+    function renderGraficoHoras() {
+      const dados = {};
+      todasIntervencoes.forEach(r => {
+        if (!r.shift_date) return;
+        const mes = r.shift_date.substring(0,7); // YYYY-MM
+        if (!dados[mes]) dados[mes] = 0;
+        dados[mes] += parseFloat(r.hours) || 0;
+      });
+
+      const meses = Object.keys(dados).sort();
+      const horas = meses.map(m => Math.round(dados[m]*100)/100);
+
+      if (meses.length === 0) {
+        document.getElementById('chartHoras').style.display = 'none';
+        return;
+      }
+
+      const ctx = document.getElementById('chartHoras').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: meses,
+          datasets: [{
+            label: 'Horas de Trabalho',
+            data: horas,
+            borderColor: '#92D050',
+            backgroundColor: 'rgba(146, 208, 80, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#ccc' } } },
+          scales: {
+            y: { ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          }
+        }
+      });
+    }
+
+    document.getElementById('btn-imprimir').addEventListener('click', () => window.print());
+    document.getElementById('btn-pdf').addEventListener('click', () => alert('Funcionalidade de PDF virá em breve.'));
+
+    (async function init() {
+      await carregar();
+    })();
+  </script>
+
+  <style media="print">
+    .navbar, .flex-between > div:last-child { display:none !important; }
+    .kpi-grid, .card { page-break-inside: avoid; }
+    body { background:#fff; }
+  </style>
+</body>
+</html>

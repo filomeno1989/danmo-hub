@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestão de Checklists — Danmo Oficina</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .selector-bar { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px; }
+    .selector-bar .form-group { min-width:200px; margin:0; }
+    .secao-card { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:14px; overflow:hidden; }
+    .secao-head { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--navy3); }
+    .secao-nome-txt { font-weight:700; font-size:14px; }
+    .secao-nome-txt input { background:transparent; border:none; color:var(--text); font-weight:700; font-size:14px; width:auto; padding:2px 6px; border-radius:4px; }
+    .secao-nome-txt input:focus { background:var(--navy); outline:1px solid var(--amber); }
+    .item-row {
+      display:grid; grid-template-columns:50px 1fr 90px 90px 140px; gap:10px; align-items:center;
+      padding:8px 16px; border-top:1px solid var(--border); font-size:13px;
+    }
+    .item-row.inativo { opacity:.4; }
+    .item-row input[type=text], .item-row input[type=number] { padding:5px 8px; font-size:13px; }
+    .item-desc-input { width:100%; }
+    .toggle-ativo { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text2); cursor:pointer; }
+    .item-acoes { display:flex; gap:4px; justify-content:flex-end; }
+    .add-item-row { padding:10px 16px; border-top:1px dashed var(--border); display:flex; gap:8px; align-items:center; }
+    .add-item-row input { flex:1; }
+    .badge-usado { background:rgba(59,130,246,.15); color:var(--blue); font-size:10px; padding:1px 7px; border-radius:10px; }
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:200; }
+    .modal-overlay.aberto { display:flex; }
+    .modal-box { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:520px; box-shadow:var(--shadow); max-height:90vh; overflow-y:auto; }
+    .col-header { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; }
+  </style>
+</head>
+<body>
+  <div id="navbar" class="navbar"></div>
+
+  <main class="main">
+    <div class="flex-between mt-16">
+      <h1 class="page-title" style="margin-bottom:0">Gestão de Checklists</h1>
+      <button class="btn btn-primary" id="btn-novo-template">+ Novo Checklist</button>
+    </div>
+    <p class="page-sub">Corrige, adiciona ou oculta itens sem mexer em SQL</p>
+
+    <div class="card">
+      <div class="selector-bar">
+        <div class="form-group">
+          <label>Categoria de Equipamento</label>
+          <select id="sel-categoria"><option value="">— Selecionar —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Checklist</label>
+          <select id="sel-template"><option value="">— Selecionar categoria primeiro —</option></select>
+        </div>
+        <div class="form-group" style="align-self:flex-end">
+          <label style="display:flex;align-items:center;gap:6px;font-weight:normal;text-transform:none;font-size:13px">
+            <input type="checkbox" id="chk-mostrar-inativos" style="width:auto" /> Mostrar templates ocultos
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div id="area-template" style="display:none">
+      <div class="card">
+        <div class="flex-between">
+          <div class="card-title" style="margin-bottom:0">Dados do Checklist</div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:normal;text-transform:none">
+            <input type="checkbox" id="tpl-ativo" style="width:auto" /> Ativo (visível para seleção nas obras)
+          </label>
+        </div>
+        <div class="form-grid mt-16">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" id="tpl-nome" />
+          </div>
+          <div class="form-group">
+            <label>Ref. / Versão</label>
+            <input type="text" id="tpl-ref" />
+          </div>
+          <div class="form-group">
+            <label>Categoria</label>
+            <input type="text" id="tpl-categoria" disabled />
+          </div>
+          <div class="form-group">
+            <label>Tipo</label>
+            <select id="tpl-tipo">
+              <option value="mecanica">Mecânica</option>
+              <option value="eletrica">Eléctrica</option>
+              <option value="diario">Diário</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Intervalo (horas, se aplicável)</label>
+            <input type="number" id="tpl-intervalo-horas" />
+          </div>
+          <div class="form-group">
+            <label>Intervalo (texto, ex: "125 horas")</label>
+            <input type="text" id="tpl-intervalo-label" />
+          </div>
+        </div>
+        <div style="text-align:right;margin-top:12px">
+          <button class="btn btn-primary btn-sm" id="btn-guardar-template">Guardar Dados do Checklist</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-between">
+          <div class="card-title" style="margin-bottom:0">Secções e Itens</div>
+          <button class="btn btn-ghost btn-sm" id="btn-nova-secao">+ Nova Secção</button>
+        </div>
+        <div id="secoes-container" class="mt-16"><p class="text-muted">A carregar...</p></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Novo Template -->
+  <div class="modal-overlay" id="modal-novo-template">
+    <div class="modal-box">
+      <div class="card-title">Novo Checklist</div>
+      <div class="form-group mt-16">
+        <label>Categoria de Equipamento *</label>
+        <select id="nt-categoria" required></select>
+        <span class="nota" style="font-size:11px;color:var(--text2);font-style:italic">Se a categoria não existir na lista, cria-a primeiro em Config.</span>
+      </div>
+      <div class="form-group mt-16">
+        <label>Nome do Checklist *</label>
+        <input type="text" id="nt-nome" required placeholder="Ex: MM RS 250h" />
+      </div>
+      <div class="form-group mt-16">
+        <label>Tipo *</label>
+        <select id="nt-tipo" required>
+          <option value="mecanica">Mecânica</option>
+          <option value="eletrica">Eléctrica</option>
+          <option value="diario">Diário</option>
+        </select>
+      </div>
+      <div class="form-grid mt-16">
+        <div class="form-group">
+          <label>Intervalo (horas)</label>
+          <input type="number" id="nt-intervalo-horas" placeholder="Ex: 250" />
+        </div>
+        <div class="form-group">
+          <label>Intervalo (texto)</label>
+          <input type="text" id="nt-intervalo-label" placeholder="Ex: 250 horas" />
+        </div>
+      </div>
+      <div class="form-group mt-16">
+        <label>Ref. / Versão</label>
+        <input type="text" id="nt-ref" value="Ref. 01" />
+      </div>
+      <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
+        <button type="button" class="btn btn-ghost" id="btn-cancelar-novo-template">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-confirmar-novo-template">Criar Checklist</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="utils.js"></script>
+  <script src="tema.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    renderNavbarOficina('config');
+
+    let todasCategorias = [], templatesDaCategoria = [], templateAtual = null;
+    let secoesAtuais = [], itensAtuais = [], contagemUsoItens = {};
+
+    async function carregarCategorias() {
+      todasCategorias = await db.query('categorias_equipamento', 'select=*&ativo=eq.true&order=nome.asc');
+      const sel = document.getElementById('sel-categoria');
+      sel.innerHTML = '<option value="">— Selecionar —</option>' +
+        todasCategorias.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+      const nt = document.getElementById('nt-categoria');
+      nt.innerHTML = todasCategorias.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+    }
+
+    document.getElementById('sel-categoria').addEventListener('change', carregarTemplatesDaCategoria);
+    document.getElementById('chk-mostrar-inativos').addEventListener('change', carregarTemplatesDaCategoria);
+
+    async function carregarTemplatesDaCategoria() {
+      const categoria = document.getElementById('sel-categoria').value;
+      const selTpl = document.getElementById('sel-template');
+      document.getElementById('area-template').style.display = 'none';
+      if (!categoria) { selTpl.innerHTML = '<option value="">— Selecionar categoria primeiro —</option>'; return; }
+
+      const mostrarInativos = document.getElementById('chk-mostrar-inativos').checked;
+      let q = `select=*&categoria_equipamento=eq.${encodeURIComponent(categoria)}&order=tipo.asc,intervalo_horas.asc`;
+      if (!mostrarInativos) q += '&ativo=eq.true';
+      templatesDaCategoria = await db.query('checklist_templates', q);
+
+      selTpl.innerHTML = '<option value="">— Selecionar —</option>' +
+        templatesDaCategoria.map(t => `<option value="${t.id}">${t.nome} (${t.intervalo_label||t.tipo})${!t.ativo?' — OCULTO':''}</option>`).join('');
+    }
+
+    document.getElementById('sel-template').addEventListener('change', async (e) => {
+      const id = e.target.value;
+      if (!id) { document.getElementById('area-template').style.display = 'none'; return; }
+      await carregarTemplateCompleto(parseInt(id));
+    });
+
+    async function carregarTemplateCompleto(templateId) {
+      const lista = await db.query('checklist_templates', `select=*&id=eq.${templateId}`);
+      templateAtual = lista[0];
+      if (!templateAtual) return;
+
+      document.getElementById('tpl-nome').value = templateAtual.nome || '';
+      document.getElementById('tpl-ref').value = templateAtual.ref_versao || '';
+      document.getElementById('tpl-categoria').value = templateAtual.categoria_equipamento || '';
+      document.getElementById('tpl-tipo').value = templateAtual.tipo || 'mecanica';
+      document.getElementById('tpl-intervalo-horas').value = templateAtual.intervalo_horas ?? '';
+      document.getElementById('tpl-intervalo-label').value = templateAtual.intervalo_label || '';
+      document.getElementById('tpl-ativo').checked = !!templateAtual.ativo;
+
+      document.getElementById('area-template').style.display = 'block';
+
+      secoesAtuais = await db.query('checklist_template_secoes', `select=*&template_id=eq.${templateId}&order=ordem.asc`);
+      const secaoIds = secoesAtuais.map(s => s.id).join(',');
+      itensAtuais = secaoIds ? await db.query('checklist_template_itens', `select=*&secao_id=in.(${secaoIds})&order=ordem.asc`) : [];
+
+      // Contar quantas vezes cada item já foi usado em checklists preenchidos (para proteger contra apagar histórico)
+      contagemUsoItens = {};
+      const itemIds = itensAtuais.map(i => i.id);
+      if (itemIds.length) {
+        const usados = await db.query('checklist_preenchidos_itens', `select=template_item_id&template_item_id=in.(${itemIds.join(',')})`);
+        usados.forEach(u => { contagemUsoItens[u.template_item_id] = (contagemUsoItens[u.template_item_id]||0) + 1; });
+      }
+
+      renderSecoes();
+    }
+
+    function renderSecoes() {
+      const container = document.getElementById('secoes-container');
+      if (!secoesAtuais.length) { container.innerHTML = '<p class="text-muted">Sem secções. Cria uma acima.</p>'; return; }
+
+      container.innerHTML = secoesAtuais.map(sec => {
+        const itensDaSecao = itensAtuais.filter(i => i.secao_id === sec.id);
+        return `<div class="secao-card">
+          <div class="secao-head">
+            <div class="secao-nome-txt">
+              <input type="text" value="${sec.nome_secao}" data-secao-id="${sec.id}" class="input-nome-secao" />
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost btn-sm" onclick="guardarNomeSecao(${sec.id})">Guardar Nome</button>
+              <button class="btn btn-danger btn-sm" onclick="apagarSecao(${sec.id})">Apagar Secção</button>
+            </div>
+          </div>
+          <div class="item-row" style="background:rgba(255,255,255,.02)">
+            <span class="col-header">Nº</span>
+            <span class="col-header">Descrição</span>
+            <span class="col-header">Ordem</span>
+            <span class="col-header">Ativo</span>
+            <span class="col-header" style="text-align:right">Ações</span>
+          </div>
+          ${itensDaSecao.map(it => {
+            const usos = contagemUsoItens[it.id] || 0;
+            return `<div class="item-row ${it.ativo===false?'inativo':''}" data-item-id="${it.id}">
+              <input type="number" class="item-numero" value="${it.numero_item ?? ''}" style="width:50px" />
+              <input type="text" class="item-desc-input" value="${(it.descricao||'').replace(/"/g,'&quot;')}" />
+              <input type="number" class="item-ordem" value="${it.ordem ?? 0}" style="width:70px" />
+              <label class="toggle-ativo">
+                <input type="checkbox" class="item-ativo-chk" ${it.ativo!==false?'checked':''} /> Visível
+              </label>
+              <div class="item-acoes">
+                ${usos>0 ? `<span class="badge-usado" title="Já respondido em ${usos} checklist(s)">${usos} uso(s)</span>` : ''}
+                <button class="btn btn-primary btn-sm" onclick="guardarItem(${it.id})">Guardar</button>
+                <button class="btn btn-danger btn-sm" onclick="apagarItem(${it.id}, ${usos})">Apagar</button>
+              </div>
+            </div>`;
+          }).join('')}
+          <div class="add-item-row">
+            <input type="number" placeholder="Nº" class="novo-item-numero" style="width:60px" data-secao="${sec.id}" />
+            <input type="text" placeholder="Descrição do novo item..." class="novo-item-desc" data-secao="${sec.id}" />
+            <button class="btn btn-ghost btn-sm" onclick="adicionarItem(${sec.id})">+ Adicionar Item</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function guardarNomeSecao(secaoId) {
+      const input = document.querySelector(`.input-nome-secao[data-secao-id="${secaoId}"]`);
+      await db.update('checklist_template_secoes', secaoId, { nome_secao: input.value.trim() });
+      mostrarToast('Nome da secção atualizado.');
+      await carregarTemplateCompleto(templateAtual.id);
+    }
+
+    async function apagarSecao(secaoId) {
+      const itensDaSecao = itensAtuais.filter(i => i.secao_id === secaoId);
+      const algumUsado = itensDaSecao.some(i => contagemUsoItens[i.id] > 0);
+      if (algumUsado) {
+        alert('Não é possível apagar: existem itens desta secção já respondidos em checklists preenchidos. Oculte os itens em vez de apagar.');
+        return;
+      }
+      if (!confirm('Apagar esta secção e todos os seus itens? Esta ação não pode ser desfeita.')) return;
+      await db.delete('checklist_template_secoes', secaoId);
+      await carregarTemplateCompleto(templateAtual.id);
+      mostrarToast('Secção apagada.');
+    }
+
+    async function guardarItem(itemId) {
+      const row = document.querySelector(`.item-row[data-item-id="${itemId}"]`);
+      const numero = row.querySelector('.item-numero').value;
+      const descricao = row.querySelector('.item-desc-input').value.trim();
+      const ordem = row.querySelector('.item-ordem').value;
+      const ativo = row.querySelector('.item-ativo-chk').checked;
+      if (!descricao) { alert('A descrição não pode ficar vazia.'); return; }
+      await db.update('checklist_template_itens', itemId, {
+        numero_item: numero ? parseInt(numero) : null,
+        descricao, ordem: parseInt(ordem) || 0, ativo,
+      });
+      mostrarToast('Item atualizado.');
+      await carregarTemplateCompleto(templateAtual.id);
+    }
+
+    async function apagarItem(itemId, usos) {
+      if (usos > 0) {
+        alert(`Este item já foi respondido em ${usos} checklist(s) preenchido(s). Para não perder esse histórico, desmarque "Visível" em vez de apagar.`);
+        return;
+      }
+      if (!confirm('Apagar este item definitivamente?')) return;
+      await db.delete('checklist_template_itens', itemId);
+      await carregarTemplateCompleto(templateAtual.id);
+      mostrarToast('Item apagado.');
+    }
+
+    async function adicionarItem(secaoId) {
+      const inputNum = document.querySelector(`.novo-item-numero[data-secao="${secaoId}"]`);
+      const inputDesc = document.querySelector(`.novo-item-desc[data-secao="${secaoId}"]`);
+      const descricao = inputDesc.value.trim();
+      if (!descricao) { alert('Escreve a descrição do item.'); return; }
+      const itensDaSecao = itensAtuais.filter(i => i.secao_id === secaoId);
+      const proximaOrdem = itensDaSecao.length ? Math.max(...itensDaSecao.map(i => i.ordem||0)) + 1 : 1;
+      await db.insert('checklist_template_itens', {
+        secao_id: secaoId,
+        numero_item: inputNum.value ? parseInt(inputNum.value) : null,
+        descricao, ordem: proximaOrdem, ativo: true,
+      });
+      await carregarTemplateCompleto(templateAtual.id);
+      mostrarToast('Item adicionado.');
+    }
+
+    document.getElementById('btn-nova-secao').addEventListener('click', async () => {
+      if (!templateAtual) return;
+      const nome = prompt('Nome da nova secção:');
+      if (!nome || !nome.trim()) return;
+      const proximaOrdem = secoesAtuais.length ? Math.max(...secoesAtuais.map(s => s.ordem||0)) + 1 : 1;
+      await db.insert('checklist_template_secoes', { template_id: templateAtual.id, nome_secao: nome.trim(), ordem: proximaOrdem });
+      await carregarTemplateCompleto(templateAtual.id);
+      mostrarToast('Secção criada.');
+    });
+
+    document.getElementById('btn-guardar-template').addEventListener('click', async () => {
+      if (!templateAtual) return;
+      await db.update('checklist_templates', templateAtual.id, {
+        nome: document.getElementById('tpl-nome').value.trim(),
+        ref_versao: document.getElementById('tpl-ref').value.trim(),
+        tipo: document.getElementById('tpl-tipo').value,
+        intervalo_horas: document.getElementById('tpl-intervalo-horas').value ? parseInt(document.getElementById('tpl-intervalo-horas').value) : null,
+        intervalo_label: document.getElementById('tpl-intervalo-label').value.trim() || null,
+        ativo: document.getElementById('tpl-ativo').checked,
+      });
+      mostrarToast('Dados do checklist guardados.');
+      await carregarTemplatesDaCategoria();
+    });
+
+    // ── Novo Template ──
+    const modalNovoTemplate = document.getElementById('modal-novo-template');
+    document.getElementById('btn-novo-template').addEventListener('click', () => {
+      document.getElementById('nt-nome').value = '';
+      document.getElementById('nt-intervalo-horas').value = '';
+      document.getElementById('nt-intervalo-label').value = '';
+      document.getElementById('nt-ref').value = 'Ref. 01';
+      modalNovoTemplate.classList.add('aberto');
+    });
+    document.getElementById('btn-cancelar-novo-template').addEventListener('click', () => modalNovoTemplate.classList.remove('aberto'));
+
+    document.getElementById('btn-confirmar-novo-template').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.disabled) return;
+      const categoria = document.getElementById('nt-categoria').value;
+      const nome = document.getElementById('nt-nome').value.trim();
+      if (!categoria || !nome) { alert('Categoria e Nome são obrigatórios.'); return; }
+
+      btn.disabled = true;
+      const textoOrig = btn.textContent;
+      btn.textContent = 'A criar...';
+      try {
+        const novo = await db.insert('checklist_templates', {
+          categoria_equipamento: categoria,
+          nome,
+          tipo: document.getElementById('nt-tipo').value,
+          intervalo_horas: document.getElementById('nt-intervalo-horas').value ? parseInt(document.getElementById('nt-intervalo-horas').value) : null,
+          intervalo_label: document.getElementById('nt-intervalo-label').value.trim() || null,
+          ref_versao: document.getElementById('nt-ref').value.trim() || 'Ref. 01',
+          ativo: true,
+        });
+        const novoId = Array.isArray(novo) ? novo[0].id : novo.id;
+        modalNovoTemplate.classList.remove('aberto');
+
+        // Seleciona automaticamente a categoria + template recém-criado
+        document.getElementById('sel-categoria').value = categoria;
+        await carregarTemplatesDaCategoria();
+        document.getElementById('sel-template').value = novoId;
+        await carregarTemplateCompleto(novoId);
+        mostrarToast('Checklist criado. Agora adiciona as secções e itens.');
+      } catch (err) {
+        alert('Erro ao criar checklist: ' + (err.message||err));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOrig;
+      }
+    });
+
+    (async function init() {
+      await carregarCategorias();
+    })();
+  </script>
+</body>
+</html>

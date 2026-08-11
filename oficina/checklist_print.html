@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <title>Checklist de Manutenção</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Calibri, sans-serif;
+      font-size: 10.5px;
+      background: #dcdcdc;
+      color: #1a1a1a;
+    }
+
+    .btn-bar { display: flex; justify-content: center; margin: 16px auto; }
+    .btn-print {
+      padding: 10px 30px; background: #0d5ca8; color: #fff; border: none;
+      border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;
+      font-family: Arial, sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    .folha {
+      width: 210mm; margin: 0 auto 40px; background: #fff;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.3); padding: 12mm 14mm;
+    }
+
+    .ck-cabecalho {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-bottom: 10px; border-bottom: 2px solid #0d5ca8; margin-bottom: 12px;
+    }
+    .ck-cabecalho img { height: 44px; }
+    .ck-cab-titulo { text-align: center; }
+    .ck-doc-tipo { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: #0d5ca8; font-weight: bold; }
+    .ck-doc-nome { font-size: 15px; font-weight: bold; margin-top: 2px; }
+    .ck-ref { font-size: 9px; text-align: right; color: #555; font-weight: bold; }
+
+    .ck-titles-linha { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px; }
+    .ck-titles-linha .esq { font-weight: bold; }
+    .ck-titles-linha .dir { color: #555; }
+
+    .ck-fields { border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px; overflow: hidden; }
+    .ck-fields div {
+      display: flex; justify-content: space-between; padding: 5px 10px;
+      border-bottom: 1px solid #eee; font-size: 10.5px;
+    }
+    .ck-fields div:last-child { border-bottom: none; }
+    .ck-fields span:first-child { color: #666; }
+    .ck-fields span:last-child { font-weight: bold; }
+
+    .ck-intervalo {
+      text-align: center; font-weight: bold; font-size: 11px; margin-bottom: 10px;
+      border: 1px solid #0d5ca8; padding: 5px; background: #eaf2fb; color: #0d5ca8; border-radius: 4px;
+    }
+
+    table.ck-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 12px; }
+    table.ck-table th {
+      border: 1px solid #999; background: #0d5ca8; color: #fff; padding: 4px;
+      font-size: 8px; text-transform: uppercase; font-family: Arial, sans-serif;
+      table.ck-table th.grupo-header { background: #094a8a; font-size: 7.5px; letter-spacing: .5px; }
+      table.ck-table th.grupo-vazio { background: #0d5ca8; }
+    }
+    table.ck-table td { border: 1px solid #ccc; padding: 4px 6px; vertical-align: top; }
+    .ck-secao-row td { background: #eaf2fb; font-weight: bold; font-size: 9.5px; color: #0d5ca8; }
+    .ck-check { text-align: center; width: 32px; font-weight: bold; }
+
+    .ck-comentarios {
+      border: 1px solid #ccc; border-radius: 4px; padding: 8px 10px; font-size: 10px;
+      min-height: 44px; margin-bottom: 14px;
+    }
+    .ck-comentarios .lbl { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #666; font-weight: bold; margin-bottom: 3px; }
+
+    .ck-assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 20px; }
+    .ck-ass-box { border-top: 1px solid #999; padding-top: 10px; font-size: 10px; min-height: 70px; }
+    .ck-ass-box .assinatura-slot { height: 44px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 6px; }
+    .ck-ass-box .assinatura-slot img { max-height: 42px; max-width: 90%; object-fit: contain; }
+    .ck-ass-box .cargo { font-weight: bold; text-align: center; }
+    .ck-ass-box .info { color: #555; margin-top: 2px; text-align: center; }
+
+    @media print {
+      body { background: #fff; }
+      .btn-bar { display: none !important; }
+      .folha { width: 100%; margin: 0; box-shadow: none; }
+      @page { size: A4; margin: 10mm; }
+      table.ck-table tr { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="btn-bar">
+  <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+</div>
+
+<div class="folha">
+  <div class="ck-cabecalho">
+    <img src="CORNELDER.png" alt="Cornelder de Moçambique" />
+    <div class="ck-cab-titulo">
+      <div class="ck-doc-tipo">Documento de Manutenção</div>
+      <div class="ck-doc-nome" id="ck-nome-doc">—</div>
+    </div>
+    <div class="ck-ref" id="ck-ref">—</div>
+  </div>
+
+  <div class="ck-titles-linha">
+    <div class="esq" id="ck-categoria-tipo">—</div>
+    <div class="dir">Gabinete técnico</div>
+  </div>
+
+  <div class="ck-fields">
+    <div><span>Número da obra</span><span id="f-numero-obra">—</span></div>
+    <div><span>Horas do equipamento</span><span id="f-horas-equip">—</span></div>
+    <div><span>Data de revisão</span><span id="f-data-revisao">—</span></div>
+    <div><span>Horas de trabalho</span><span id="f-horas-trabalho">—</span></div>
+    <div><span>Folha número</span><span id="f-folha">—</span></div>
+  </div>
+
+  <div class="ck-intervalo" id="ck-intervalo-box" style="display:none"></div>
+
+  <table class="ck-table">
+    <thead>
+      <tr id="ck-thead-grupo"></tr>
+      <tr id="ck-thead-row"></tr>
+    </thead>
+    <tbody id="ck-tbody"></tbody>
+  </table>
+
+  <div class="ck-comentarios">
+    <div class="lbl">Informações Complementares</div>
+    <div id="f-comentarios">—</div>
+  </div>
+
+  <div class="ck-assinaturas">
+    <div class="ck-ass-box">
+      <div class="assinatura-slot" id="slot-executante"></div>
+      <div class="cargo">Executante</div>
+      <div class="info" id="f-executante">—</div>
+    </div>
+    <div class="ck-ass-box">
+      <div class="assinatura-slot" id="slot-encarregado"></div>
+      <div class="cargo">Encarregado</div>
+      <div class="info" id="f-encarregado">—</div>
+    </div>
+  </div>
+</div>
+
+<script src="supabase.js"></script>
+<script src="utils.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const checklistId = params.get('id');
+  if (!checklistId) { alert('Checklist não especificado.'); window.location.href = 'ordens.html'; }
+
+  function fData(str) {
+    if (!str) return '—';
+    const d = new Date(str);
+    return d.toLocaleDateString('pt-PT', { day:'2-digit', month:'2-digit', year:'numeric' });
+  }
+
+  async function carregar() {
+    const ckList = await db.query('checklist_preenchidos', `select=*&id=eq.${checklistId}`);
+    const ck = ckList[0];
+    if (!ck) { alert('Checklist não encontrado.'); return; }
+
+    const tplList = await db.query('checklist_templates', `select=*&id=eq.${ck.template_id}`);
+    const tpl = tplList[0];
+    if (!tpl) return;
+
+    const isDiario = tpl.tipo === 'diario';
+    const tituloTipo = tpl.tipo === 'eletrica' ? 'REVISÃO - Eléctrica'
+      : tpl.tipo === 'mecanica' ? 'REVISÃO - Mecânica' : 'CHECK LIST DIARIO';
+
+    document.getElementById('ck-nome-doc').textContent = tpl.nome;
+    document.getElementById('ck-ref').textContent = tpl.ref_versao || '';
+    document.getElementById('ck-categoria-tipo').textContent = `${tpl.categoria_equipamento} — ${tituloTipo}`;
+
+    document.getElementById('f-numero-obra').textContent   = ck.numero_obra || '—';
+    document.getElementById('f-horas-equip').textContent   = ck.horas_equipamento != null ? ck.horas_equipamento + ' h' : '—';
+    document.getElementById('f-data-revisao').textContent  = fData(ck.data_revisao);
+    document.getElementById('f-horas-trabalho').textContent = ck.horas_trabalho != null ? ck.horas_trabalho + ' h' : '—';
+    document.getElementById('f-folha').textContent         = ck.folha_numero || '—';
+    document.getElementById('f-comentarios').textContent   = ck.observacoes_gerais || '—';
+    document.getElementById('f-executante').textContent    = ck.executante ? `${ck.executante} — ${ck.executante_data ? fData(ck.executante_data) : '___/___/___'}` : '—';
+    document.getElementById('f-encarregado').textContent   = ck.encarregado ? `${ck.encarregado} — ${ck.encarregado_data ? fData(ck.encarregado_data) : '___/___/___'}` : '—';
+
+    // Tenta carregar assinatura digital (bucket "assinaturas" no Supabase Storage, nome = code.png)
+    const colabsList = await db.query('collaborators', 'select=name,code');
+    function tentarAssinatura(nome, slotId) {
+      if (!nome) return;
+      const colab = colabsList.find(c => c.name === nome);
+      if (!colab || !colab.code) return;
+      const url = `https://czgnbzxoeylicrqjvncd.supabase.co/storage/v1/object/public/assinaturas/${colab.code}.png`;
+      const img = new Image();
+      img.onload = () => { document.getElementById(slotId).innerHTML = `<img src="${url}" alt="Assinatura" />`; };
+      img.onerror = () => {}; // não existe ainda — mantém espaço em branco para assinar à mão
+      img.src = url;
+    }
+    tentarAssinatura(ck.executante, 'slot-executante');
+    tentarAssinatura(ck.encarregado, 'slot-encarregado');
+    if (!isDiario && tpl.intervalo_label) {
+      const box = document.getElementById('ck-intervalo-box');
+      box.style.display = 'block';
+      box.textContent = tpl.intervalo_label;
+    }
+
+    document.getElementById('ck-thead-grupo').innerHTML = isDiario
+      ? `<th class="grupo-vazio" rowspan="2">Item</th><th class="grupo-vazio" rowspan="2">Descrição do trabalho</th><th class="grupo-header" colspan="2">Estado</th>`
+      : `<th class="grupo-vazio" rowspan="2">Item</th><th class="grupo-vazio" rowspan="2">Descrição do trabalho</th><th class="grupo-header" colspan="2">Executado</th><th class="grupo-header" colspan="2">Estado</th><th class="grupo-vazio" rowspan="2">Observações</th>`;
+
+    document.getElementById('ck-thead-row').innerHTML = isDiario
+      ? `<th>Bom</th><th>Danificado</th>`
+      : `<th>Sim</th><th>Não</th><th>Bom</th><th>Danificado</th>`;
+
+    const secoes = await db.query('checklist_template_secoes', `select=*&template_id=eq.${ck.template_id}&order=ordem.asc`);
+    const secaoIds = secoes.map(s => s.id).join(',');
+    const itensTpl = secaoIds ? await db.query('checklist_template_itens', `select=*&secao_id=in.(${secaoIds})&order=ordem.asc`) : [];
+    const respostas = await db.query('checklist_preenchidos_itens', `select=*&checklist_id=eq.${checklistId}`);
+    const mapaResp = {};
+    respostas.forEach(r => mapaResp[r.template_item_id] = r);
+
+    let html = '';
+    secoes.forEach(sec => {
+      html += `<tr class="ck-secao-row"><td colspan="${isDiario?4:7}">${sec.nome_secao}</td></tr>`;
+      itensTpl.filter(it => it.secao_id === sec.id).forEach(it => {
+        const r = mapaResp[it.id] || {};
+        if (isDiario) {
+          html += `<tr>
+            <td class="ck-check">${it.numero_item ?? ''}</td>
+            <td>${it.descricao}</td>
+            <td class="ck-check">${r.estado==='bom'?'✓':''}</td>
+            <td class="ck-check">${r.estado==='danificado'?'✓':''}</td>
+          </tr>`;
+        } else {
+          html += `<tr>
+            <td class="ck-check">${it.numero_item ?? ''}</td>
+            <td>${it.descricao}</td>
+            <td class="ck-check">${r.executado==='sim'?'✓':''}</td>
+            <td class="ck-check">${r.executado==='nao'?'✓':''}</td>
+            <td class="ck-check">${r.estado==='bom'?'✓':''}</td>
+            <td class="ck-check">${r.estado==='danificado'?'✓':''}</td>
+            <td style="font-size:8.5px">${r.observacao||''}</td>
+          </tr>`;
+        }
+      });
+    });
+    document.getElementById('ck-tbody').innerHTML = html;
+  }
+
+  carregar();
+</script>
+</body>
+</html>

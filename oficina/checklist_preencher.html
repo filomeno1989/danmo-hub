@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checklist de Manutenção — Danmo Oficina</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .ck-header {
+      background: linear-gradient(135deg, var(--navy2), var(--navy3));
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px 24px; margin-bottom: 20px;
+    }
+    .ck-header-top { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; }
+    .ck-title { font-size:20px; font-weight:700; }
+    .ck-sub { font-size:13px; color:var(--text2); margin-top:2px; }
+    .ck-ref-badge {
+      background: rgba(245,158,11,0.15); color: var(--amber);
+      font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;
+      text-transform:uppercase; letter-spacing:.5px;
+    }
+    .ck-progress-wrap { margin-top:16px; }
+    .ck-progress-label { display:flex; justify-content:space-between; font-size:12px; color:var(--text2); margin-bottom:6px; }
+    .ck-progress-bar-bg { height:10px; background:rgba(255,255,255,0.08); border-radius:6px; overflow:hidden; }
+    .ck-progress-bar-fill { height:100%; background:linear-gradient(90deg,var(--amber),#fbbf24); border-radius:6px; transition:width .4s ease; }
+
+    .ck-legenda { display:flex; gap:16px; font-size:11px; color:var(--text2); margin-top:12px; margin-bottom:4px; flex-wrap:wrap; }
+
+    .ck-dados-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-top:16px; }
+    .ck-dados-form .form-group { margin:0; }
+    .ck-dados-form label { font-size:10px; }
+    .ck-dados-form input:disabled { opacity:.6; cursor:not-allowed; }
+
+    .secao-card {
+      background: var(--navy2); border: 1px solid var(--border); border-radius: var(--radius);
+      margin-bottom: 12px; overflow: hidden;
+    }
+    .secao-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 18px; cursor:pointer; user-select:none;
+      transition: background .15s;
+    }
+    .secao-header:hover { background: rgba(255,255,255,0.02); }
+    .secao-nome { font-size:14px; font-weight:600; display:flex; align-items:center; gap:10px; }
+    .secao-count { font-size:11px; padding:2px 9px; border-radius:20px; font-weight:700; }
+    .secao-count.completa { background:rgba(34,197,94,.15); color:var(--green); }
+    .secao-count.parcial { background:rgba(245,158,11,.15); color:var(--amber); }
+    .secao-count.vazia { background:rgba(255,255,255,.06); color:var(--text2); }
+    .secao-chevron { transition: transform .2s; color:var(--text2); }
+    .secao-chevron.aberto { transform: rotate(180deg); }
+    .secao-body { display:none; padding: 0 18px 16px; }
+    .secao-body.aberto { display:block; }
+
+    .item-row {
+      display:grid; grid-template-columns: 32px 1fr auto; align-items:center;
+      gap:14px; padding:12px 0; border-top:1px solid var(--border);
+    }
+    .item-row:first-child { border-top:none; }
+    .item-num {
+      width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.06);
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:700; color:var(--text2); flex-shrink:0;
+    }
+    .item-desc { font-size:13px; line-height:1.4; }
+    .item-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+
+    .toggle-group { display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    .toggle-btn {
+      padding:6px 14px; font-size:12px; font-weight:600; background:var(--navy3);
+      color:var(--text2); border:none; cursor:pointer; transition:all .15s;
+    }
+    .toggle-btn + .toggle-btn { border-left:1px solid var(--border); }
+    .toggle-btn.ativo-sim { background:rgba(34,197,94,.2); color:var(--green); }
+    .toggle-btn.ativo-nao { background:rgba(239,68,68,.2); color:var(--red); }
+    .toggle-btn.ativo-bom { background:rgba(34,197,94,.2); color:var(--green); }
+    .toggle-btn.ativo-danificado { background:rgba(239,68,68,.2); color:var(--red); }
+
+    .obs-btn {
+      width:30px; height:30px; border-radius:6px; border:1px solid var(--border);
+      background:var(--navy3); color:var(--text2); cursor:pointer; font-size:13px;
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .obs-btn.tem-obs { border-color:var(--amber); color:var(--amber); }
+    .obs-wrap { grid-column:1/-1; margin-top:8px; display:none; }
+    .obs-wrap.aberto { display:block; }
+    .obs-wrap textarea { width:100%; font-size:12px; }
+
+    .save-flash {
+      position:fixed; bottom:24px; right:24px; background:var(--green); color:#0a1f0f;
+      padding:10px 18px; border-radius:8px; font-size:13px; font-weight:600;
+      opacity:0; transform:translateY(10px); transition:all .25s; pointer-events:none;
+      box-shadow: var(--shadow);
+    }
+    .save-flash.show { opacity:1; transform:translateY(0); }
+  </style>
+</head>
+<body>
+  <div id="navbar" class="navbar"></div>
+
+  <main class="main">
+    <div class="flex-between mt-16">
+      <h1 class="page-title" style="margin-bottom:0">Checklist de Manutenção</h1>
+      <a href="#" id="btn-voltar-os" class="btn btn-ghost">← Voltar à Obra</a>
+    </div>
+
+    <div class="ck-header mt-16">
+      <div class="ck-header-top">
+        <div>
+          <div class="ck-title" id="ck-titulo">—</div>
+          <div class="ck-sub" id="ck-subtitulo">—</div>
+        </div>
+        <span class="ck-ref-badge" id="ck-ref">—</span>
+      </div>
+
+      <div class="ck-progress-wrap">
+        <div class="ck-progress-label">
+          <span>Progresso do preenchimento</span>
+          <span id="ck-progress-texto">0 / 0 itens</span>
+        </div>
+        <div class="ck-progress-bar-bg">
+          <div class="ck-progress-bar-fill" id="ck-progress-bar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="ck-legenda">
+        <span><strong style="color:var(--green)">Sim / Não</strong> — o item foi executado?</span>
+        <span><strong style="color:var(--amber)">Bom / Danificado</strong> — estado encontrado</span>
+      </div>
+
+      <div class="ck-dados-form">
+        <div class="form-group">
+          <label>Nº Obra <span style="color:var(--text2);font-weight:400">(da OS)</span></label>
+          <input type="text" id="d-numero-obra-info" disabled />
+        </div>
+        <div class="form-group">
+          <label>Horas Equip. <span style="color:var(--text2);font-weight:400">(da OS)</span></label>
+          <input type="text" id="d-horas-equip-info" disabled />
+        </div>
+        <div class="form-group">
+          <label>Data da Revisão</label>
+          <input type="date" id="d-data-revisao" />
+        </div>
+        <div class="form-group">
+          <label>Horas de Trabalho</label>
+          <input type="number" step="0.1" id="d-horas-trabalho" />
+        </div>
+        <div class="form-group">
+          <label>Folha Nº</label>
+          <input type="text" id="d-folha" />
+        </div>
+        <div class="form-group">
+          <label>Executante</label>
+          <select id="d-executante"><option value="">— Selecionar —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Encarregado</label>
+          <select id="d-encarregado"><option value="">— Selecionar —</option></select>
+        </div>
+        <div class="form-group" style="align-self:flex-end">
+          <button class="btn btn-primary btn-sm" id="btn-guardar-cabecalho">Guardar Dados</button>
+        </div>
+      </div>
+
+      <div class="form-group mt-16">
+        <label>Comentários Adicionais</label>
+        <textarea id="d-comentarios" rows="3" placeholder="Observações gerais sobre a revisão, para colegas que não acompanharam o trabalho..."></textarea>
+      </div>
+    </div>
+
+    <div id="secoes-container">
+      <div class="card"><p class="text-muted">A carregar checklist...</p></div>
+    </div>
+  </main>
+
+  <div class="save-flash" id="save-flash">✓ Guardado</div>
+
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="utils.js"></script>
+  <script src="tema.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    renderNavbarOficina('ordens');
+
+    const params = new URLSearchParams(window.location.search);
+    const checklistId = params.get('id');
+    if (!checklistId) { alert('Checklist não especificado.'); window.location.href = 'ordens.html'; }
+
+    let checklistAtual = null, templateAtual = null, osRelacionada = null, equipRelacionado = null;
+    let itensPreenchidos = [];
+    let templateItensMap = {};
+    let colaboradores = [];
+
+    function mostrarFlash() {
+      const el = document.getElementById('save-flash');
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 1200);
+    }
+
+    async function carregarColaboradores() {
+      colaboradores = await db.query('collaborators', 'select=id,name,code&active=eq.true&order=name.asc');
+      ['d-executante','d-encarregado'].forEach(id => {
+        const sel = document.getElementById(id);
+        colaboradores.forEach(c => sel.insertAdjacentHTML('beforeend',
+          `<option value="${c.name}">${c.name}${c.code?' ('+c.code+')':''}</option>`));
+      });
+    }
+
+    async function carregarTudo() {
+      const ckList = await db.query('checklist_preenchidos', `select=*&id=eq.${checklistId}`);
+      checklistAtual = ckList[0];
+      if (!checklistAtual) { alert('Checklist não encontrado.'); return; }
+
+      const [tplList, osList, eqList, secoes] = await Promise.all([
+        db.query('checklist_templates', `select=*&id=eq.${checklistAtual.template_id}`),
+        checklistAtual.os_id ? db.query('ordens_servico', `select=*&id=eq.${checklistAtual.os_id}`) : Promise.resolve([]),
+        checklistAtual.equipment_id ? db.query('equipment', `select=*&id=eq.${checklistAtual.equipment_id}`) : Promise.resolve([]),
+        db.query('checklist_template_secoes', `select=*&template_id=eq.${checklistAtual.template_id}&order=ordem.asc`),
+      ]);
+
+      templateAtual = tplList[0];
+      osRelacionada = osList[0];
+      equipRelacionado = eqList[0];
+
+      if (checklistAtual.os_id) document.getElementById('btn-voltar-os').href = `os_detalhe.html?id=${checklistAtual.os_id}`;
+
+      document.getElementById('ck-titulo').textContent = templateAtual ? templateAtual.nome : '—';
+      document.getElementById('ck-subtitulo').textContent =
+        `${equipRelacionado ? equipRelacionado.code : ''} — Obra ${osRelacionada ? (osRelacionada.numero_obra || 'S/Nº') : '—'}`;
+      document.getElementById('ck-ref').textContent = templateAtual ? templateAtual.ref_versao : '—';
+
+      document.getElementById('d-numero-obra-info').value = checklistAtual.numero_obra || '—';
+      document.getElementById('d-horas-equip-info').value = checklistAtual.horas_equipamento != null ? checklistAtual.horas_equipamento + ' h' : '—';
+      document.getElementById('d-data-revisao').value    = checklistAtual.data_revisao || '';
+      document.getElementById('d-horas-trabalho').value  = checklistAtual.horas_trabalho || '';
+      document.getElementById('d-folha').value           = checklistAtual.folha_numero || '';
+      document.getElementById('d-executante').value      = checklistAtual.executante || '';
+      document.getElementById('d-encarregado').value     = checklistAtual.encarregado || '';
+      document.getElementById('d-comentarios').value     = checklistAtual.observacoes_gerais || '';
+
+      const secaoIds = secoes.map(s => s.id).join(',');
+      const [itensTemplate, itensResp] = await Promise.all([
+        secaoIds ? db.query('checklist_template_itens', `select=*&secao_id=in.(${secaoIds})&order=ordem.asc`) : Promise.resolve([]),
+        db.query('checklist_preenchidos_itens', `select=*&checklist_id=eq.${checklistId}`),
+      ]);
+
+      itensTemplate.forEach(it => templateItensMap[it.id] = it);
+      itensPreenchidos = itensResp;
+
+      renderSecoes(secoes, itensTemplate);
+      atualizarProgresso();
+    }
+
+    function renderSecoes(secoes, itensTemplate) {
+      const container = document.getElementById('secoes-container');
+      if (!secoes.length) { container.innerHTML = '<div class="card"><p class="text-muted">Este checklist não tem itens.</p></div>'; return; }
+
+      container.innerHTML = secoes.map((sec) => {
+        const itensDaSecao = itensTemplate.filter(it => it.secao_id === sec.id);
+        const respostasSecao = itensDaSecao.map(it => itensPreenchidos.find(p => p.template_item_id === it.id)).filter(Boolean);
+        const preenchidosCount = respostasSecao.filter(r => r.executado || r.estado).length;
+        const totalCount = itensDaSecao.length;
+        const statusClass = preenchidosCount === 0 ? 'vazia' : (preenchidosCount === totalCount ? 'completa' : 'parcial');
+
+        return `<div class="secao-card">
+          <div class="secao-header" onclick="toggleSecao(${sec.id})">
+            <div class="secao-nome">
+              ${sec.nome_secao}
+              <span class="secao-count ${statusClass}" id="count-${sec.id}">${preenchidosCount}/${totalCount}</span>
+            </div>
+            <span class="secao-chevron" id="chev-${sec.id}">▾</span>
+          </div>
+          <div class="secao-body" id="body-${sec.id}">
+            ${itensDaSecao.map(it => renderItem(it, templateAtual.tipo)).join('')}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderItem(item, tipoTemplate) {
+      const resposta = itensPreenchidos.find(p => p.template_item_id === item.id) || {};
+      const temExecutado = tipoTemplate !== 'diario';
+      const obsPreenchida = resposta.observacao && resposta.observacao.trim() !== '';
+
+      return `<div class="item-row" data-item-id="${item.id}">
+        <div class="item-num">${item.numero_item ?? ''}</div>
+        <div class="item-desc">${item.descricao}</div>
+        <div class="item-controls">
+          ${temExecutado ? `
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn ${resposta.executado==='sim'?'ativo-sim':''}" onclick="setExecutado(${item.id},'sim')">Sim</button>
+            <button type="button" class="toggle-btn ${resposta.executado==='nao'?'ativo-nao':''}" onclick="setExecutado(${item.id},'nao')">Não</button>
+          </div>` : ''}
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn ${resposta.estado==='bom'?'ativo-bom':''}" onclick="setEstado(${item.id},'bom')">Bom</button>
+            <button type="button" class="toggle-btn ${resposta.estado==='danificado'?'ativo-danificado':''}" onclick="setEstado(${item.id},'danificado')">Danificado</button>
+          </div>
+          <button type="button" class="obs-btn ${obsPreenchida?'tem-obs':''}" onclick="toggleObs(${item.id})" title="Observação">📝</button>
+        </div>
+        <div class="obs-wrap ${obsPreenchida?'aberto':''}" id="obs-wrap-${item.id}">
+          <textarea rows="2" placeholder="Observação (opcional)" onblur="salvarObservacao(${item.id}, this.value)">${resposta.observacao||''}</textarea>
+        </div>
+      </div>`;
+    }
+
+    function toggleSecao(secaoId) {
+      document.getElementById('body-'+secaoId).classList.toggle('aberto');
+      document.getElementById('chev-'+secaoId).classList.toggle('aberto');
+    }
+
+    function toggleObs(itemId) {
+      document.getElementById('obs-wrap-'+itemId).classList.toggle('aberto');
+    }
+
+    async function garantirRegisto(itemId) {
+      let r = itensPreenchidos.find(p => p.template_item_id === itemId);
+      if (r) return r;
+      const novo = await db.insert('checklist_preenchidos_itens', { checklist_id: parseInt(checklistId), template_item_id: itemId });
+      r = Array.isArray(novo) ? novo[0] : novo;
+      itensPreenchidos.push(r);
+      return r;
+    }
+
+    async function setExecutado(itemId, valor) {
+      const r = await garantirRegisto(itemId);
+      const novoValor = r.executado === valor ? null : valor;
+      await db.update('checklist_preenchidos_itens', r.id, { executado: novoValor });
+      r.executado = novoValor;
+      atualizarBotoesItem(itemId);
+      atualizarProgresso();
+      mostrarFlash();
+    }
+
+    async function setEstado(itemId, valor) {
+      const r = await garantirRegisto(itemId);
+      const novoValor = r.estado === valor ? null : valor;
+      await db.update('checklist_preenchidos_itens', r.id, { estado: novoValor });
+      r.estado = novoValor;
+      atualizarBotoesItem(itemId);
+      atualizarProgresso();
+      mostrarFlash();
+    }
+
+    async function salvarObservacao(itemId, texto) {
+      const r = await garantirRegisto(itemId);
+      await db.update('checklist_preenchidos_itens', r.id, { observacao: texto.trim() || null });
+      r.observacao = texto.trim();
+      const btn = document.querySelector(`.item-row[data-item-id="${itemId}"] .obs-btn`);
+      if (btn) btn.classList.toggle('tem-obs', texto.trim() !== '');
+      mostrarFlash();
+    }
+
+    function atualizarBotoesItem(itemId) {
+      const r = itensPreenchidos.find(p => p.template_item_id === itemId);
+      const row = document.querySelector(`.item-row[data-item-id="${itemId}"]`);
+      if (!row || !r) return;
+      row.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('ativo-sim','ativo-nao','ativo-bom','ativo-danificado'));
+      const btns = row.querySelectorAll('.toggle-btn');
+      btns.forEach(b => {
+        const txt = b.textContent.trim();
+        if (txt === 'Sim' && r.executado === 'sim') b.classList.add('ativo-sim');
+        if (txt === 'Não' && r.executado === 'nao') b.classList.add('ativo-nao');
+        if (txt === 'Bom' && r.estado === 'bom') b.classList.add('ativo-bom');
+        if (txt === 'Danificado' && r.estado === 'danificado') b.classList.add('ativo-danificado');
+      });
+    }
+
+    function atualizarProgresso() {
+      const total = itensPreenchidos.length;
+      const feitos = itensPreenchidos.filter(i => i.executado || i.estado).length;
+      document.getElementById('ck-progress-texto').textContent = `${feitos} / ${total} itens`;
+      document.getElementById('ck-progress-bar').style.width = total ? (feitos/total*100)+'%' : '0%';
+
+      document.querySelectorAll('[id^="count-"]').forEach(el => {
+        const secaoId = el.id.replace('count-','');
+        const itensDaSecao = Object.values(templateItensMap).filter(it => String(it.secao_id) === secaoId);
+        const respostas = itensDaSecao.map(it => itensPreenchidos.find(p => p.template_item_id === it.id)).filter(Boolean);
+        const feitosSecao = respostas.filter(r => r.executado || r.estado).length;
+        el.textContent = `${feitosSecao}/${itensDaSecao.length}`;
+        el.className = 'secao-count ' + (feitosSecao===0?'vazia':(feitosSecao===itensDaSecao.length?'completa':'parcial'));
+      });
+    }
+
+    document.getElementById('btn-guardar-cabecalho').addEventListener('click', async () => {
+      const payload = {
+        observacoes_gerais: document.getElementById('d-comentarios').value.trim() || null,
+        data_revisao: document.getElementById('d-data-revisao').value || null,
+        horas_trabalho: parseFloat(document.getElementById('d-horas-trabalho').value) || null,
+        folha_numero: document.getElementById('d-folha').value.trim() || null,
+        executante: document.getElementById('d-executante').value || null,
+        executante_data: document.getElementById('d-executante').value ? dataHoje() : null,
+        encarregado: document.getElementById('d-encarregado').value || null,
+        encarregado_data: document.getElementById('d-encarregado').value ? dataHoje() : null,
+      };
+      await db.update('checklist_preenchidos', checklistId, payload);
+      mostrarToast('Dados do checklist guardados.');
+    });
+
+    (async function init() {
+      await Promise.all([carregarColaboradores(), carregarTudo()]);
+    })();
+  </script>
+</body>
+</html>

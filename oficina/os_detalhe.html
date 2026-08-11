@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Detalhe da Obra — Danmo Oficina</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .timeline { list-style:none; margin-top:8px; }
+    .timeline li { padding:10px 14px; border-left:3px solid var(--amber); margin-bottom:8px; border-radius:0 6px 6px 0; background:rgba(255,255,255,0.03); font-size:14px; }
+    .timeline .meta { color:var(--text2); font-size:12px; margin-top:2px; }
+    .timeline-fisico li { border-left-color: var(--blue); }
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:200; }
+    .modal-overlay.aberto { display:flex; }
+    .modal-box { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:520px; box-shadow:var(--shadow); max-height:90vh; overflow-y:auto; }
+    .info-box { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:12px; font-size:14px; }
+    .info-box .label { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .tipo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:6px; margin-top:8px; }
+    .tipo-grid label { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:normal; text-transform:none; cursor:pointer; color:var(--text); }
+    .tipo-grid input[type=checkbox] { width:auto; }
+    .chips-wrap { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+    .chip { background:rgba(245,158,11,0.15); color:var(--amber); border-radius:20px; padding:2px 10px; font-size:12px; }
+    .chip-tech { background:rgba(59,130,246,0.15); color:var(--blue); border-radius:20px; padding:3px 10px 3px 12px; font-size:12px; display:flex; align-items:center; gap:6px; }
+    .chip-tech button { background:none; border:none; color:var(--blue); cursor:pointer; font-size:14px; line-height:1; padding:0; }
+    .tecnicos-stack { display:flex; flex-direction:column; gap:2px; }
+    .tecnicos-stack span { font-size:12px; }
+    .tech-search-wrap { position:relative; }
+    .tech-dropdown {
+      position:absolute; top:100%; left:0; right:0; background:var(--navy3);
+      border:1px solid var(--border); border-radius:6px; z-index:50;
+      max-height:180px; overflow-y:auto; display:none; margin-top:2px;
+    }
+    .tech-dropdown.open { display:block; }
+    .tech-option { padding:8px 12px; font-size:13px; cursor:pointer; }
+    .tech-option:hover { background:var(--navy2); }
+    .edit-btn { padding:2px 10px; font-size:11px; }
+    .modo-badge {
+      font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+      padding:3px 10px; border-radius:20px; background:rgba(59,130,246,.15); color:var(--blue);
+      display:inline-block; margin-bottom:12px;
+    }
+    .trocas-list { list-style:none; margin-top:10px; }
+    .trocas-list li {
+      font-size:12px; padding:8px 10px; border-left:3px solid var(--text2);
+      background:rgba(255,255,255,0.03); border-radius:0 6px 6px 0; margin-bottom:6px;
+    }
+    .trocas-list .meta { color:var(--text2); font-size:11px; margin-top:2px; }
+    .unidade-select { width:110px; flex-shrink:0; }
+    .peca-linha { display:flex; gap:8px; }
+    .peca-linha input:first-child { flex:1; }
+  </style>
+</head>
+<body>
+  <div id="navbar" class="navbar"></div>
+  <main class="main">
+    <div class="flex-between mt-16">
+      <h1 class="page-title" style="margin-bottom:0" id="titulo-os">Obra —</h1>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="window.open('os_print.html?id='+new URLSearchParams(location.search).get('id'))">🖨️ Imprimir Folha</button>
+        <a href="ordens.html" class="btn btn-ghost">← Voltar</a>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid mt-24">
+      <div class="kpi-card"><div class="kpi-label">Equipamento</div><div class="kpi-value" id="info-equip" style="font-size:18px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Categoria</div><div class="kpi-value" id="info-categoria" style="font-size:18px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Sector</div><div class="kpi-value" id="info-sector" style="font-size:18px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Abertura</div><div class="kpi-value" id="info-abertura" style="font-size:18px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Fecho</div><div class="kpi-value" id="info-fecho" style="font-size:18px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Contador</div><div class="kpi-value" id="info-horimetro" style="font-size:18px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Estado Físico</div><div class="kpi-value" id="info-fisico" style="font-size:15px">—</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Estado da Obra</div><div class="kpi-value" id="info-workflow" style="font-size:15px">—</div></div>
+    </div>
+
+    <!-- Info da OS -->
+    <div class="card">
+      <div class="info-box">
+        <div class="flex-between" style="margin-bottom:4px">
+          <div class="label" style="margin-bottom:0">Avaria / Motivo de entrada</div>
+          <button class="btn btn-ghost edit-btn" id="btn-editar-avaria">Editar</button>
+        </div>
+        <div id="info-avaria">—</div>
+        <div id="edit-avaria-wrap" style="display:none;margin-top:8px">
+          <textarea id="edit-avaria-txt" rows="3" style="width:100%"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" id="btn-cancelar-avaria">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btn-guardar-avaria">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <div class="flex-between" style="margin-bottom:4px">
+          <div class="label" style="margin-bottom:0">Equipamento, Data e Contador</div>
+          <button class="btn btn-ghost edit-btn" id="btn-editar-dados-base">Editar</button>
+        </div>
+        <div id="info-dados-base">—</div>
+        <div id="edit-dados-base-wrap" style="display:none;margin-top:8px">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Equipamento</label>
+              <select id="edit-equipamento"></select>
+            </div>
+            <div class="form-group">
+              <label>Data de Abertura</label>
+              <input type="date" id="edit-data-abertura" />
+            </div>
+            <div class="form-group">
+              <label>Contador do Equipamento</label>
+              <div style="display:flex;gap:8px">
+                <input type="number" id="edit-horimetro" min="0" step="0.1" style="flex:1" />
+                <select id="edit-unidade-medida" style="width:90px;flex-shrink:0">
+                  <option value="h">h</option>
+                  <option value="km">km</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" id="btn-cancelar-dados-base">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btn-guardar-dados-base">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <div class="flex-between" style="margin-bottom:4px">
+          <div class="label" style="margin-bottom:0">Tipo de Intervenção</div>
+          <button class="btn btn-ghost edit-btn" id="btn-editar-tipo">Adicionar / Editar</button>
+        </div>
+        <div class="chips-wrap" id="info-tipo-chips"><span class="text-muted" style="font-size:12px">Nenhum tipo definido.</span></div>
+        <div id="edit-tipo-wrap" style="display:none;margin-top:10px">
+          <div class="tipo-grid" id="edit-tipo-grid">
+            <label><input type="checkbox" value="Inspeção Geral" /> Inspeção Geral</label>
+            <label><input type="checkbox" value="Reparação Pneus" /> Reparação Pneus</label>
+            <label><input type="checkbox" value="Lubrificação" /> Lubrificação</label>
+            <label><input type="checkbox" value="Rep. Sis. Mecânico" /> Rep. Sis. Mecânico</label>
+            <label><input type="checkbox" value="Rep. Sis. Hidráulico" /> Rep. Sis. Hidráulico</label>
+            <label><input type="checkbox" value="Rep. Sis. Elétrico" /> Rep. Sis. Elétrico</label>
+            <label><input type="checkbox" value="Revisão" /> Revisão</label>
+            <label><input type="checkbox" value="Rep. Estrutura" /> Rep. Estrutura</label>
+            <label><input type="checkbox" value="Outros" /> Outros</label>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" id="btn-cancelar-tipo">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btn-guardar-tipo">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="info-observacoes-wrap" style="display:none">
+        <div class="info-box">
+          <div class="label">Observações</div>
+          <div id="info-observacoes">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Checklist Digital de Manutenção -->
+    <div class="card" id="card-checklist-digital" style="display:none">
+      <div class="card-title">Checklist de Manutenção</div>
+
+      <div id="checklist-sem-registo">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Selecionar Checklist</label>
+            <select id="sel-checklist-template"><option value="">— Selecionar —</option></select>
+          </div>
+          <div class="form-group" style="align-self:flex-end">
+            <button class="btn btn-primary" id="btn-iniciar-checklist">Iniciar Checklist</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="checklist-com-registo" style="display:none">
+        <div class="flex-between" style="align-items:center">
+          <div>
+            <div style="font-weight:600" id="checklist-nome-atual">—</div>
+            <div class="text-muted" style="font-size:12px" id="checklist-ref-atual">—</div>
+          </div>
+          <div class="badge badge-blue" id="checklist-progresso-badge">0/0</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.06);border-radius:6px;height:8px;margin-top:10px;overflow:hidden">
+          <div id="checklist-progresso-bar" style="height:100%;background:var(--amber);width:0%;transition:width .3s"></div>
+        </div>
+        <div style="text-align:right;margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-ghost btn-sm" id="btn-trocar-revisao">🔄 Trocar Revisão</button>
+          <a class="btn btn-ghost btn-sm" id="btn-imprimir-checklist" href="#" target="_blank">🖨️ Imprimir</a>
+          <a class="btn btn-primary btn-sm" id="btn-abrir-checklist" href="#">Abrir Checklist →</a>
+        </div>
+      </div>
+
+      <div id="trocas-wrap" style="display:none;margin-top:16px">
+        <div class="label" style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Histórico de Trocas de Revisão</div>
+        <ul class="trocas-list" id="lista-trocas"></ul>
+      </div>
+    </div>
+
+    <!-- Atualizar estado -->
+    <div class="card">
+      <div class="card-title">Atualizar Estado</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Estado da Obra</label>
+          <select id="sel-novo-status">
+            <option value="Aberta (DTEC)">Aberta (DTEC)</option>
+            <option value="Supervisão">Supervisão</option>
+            <option value="Chefe da Oficina">Chefe da Oficina</option>
+            <option value="Departamento Técnico">Departamento Técnico</option>
+            <option value="CdM">CdM</option>
+            <option value="Fechada">Fechada</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Responsável</label>
+          <div class="tech-search-wrap">
+            <input type="text" id="responsavel-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
+            <div class="tech-dropdown" id="responsavel-dropdown"></div>
+          </div>
+          <input type="hidden" id="responsavel-mudanca" />
+          <div class="chips-wrap" id="responsavel-chip"></div>
+        </div>
+        <div class="form-group" style="align-self:flex-end">
+          <button class="btn btn-primary" id="btn-mudar-status">Atualizar Estado da Obra</button>
+        </div>
+      </div>
+      <div class="form-grid mt-16">
+        <div class="form-group">
+          <label>Estado Físico</label>
+          <select id="sel-status-fisico">
+            <option value="Avariada">Avariada</option>
+            <option value="Acidentada">Acidentada</option>
+            <option value="Pneumático">Pneumático</option>
+            <option value="Revisão/Manutenção">Revisão/Manutenção</option>
+            <option value="Inspeção">Inspeção</option>
+            <option value="Aguarda Acessório">Aguarda Acessório</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Nº de Obra (se ainda não atribuído)</label>
+          <input type="text" id="campo-numero-obra" placeholder="Preencher quando CdM atribuir" />
+        </div>
+        <div class="form-group" style="align-self:flex-end">
+          <button class="btn btn-ghost" id="btn-atualizar-fisico">Guardar Alterações</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Histórico da Obra -->
+    <div class="card">
+      <div class="card-title">Histórico da Obra</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div style="font-size:12px;color:var(--amber);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Estado da Obra</div>
+          <p class="text-muted" style="font-size:11px;margin-bottom:6px">Errou o responsável? Edite ou apague o registo abaixo.</p>
+          <ul class="timeline" id="lista-timeline"><li>A carregar...</li></ul>
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Estado Físico</div>
+          <ul class="timeline timeline-fisico" id="lista-timeline-fisico"><li>A carregar...</li></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Intervenções -->
+    <div class="card">
+      <div class="flex-between">
+        <div class="card-title" style="margin-bottom:0">Descrição da Mão de Obra</div>
+        <button class="btn btn-primary btn-sm" id="btn-nova-intervencao">+ Registar Intervenção</button>
+      </div>
+      <div class="table-wrap mt-16">
+        <table>
+          <thead>
+            <tr><th>Data</th><th>Início</th><th>Fim</th><th>Horas</th><th>Técnicos</th><th>Setor(es)</th><th>Descrição</th><th>Estado</th><th></th></tr>
+          </thead>
+          <tbody id="tbody-intervencoes"><tr><td colspan="9">A carregar...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="kpi-grid mt-16">
+        <div class="kpi-card green">
+          <div class="kpi-label">Total Horas (por técnico)</div>
+          <div class="kpi-value" id="total-horas-tecnicos">0h</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total Horas (intervenções)</div>
+          <div class="kpi-value" id="total-horas-intervencoes">0h</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Peças -->
+    <div class="card">
+      <div class="flex-between">
+        <div class="card-title" style="margin-bottom:0">Peças Aplicadas</div>
+        <button class="btn btn-primary btn-sm" id="btn-nova-peca">+ Adicionar Peça</button>
+      </div>
+      <div class="table-wrap mt-16">
+        <table>
+          <thead>
+            <tr><th>Peça / Material</th><th>Data</th><th>Qtd</th><th>Unidade</th><th>Colaborador</th><th></th></tr>
+          </thead>
+          <tbody id="tbody-pecas"><tr><td colspan="6">Sem peças registadas.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="flex-between mt-16" style="margin-bottom:24px">
+      <a href="ordens.html" class="btn btn-ghost">← Voltar</a>
+      <button class="btn btn-ghost" onclick="window.open('os_print.html?id='+new URLSearchParams(location.search).get('id'))">🖨️ Imprimir Folha</button>
+    </div>
+  </main>
+
+  <!-- Modal Intervenção -->
+  <div class="modal-overlay" id="modal-intervencao">
+    <div class="modal-box">
+      <div class="card-title" id="titulo-modal-intervencao">Registar Intervenção</div>
+      <span class="modo-badge" id="badge-edicao" style="display:none">Modo Edição</span>
+      <form id="form-intervencao">
+        <input type="hidden" id="i-record-id" />
+        <div class="form-group mt-16">
+          <label>Data *</label>
+          <input type="date" id="i-data" required />
+        </div>
+        <div class="form-grid mt-16">
+          <div class="form-group">
+            <label>Hora Início *</label>
+            <input type="time" id="i-inicio" required />
+          </div>
+          <div class="form-group">
+            <label>Hora Fim *</label>
+            <input type="time" id="i-fim" required />
+          </div>
+        </div>
+        <div class="form-group mt-16">
+          <label>Descrição do Trabalho *</label>
+          <textarea id="i-descricao" rows="3" required placeholder="O que foi feito... (use ; para separar tarefas em linhas diferentes)"></textarea>
+        </div>
+        <div class="form-group mt-16">
+          <label>Estado</label>
+          <select id="i-status">
+            <option value="em_curso">Em curso</option>
+            <option value="concluida">Concluída</option>
+          </select>
+        </div>
+        <div class="form-group mt-16">
+          <label>Técnicos Envolvidos</label>
+          <div class="tech-search-wrap">
+            <input type="text" id="i-tech-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
+            <div class="tech-dropdown" id="i-tech-dropdown"></div>
+          </div>
+          <div class="chips-wrap" id="i-tech-chips"></div>
+        </div>
+        <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
+          <button type="button" class="btn btn-ghost" id="btn-cancelar-intervencao">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-intervencao">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Peça -->
+  <div class="modal-overlay" id="modal-peca">
+    <div class="modal-box">
+      <div class="card-title" id="titulo-modal-peca">Adicionar Peça(s) Aplicada(s)</div>
+      <form id="form-peca">
+        <input type="hidden" id="p-id" />
+
+        <div class="form-group mt-16" style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="p-usar-stock" style="width:auto" />
+          <label for="p-usar-stock" style="margin:0;text-transform:none;font-weight:normal;cursor:pointer">
+            Material da Danmo (retirar do Stock)
+          </label>
+        </div>
+
+        <datalist id="lista-materiais-sugeridos"></datalist>
+
+        <div id="pecas-linhas-container" class="mt-16"></div>
+
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-add-linha-peca" style="margin-top:4px">+ Adicionar outra peça</button>
+
+        <div class="form-grid mt-16">
+          <div class="form-group">
+            <label>Data de Aplicação</label>
+            <input type="date" id="p-data" />
+          </div>
+          <div class="form-group">
+            <label>Colaborador que Aplicou</label>
+            <div class="tech-search-wrap">
+              <input type="text" id="p-colab-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
+              <div class="tech-dropdown" id="p-colab-dropdown"></div>
+            </div>
+            <input type="hidden" id="p-colaborador" />
+            <div class="chips-wrap" id="p-colab-chip"></div>
+          </div>
+        </div>
+        <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
+          <button type="button" class="btn btn-ghost" id="btn-cancelar-peca">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-peca">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Trocar Revisão -->
+  <div class="modal-overlay" id="modal-trocar-revisao">
+    <div class="modal-box">
+      <div class="card-title">Trocar Revisão do Checklist</div>
+      <p class="text-muted" style="font-size:12px;margin-bottom:12px">
+        O checklist actual será arquivado (fica visível no histórico) e um novo será iniciado do zero com a revisão escolhida.
+      </p>
+      <div class="form-group">
+        <label>Nova Revisão *</label>
+        <select id="tr-novo-template" required><option value="">— Selecionar —</option></select>
+      </div>
+      <div class="form-group mt-16">
+        <label>Motivo da Troca *</label>
+        <textarea id="tr-motivo" rows="3" required placeholder="Ex: Ao verificar o óleo notou-se desgaste avançado, avança-se para revisão de 2000h..."></textarea>
+      </div>
+      <div class="form-group mt-16">
+        <label>Responsável</label>
+        <div class="tech-search-wrap">
+          <input type="text" id="tr-responsavel-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
+          <div class="tech-dropdown" id="tr-responsavel-dropdown"></div>
+        </div>
+        <input type="hidden" id="tr-responsavel" />
+        <div class="chips-wrap" id="tr-responsavel-chip"></div>
+      </div>
+      <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
+        <button type="button" class="btn btn-ghost" id="btn-cancelar-troca">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-confirmar-troca">Confirmar Troca</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="utils.js"></script>
+  <script src="tema.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    renderNavbarOficina('ordens');
+
+    const params = new URLSearchParams(window.location.search);
+    const osId = params.get('id');
+    let osAtual = null, equipAtual = null, collaboradoresAtivos = [];
+    let selecionadosIntervencao = [];
+    let materiaisStock = [];
+    let materiaisSugeridos = [];
+    let editandoRecordId = null;
+    let checklistAtivoAtual = null;
+
+    if (!osId) { alert('Obra não especificada.'); window.location.href='ordens.html'; }
+
+    function arredondarHoras(horasDecimal) {
+      const horas = Math.floor(horasDecimal);
+      const minutos = (horasDecimal - horas) * 60;
+      return minutos >= 30 ? horas + 1 : horas;
+    }
+
+    // Calcula horas trabalhadas entre início e fim, excluindo o intervalo de almoço (12h-13h)
+    function calcularHorasExcluindoAlmoco(inicio, fim) {
+      const [h1,m1] = inicio.split(':').map(Number);
+      const [h2,m2] = fim.split(':').map(Number);
+      let ini = h1*60 + m1;
+      let fimM = h2*60 + m2;
+      if (fimM <= ini) fimM += 24*60; // atravessa a meia-noite
+      let totalMin = fimM - ini;
+
+      const almocoIni = 12*60, almocoFim = 13*60;
+      const overlapIni = Math.max(ini, almocoIni);
+      const overlapFim = Math.min(fimM, almocoFim);
+      const overlapMin = Math.max(0, overlapFim - overlapIni);
+      totalMin -= overlapMin;
+
+      return totalMin / 60;
+    }
+
+    // Transforma ';' em quebra de linha na apresentação (',' e '.' continuam normais)
+    function formatarDescricao(texto) {
+      if (!texto) return '—';
+      return texto.split(';').map(t => t.trim()).filter(Boolean).join('<br>');
+    }
+
+    async function carregarOS() {
+      const lista = await db.query('ordens_servico', `select=*&id=eq.${osId}`);
+      osAtual = lista[0];
+      if (!osAtual) { alert('Obra não encontrada.'); window.location.href='ordens.html'; return; }
+
+      const eqLista = await db.query('equipment', `select=*&id=eq.${osAtual.equipment_id}`);
+      equipAtual = eqLista[0];
+
+      document.getElementById('titulo-os').textContent = osAtual.numero_obra
+        ? `Obra ${osAtual.numero_obra}` : `Obra s/nº — ${equipAtual ? equipAtual.code : ''}`;
+      document.getElementById('info-equip').textContent      = equipAtual ? equipAtual.code : '—';
+      document.getElementById('info-categoria').textContent  = equipAtual ? (equipAtual.fleet_type||'—') : '—';
+      document.getElementById('info-sector').textContent     = osAtual.sector || '—';
+      document.getElementById('info-abertura').textContent   = formatarData(osAtual.data_abertura);
+      document.getElementById('info-fecho').textContent      = osAtual.data_fecho ? formatarData(osAtual.data_fecho) : '—';
+      document.getElementById('info-horimetro').textContent  = osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' ' + (osAtual.unidade_medida||'h') : '—';
+      document.getElementById('info-workflow').textContent   = osAtual.status_atual;
+      document.getElementById('info-fisico').textContent     = osAtual.status_fisico || '—';
+      document.getElementById('info-avaria').textContent     = osAtual.descricao_avaria || '—';
+
+      const chipsWrap = document.getElementById('info-tipo-chips');
+      if (osAtual.tipo_intervencao && osAtual.tipo_intervencao.length > 0) {
+        chipsWrap.innerHTML = osAtual.tipo_intervencao.map(t => `<span class="chip">${t}</span>`).join('');
+      } else {
+        chipsWrap.innerHTML = '<span class="text-muted" style="font-size:12px">Nenhum tipo definido.</span>';
+      }
+
+      if (osAtual.observacoes) {
+        document.getElementById('info-observacoes').textContent = osAtual.observacoes;
+        document.getElementById('info-observacoes-wrap').style.display = 'block';
+      }
+
+      document.getElementById('info-dados-base').innerHTML =
+        `<strong>${equipAtual ? equipAtual.code : '—'}</strong> — Aberta em ${formatarData(osAtual.data_abertura)} — Contador: ${osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' ' + (osAtual.unidade_medida||'h') : '—'}`;
+
+      document.getElementById('sel-novo-status').value  = osAtual.status_atual;
+      document.getElementById('sel-status-fisico').value = osAtual.status_fisico;
+      document.getElementById('campo-numero-obra').value = osAtual.numero_obra || '';
+
+      await carregarChecklistDigital();
+    }
+
+    let todosEquipamentosCache = [];
+    async function carregarEquipamentosParaEdicao() {
+      if (todosEquipamentosCache.length) return todosEquipamentosCache;
+      todosEquipamentosCache = await db.query('equipment', 'select=*&active=eq.true&order=code.asc');
+      return todosEquipamentosCache;
+    }
+
+    document.getElementById('btn-editar-dados-base').addEventListener('click', async () => {
+      const equips = await carregarEquipamentosParaEdicao();
+      const sel = document.getElementById('edit-equipamento');
+      sel.innerHTML = equips.map(e => `<option value="${e.id}">${e.code} — ${e.fleet_type||''}</option>`).join('');
+      sel.value = osAtual.equipment_id;
+      document.getElementById('edit-data-abertura').value = osAtual.data_abertura || '';
+      document.getElementById('edit-horimetro').value = osAtual.hora_equipamento != null ? osAtual.hora_equipamento : '';
+      document.getElementById('edit-unidade-medida').value = osAtual.unidade_medida || 'h';
+      document.getElementById('edit-dados-base-wrap').style.display = 'block';
+    });
+    document.getElementById('btn-cancelar-dados-base').addEventListener('click', () => {
+      document.getElementById('edit-dados-base-wrap').style.display = 'none';
+    });
+    document.getElementById('btn-guardar-dados-base').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const textoOrig = btn.textContent;
+      btn.textContent = 'A guardar...';
+      try {
+        const horimetro = document.getElementById('edit-horimetro').value;
+        await db.update('ordens_servico', osId, {
+          equipment_id: document.getElementById('edit-equipamento').value,
+          data_abertura: document.getElementById('edit-data-abertura').value,
+          hora_equipamento: horimetro ? parseFloat(horimetro) : null,
+          unidade_medida: document.getElementById('edit-unidade-medida').value,
+          atualizado_em: new Date().toISOString(),
+        });
+        document.getElementById('edit-dados-base-wrap').style.display = 'none';
+        await carregarOS();
+        mostrarToast('Dados da obra atualizados.');
+      } catch (err) {
+        alert('Erro ao guardar: ' + (err.message||err));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOrig;
+      }
+    });
+    async function criarItensChecklist(checklistId, templateId) {
+      const secoes = await db.query('checklist_template_secoes', `select=id&template_id=eq.${templateId}`);
+      const secaoIds = secoes.map(s => s.id).join(',');
+      if (!secaoIds) return;
+      const itensTemplate = await db.query('checklist_template_itens', `select=id&secao_id=in.(${secaoIds})`);
+      if (!itensTemplate.length) return;
+      const payload = itensTemplate.map(it => ({ checklist_id: checklistId, template_item_id: it.id }));
+      await db.insert('checklist_preenchidos_itens', payload);
+    }
+
+    async function carregarChecklistDigital() {
+      const temRevisao = (osAtual.tipo_intervencao || []).includes('Revisão');
+      const card = document.getElementById('card-checklist-digital');
+      if (!temRevisao || !equipAtual) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+
+      const existentes = await db.query('checklist_preenchidos', `select=*&os_id=eq.${osId}&substituido=eq.false&order=criado_em.desc`);
+
+      if (existentes.length > 0) {
+        const ck = existentes[0];
+        checklistAtivoAtual = ck.id;
+        const tpl = await db.query('checklist_templates', `select=*&id=eq.${ck.template_id}`);
+        const template = tpl[0] || {};
+        document.getElementById('checklist-sem-registo').style.display = 'none';
+        document.getElementById('checklist-com-registo').style.display = 'block';
+        document.getElementById('checklist-nome-atual').textContent = template.nome || '—';
+        document.getElementById('checklist-ref-atual').textContent = template.ref_versao || '';
+        document.getElementById('btn-abrir-checklist').href = `checklist_preencher.html?id=${ck.id}`;
+        document.getElementById('btn-imprimir-checklist').href = `checklist_print.html?id=${ck.id}`;
+
+        const itens = await db.query('checklist_preenchidos_itens', `select=executado&checklist_id=eq.${ck.id}`);
+        const total = itens.length;
+        const preenchidos = itens.filter(i => i.executado).length;
+        document.getElementById('checklist-progresso-badge').textContent = `${preenchidos}/${total}`;
+        document.getElementById('checklist-progresso-bar').style.width = total ? (preenchidos/total*100)+'%' : '0%';
+      } else {
+        checklistAtivoAtual = null;
+        document.getElementById('checklist-sem-registo').style.display = 'block';
+        document.getElementById('checklist-com-registo').style.display = 'none';
+
+        const templates = await db.query('checklist_templates',
+          `select=*&categoria_equipamento=eq.${encodeURIComponent(equipAtual.fleet_type||'')}&ativo=eq.true&order=intervalo_horas.asc`);
+        const sel = document.getElementById('sel-checklist-template');
+        sel.innerHTML = '<option value="">— Selecionar —</option>' +
+          templates.map(t => `<option value="${t.id}">${t.nome} (${t.intervalo_label||t.tipo})</option>`).join('');
+      }
+
+      await carregarHistoricoTrocas();
+    }
+
+    async function carregarHistoricoTrocas() {
+      const trocas = await db.query('checklist_trocas', `select=*&os_id=eq.${osId}&order=criado_em.desc`);
+      const wrap = document.getElementById('trocas-wrap');
+      if (!trocas.length) { wrap.style.display = 'none'; return; }
+      wrap.style.display = 'block';
+      document.getElementById('lista-trocas').innerHTML = trocas.map(t => `<li>
+        <strong>${t.template_anterior_nome || '—'} → ${t.template_novo_nome || '—'}</strong>
+        <div>${t.motivo}</div>
+        <div class="meta">${t.responsavel ? t.responsavel+' · ' : ''}${formatarDataHora(t.criado_em)}</div>
+      </li>`).join('');
+    }
+
+    document.getElementById('btn-iniciar-checklist').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.disabled) return;
+      const templateId = document.getElementById('sel-checklist-template').value;
+      if (!templateId) { alert('Selecione um checklist.'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'A criar...';
+      try {
+        const novo = await db.insert('checklist_preenchidos', {
+          os_id: parseInt(osId),
+          template_id: parseInt(templateId),
+          equipment_id: equipAtual.id,
+          numero_obra: osAtual.numero_obra || null,
+          horas_equipamento: osAtual.hora_equipamento || null,
+          data_revisao: dataHoje(),
+        });
+        const checklistId = Array.isArray(novo) ? novo[0].id : novo.id;
+        await criarItensChecklist(checklistId, templateId);
+        window.location.href = `checklist_preencher.html?id=${checklistId}`;
+      } catch (err) {
+        alert('Erro ao iniciar checklist: ' + (err.message || err));
+        btn.disabled = false;
+        btn.textContent = 'Iniciar Checklist';
+      }
+    });
+
+    // ── Trocar Revisão ──
+    const modalTroca = document.getElementById('modal-trocar-revisao');
+    document.getElementById('btn-trocar-revisao').addEventListener('click', async () => {
+      const templates = await db.query('checklist_templates',
+        `select=*&categoria_equipamento=eq.${encodeURIComponent(equipAtual.fleet_type||'')}&ativo=eq.true&order=intervalo_horas.asc`);
+      const sel = document.getElementById('tr-novo-template');
+      sel.innerHTML = '<option value="">— Selecionar —</option>' +
+        templates.map(t => `<option value="${t.id}">${t.nome} (${t.intervalo_label||t.tipo})</option>`).join('');
+      document.getElementById('tr-motivo').value = '';
+      seletorTrResponsavel.reset();
+      modalTroca.classList.add('aberto');
+    });
+    document.getElementById('btn-cancelar-troca').addEventListener('click', () => modalTroca.classList.remove('aberto'));
+
+    document.getElementById('btn-confirmar-troca').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.disabled) return;
+      const novoTemplateId = document.getElementById('tr-novo-template').value;
+      const motivo = document.getElementById('tr-motivo').value.trim();
+      const responsavel = document.getElementById('tr-responsavel').value || null;
+
+      if (!novoTemplateId) { alert('Selecione a nova revisão.'); return; }
+      if (!motivo) { alert('O motivo da troca é obrigatório.'); return; }
+      if (!checklistAtivoAtual) { alert('Não há checklist activo para trocar.'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'A trocar...';
+      try {
+        const ckAtualList = await db.query('checklist_preenchidos', `select=*&id=eq.${checklistAtivoAtual}`);
+        const ckAtual = ckAtualList[0];
+        const tplAtualList = await db.query('checklist_templates', `select=*&id=eq.${ckAtual.template_id}`);
+        const tplAtual = tplAtualList[0];
+        const tplNovoList = await db.query('checklist_templates', `select=*&id=eq.${novoTemplateId}`);
+        const tplNovo = tplNovoList[0];
+
+        await db.update('checklist_preenchidos', checklistAtivoAtual, { substituido: true });
+
+        const novo = await db.insert('checklist_preenchidos', {
+          os_id: parseInt(osId),
+          template_id: parseInt(novoTemplateId),
+          equipment_id: equipAtual.id,
+          numero_obra: osAtual.numero_obra || null,
+          horas_equipamento: osAtual.hora_equipamento || null,
+          data_revisao: dataHoje(),
+        });
+        const novoChecklistId = Array.isArray(novo) ? novo[0].id : novo.id;
+        await criarItensChecklist(novoChecklistId, novoTemplateId);
+
+        await db.insert('checklist_trocas', {
+          os_id: parseInt(osId),
+          checklist_anterior_id: checklistAtivoAtual,
+          checklist_novo_id: novoChecklistId,
+          template_anterior_nome: tplAtual ? tplAtual.nome : null,
+          template_novo_nome: tplNovo ? tplNovo.nome : null,
+          motivo,
+          responsavel,
+        });
+
+        modalTroca.classList.remove('aberto');
+        await carregarChecklistDigital();
+        mostrarToast('Revisão trocada. O checklist anterior ficou no histórico.');
+      } catch (err) {
+        alert('Erro ao trocar revisão: ' + (err.message || err));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirmar Troca';
+      }
+    });
+
+    async function carregarTimeline() {
+      const log = await db.query('os_status_log', `select=*&os_id=eq.${osId}`);
+      const ord = [...log].sort((a,b) => new Date(b.data_mudanca)-new Date(a.data_mudanca));
+      document.getElementById('lista-timeline').innerHTML = ord.length === 0
+        ? '<li>Sem registos.</li>'
+        : ord.map(ev => `<li>
+            <div class="flex-between" style="align-items:flex-start">
+              <div>
+                <strong>${ev.status_anterior ? ev.status_anterior+' → ' : ''}${ev.status_novo}</strong>
+                ${ev.observacao ? ' — '+ev.observacao : ''}
+                <div class="meta">${ev.responsavel ? ev.responsavel+' · ' : '<span style="color:var(--red)">sem responsável · </span>'}${formatarDataHora(ev.data_mudanca)}</div>
+              </div>
+              <div style="display:flex;gap:4px;flex-shrink:0">
+                <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="editarResponsavelLog(${ev.id},'${(ev.responsavel||'').replace(/'/g,"\\'")}')">Editar</button>
+                <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:11px" onclick="apagarLogEstado(${ev.id})">Apagar</button>
+              </div>
+            </div>
+          </li>`).join('');
+
+      const logFisico = await db.query('os_status_fisico_log', `select=*&os_id=eq.${osId}`);
+      const ordFisico = [...logFisico].sort((a,b) => new Date(b.data_mudanca)-new Date(a.data_mudanca));
+      document.getElementById('lista-timeline-fisico').innerHTML = ordFisico.length === 0
+        ? '<li>Sem registos.</li>'
+        : ordFisico.map(ev => `<li>
+            <strong>${ev.status_fisico}</strong>
+            <div class="meta">${formatarDataHora(ev.data_mudanca)}</div>
+          </li>`).join('');
+    }
+
+    async function editarResponsavelLog(logId, responsavelAtual) {
+      const novoNome = prompt('Corrigir responsável deste registo:', responsavelAtual || '');
+      if (novoNome === null) return; // cancelado
+      const nomeFinal = novoNome.trim();
+      if (!nomeFinal) { alert('O responsável não pode ficar vazio.'); return; }
+      await db.update('os_status_log', logId, { responsavel: nomeFinal });
+      await carregarTimeline();
+      mostrarToast('Responsável corrigido.');
+    }
+
+    async function apagarLogEstado(logId) {
+      if (!confirm('Apagar este registo do histórico? Use isto só para corrigir um erro de lançamento.')) return;
+      await db.delete('os_status_log', logId);
+      await carregarTimeline();
+      mostrarToast('Registo apagado.');
+    }
+
+    // ── Widget de busca simples (seleção única, reutilizável) ──
+    function criarSeletorSimples({ inputId, dropdownId, hiddenId, chipId }) {
+      const inputEl = document.getElementById(inputId);
+      const ddEl = document.getElementById(dropdownId);
+      const hiddenEl = document.getElementById(hiddenId);
+      const chipEl = document.getElementById(chipId);
+
+      function renderChip() {
+        const nome = hiddenEl.value;
+        chipEl.innerHTML = nome ? `<span class="chip-tech">${nome}<button type="button">✕</button></span>` : '';
+      }
+      chipEl.addEventListener('click', e => {
+        if (e.target.closest('button')) { hiddenEl.value=''; renderChip(); }
+      });
+      inputEl.addEventListener('input', () => {
+        const q = inputEl.value.toLowerCase().trim();
+        if (!q) { ddEl.classList.remove('open'); ddEl.innerHTML=''; return; }
+        const matches = collaboradoresAtivos.filter(c => c.name.toLowerCase().includes(q) || (c.code||'').toLowerCase().includes(q));
+        ddEl.innerHTML = matches.length
+          ? matches.map(c => `<div class="tech-option" data-nome="${c.name}">${c.name}${c.code?' ('+c.code+')':''}${c.setor?' — '+c.setor:''}</div>`).join('')
+          : '<div class="tech-option text-muted">Nenhum resultado.</div>';
+        ddEl.classList.add('open');
+      });
+      ddEl.addEventListener('click', e => {
+        const opt = e.target.closest('.tech-option');
+        if (!opt || !opt.dataset.nome) return;
+        hiddenEl.value = opt.dataset.nome;
+        inputEl.value = '';
+        ddEl.classList.remove('open');
+        renderChip();
+      });
+      document.addEventListener('click', e => {
+        if (!e.target.closest('#'+inputId) && !e.target.closest('#'+dropdownId)) ddEl.classList.remove('open');
+      });
+      return { reset: () => { hiddenEl.value=''; renderChip(); } };
+    }
+
+    let seletorResponsavel, seletorPColab, seletorTrResponsavel;
+
+    async function carregarTecnicosBase() {
+      collaboradoresAtivos = await db.query('collaborators','select=id,name,setor,code&active=eq.true&order=name.asc');
+      seletorResponsavel   = criarSeletorSimples({ inputId:'responsavel-search', dropdownId:'responsavel-dropdown', hiddenId:'responsavel-mudanca', chipId:'responsavel-chip' });
+      seletorPColab        = criarSeletorSimples({ inputId:'p-colab-search', dropdownId:'p-colab-dropdown', hiddenId:'p-colaborador', chipId:'p-colab-chip' });
+      seletorTrResponsavel = criarSeletorSimples({ inputId:'tr-responsavel-search', dropdownId:'tr-responsavel-dropdown', hiddenId:'tr-responsavel', chipId:'tr-responsavel-chip' });
+    }
+
+    async function carregarMateriaisStock() {
+      materiaisStock = await db.query('materiais', 'select=*&ativo=eq.true&order=nome.asc');
+    }
+
+    async function carregarMateriaisSugeridos() {
+      materiaisSugeridos = await db.query('materiais_sugeridos', 'select=nome&order=usos.desc');
+      const dl = document.getElementById('lista-materiais-sugeridos');
+      dl.innerHTML = materiaisSugeridos.map(m => `<option value="${m.nome}"></option>`).join('');
+    }
+
+    async function registarMaterialSugerido(nome) {
+      if (!nome) return;
+      const existente = materiaisSugeridos.find(m => m.nome.toLowerCase() === nome.toLowerCase());
+      if (existente) {
+        await db.query('materiais_sugeridos', `select=id,usos&nome=eq.${encodeURIComponent(nome)}`).then(async rows => {
+          if (rows[0]) await db.update('materiais_sugeridos', rows[0].id, { usos: (rows[0].usos||1) + 1 });
+        });
+      } else {
+        await db.insert('materiais_sugeridos', { nome });
+        materiaisSugeridos.push({ nome, usos: 1 });
+      }
+    }
+
+    // ── Linhas dinâmicas de peça (permite lançar várias de uma vez) ──
+    function optionsMateriaisStock() {
+      return '<option value="">— Selecionar —</option>' +
+        materiaisStock.map(m => `<option value="${m.id}">${m.nome}${m.referencia?' ('+m.referencia+')':''} — ${m.unidade||'Und'}</option>`).join('');
+    }
+
+    function novaLinhaPeca() {
+      const usaStock = document.getElementById('p-usar-stock').checked;
+      const div = document.createElement('div');
+      div.className = 'linha-peca-item';
+      div.style.cssText = 'border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px;position:relative';
+      div.innerHTML = `
+        <button type="button" class="btn btn-danger btn-sm btn-remover-linha-peca" style="position:absolute;top:8px;right:8px;padding:2px 8px">✕</button>
+        <div class="form-group linha-peca-texto-wrap" style="display:${usaStock?'none':'block'}">
+          <label>Peça / Material *</label>
+          <input type="text" class="linha-peca-nome" list="lista-materiais-sugeridos" placeholder="Ex: Correia de comando, Óleo 15W40..." />
+        </div>
+        <div class="form-group linha-peca-select-wrap" style="display:${usaStock?'block':'none'}">
+          <label>Material do Stock *</label>
+          <select class="linha-peca-material">${optionsMateriaisStock()}</select>
+        </div>
+        <div class="form-group mt-16">
+          <label>Quantidade</label>
+          <div class="peca-linha">
+            <input type="number" class="linha-peca-qtd" min="0.01" step="0.01" value="1" />
+            <select class="linha-peca-unidade unidade-select">
+              <option value="Unidade">Unidade</option>
+              <option value="Litro">Litro</option>
+              <option value="Kg">Kg</option>
+              <option value="Metro">Metro</option>
+              <option value="Caixa">Caixa</option>
+              <option value="Par">Par</option>
+              <option value="Rolo">Rolo</option>
+            </select>
+          </div>
+        </div>`;
+      document.getElementById('pecas-linhas-container').appendChild(div);
+      div.querySelector('.btn-remover-linha-peca').addEventListener('click', () => {
+        if (document.querySelectorAll('.linha-peca-item').length <= 1) { alert('Tem de haver pelo menos uma peça.'); return; }
+        div.remove();
+      });
+      return div;
+    }
+
+    document.getElementById('btn-add-linha-peca').addEventListener('click', () => novaLinhaPeca());
+
+    document.getElementById('p-usar-stock').addEventListener('change', e => {
+      const usaStock = e.target.checked;
+      document.querySelectorAll('.linha-peca-item').forEach(linha => {
+        linha.querySelector('.linha-peca-texto-wrap').style.display = usaStock ? 'none' : 'block';
+        linha.querySelector('.linha-peca-select-wrap').style.display = usaStock ? 'block' : 'none';
+      });
+    });
+
+    // ── Pesquisa de técnicos (intervenção, multi) ──
+    function filtrarTecnicos(q) {
+      const dd = document.getElementById('i-tech-dropdown');
+      q = q.toLowerCase().trim();
+      if (!q) { dd.classList.remove('open'); dd.innerHTML=''; return; }
+      const jaSelecionados = selecionadosIntervencao.map(t => t.id);
+      const matches = collaboradoresAtivos.filter(c =>
+        !jaSelecionados.includes(c.id) &&
+        (c.name.toLowerCase().includes(q) || (c.code||'').toLowerCase().includes(q))
+      );
+      if (!matches.length) { dd.classList.remove('open'); dd.innerHTML='<div class="tech-option text-muted">Nenhum resultado.</div>'; dd.classList.add('open'); return; }
+      dd.innerHTML = matches.map(c =>
+        `<div class="tech-option" data-id="${c.id}">${c.name}${c.code?' ('+c.code+')':''}${c.setor?' — '+c.setor:''}</div>`
+      ).join('');
+      dd.classList.add('open');
+    }
+    document.getElementById('i-tech-search').addEventListener('input', e => filtrarTecnicos(e.target.value));
+    document.getElementById('i-tech-dropdown').addEventListener('click', e => {
+      const opt = e.target.closest('.tech-option');
+      if (!opt || !opt.dataset.id) return;
+      const c = collaboradoresAtivos.find(x => String(x.id) === opt.dataset.id);
+      if (c && !selecionadosIntervencao.find(t => t.id === c.id)) {
+        selecionadosIntervencao.push(c);
+        renderChipsTecnicos();
+      }
+      document.getElementById('i-tech-search').value = '';
+      document.getElementById('i-tech-dropdown').classList.remove('open');
+    });
+    function renderChipsTecnicos() {
+      document.getElementById('i-tech-chips').innerHTML = selecionadosIntervencao.map(c =>
+        `<span class="chip-tech">${c.name}${c.code?' ('+c.code+')':''}<button type="button" data-id="${c.id}">✕</button></span>`
+      ).join('');
+    }
+    document.getElementById('i-tech-chips').addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      selecionadosIntervencao = selecionadosIntervencao.filter(c => String(c.id) !== btn.dataset.id);
+      renderChipsTecnicos();
+    });
+
+    async function carregarIntervencoes() {
+      const records = await db.query('records', `select=*&os_id=eq.${osId}&order=shift_date.asc,time_start.asc`);
+      const tbody = document.getElementById('tbody-intervencoes');
+
+      if (!records.length) {
+        tbody.innerHTML = '<tr><td colspan="9">Ainda sem intervenções registadas.</td></tr>';
+        document.getElementById('total-horas-tecnicos').textContent = '0h';
+        document.getElementById('total-horas-intervencoes').textContent = '0h';
+        return;
+      }
+
+      const relacoes = await db.query('record_collaborators','select=*');
+      let totalHorasIntervencoes = 0;
+      let totalHorasTecnicos = 0;
+
+      tbody.innerHTML = records.map(r => {
+        const idsColabs = relacoes.filter(rc => rc.record_id === r.id).map(rc => rc.collaborator_id);
+        const tecnicos = idsColabs.map(id => {
+          const c = collaboradoresAtivos.find(x => x.id === id);
+          return c ? `${c.name}${c.code?' ('+c.code+')':''}` : '—';
+        });
+        const setores = [...new Set(idsColabs.map(id => {
+          const c = collaboradoresAtivos.find(x => x.id === id);
+          return c && c.setor ? c.setor : null;
+        }).filter(Boolean))];
+
+        const nTecnicos = idsColabs.length || 1;
+        const horasArredondadas = r.hours != null ? arredondarHoras(parseFloat(r.hours)) : 0;
+        totalHorasIntervencoes += horasArredondadas;
+        totalHorasTecnicos += horasArredondadas * nTecnicos;
+
+        return `<tr>
+          <td>${r.shift_date ? formatarData(r.shift_date) : '—'}</td>
+          <td>${r.time_start||'—'}</td>
+          <td>${r.time_end||'—'}</td>
+          <td>${horasArredondadas}h${nTecnicos>1?' × '+nTecnicos:''}</td>
+          <td><div class="tecnicos-stack">${tecnicos.map(t=>`<span>${t}</span>`).join('')||'—'}</div></td>
+          <td><div class="tecnicos-stack">${setores.map(s=>`<span>${s}</span>`).join('')||'—'}</div></td>
+          <td>${formatarDescricao(r.description)}</td>
+          <td><span class="badge ${r.status==='concluida'?'badge-green':'badge-amber'}">${r.status==='concluida'?'Concluída':'Em curso'}</span></td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="editarIntervencao(${r.id})" style="margin-right:4px">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="eliminarIntervencao(${r.id})">Apagar</button>
+          </td>
+        </tr>`;
+      }).join('');
+
+      document.getElementById('total-horas-intervencoes').textContent = totalHorasIntervencoes + 'h';
+      document.getElementById('total-horas-tecnicos').textContent = totalHorasTecnicos + 'h';
+    }
+
+    async function carregarPecas() {
+      const pecas = await db.query('os_pecas', `select=*&os_id=eq.${osId}&order=criado_em.asc`);
+      const tbody = document.getElementById('tbody-pecas');
+      if (!pecas.length) { tbody.innerHTML='<tr><td colspan="6">Sem peças registadas.</td></tr>'; return; }
+      tbody.innerHTML = pecas.map(p => `<tr>
+        <td>${p.peca}</td>
+        <td>${p.data ? formatarData(p.data) : '—'}</td>
+        <td>${p.quantidade||1}</td>
+        <td>${p.unidade||'Unidade'}</td>
+        <td>${p.colaborador||'—'}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="editarPeca(${p.id})" style="margin-right:4px">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarPeca(${p.id})">Apagar</button>
+        </td>
+      </tr>`).join('');
+    }
+
+    async function eliminarIntervencao(id) {
+      if (!confirm('Apagar esta intervenção?')) return;
+      await db.delete('records', id);
+      await carregarIntervencoes();
+    }
+    async function eliminarPeca(id) {
+      if (!confirm('Apagar esta peça?')) return;
+      await db.delete('os_pecas', id);
+      await carregarPecas();
+    }
+
+    let pecasCache = [];
+    async function editarPeca(id) {
+      if (!pecasCache.length) pecasCache = await db.query('os_pecas', `select=*&os_id=eq.${osId}`);
+      const p = pecasCache.find(x => x.id === id);
+      if (!p) return;
+
+      document.getElementById('titulo-modal-peca').textContent = 'Editar Peça';
+      document.getElementById('p-id').value = p.id;
+      document.getElementById('p-data').value = p.data || '';
+      document.getElementById('p-usar-stock').checked = !!p.material_id;
+
+      document.getElementById('pecas-linhas-container').innerHTML = '';
+      const linha = novaLinhaPeca();
+      if (p.material_id) {
+        linha.querySelector('.linha-peca-material').value = p.material_id;
+      } else {
+        linha.querySelector('.linha-peca-nome').value = p.peca || '';
+      }
+      linha.querySelector('.linha-peca-qtd').value = p.quantidade || 1;
+      linha.querySelector('.linha-peca-unidade').value = p.unidade || 'Unidade';
+
+      seletorPColab.reset();
+      document.getElementById('p-colaborador').value = p.colaborador || '';
+      if (p.colaborador) document.getElementById('p-colab-chip').innerHTML = `<span class="chip-tech">${p.colaborador}<button type="button">✕</button></span>`;
+      modalPeca.classList.add('aberto');
+    }
+
+    let recordsCache = [];
+    async function editarIntervencao(id) {
+      if (!recordsCache.length) recordsCache = await db.query('records', `select=*&os_id=eq.${osId}`);
+      let rec = recordsCache.find(x => x.id === id);
+      if (!rec) { recordsCache = await db.query('records', `select=*&os_id=eq.${osId}`); rec = recordsCache.find(x => x.id === id); }
+      if (!rec) return;
+
+      editandoRecordId = id;
+      document.getElementById('titulo-modal-intervencao').textContent = 'Editar Intervenção';
+      document.getElementById('badge-edicao').style.display = 'inline-block';
+      document.getElementById('btn-submit-intervencao').textContent = 'Guardar Alterações';
+
+      document.getElementById('i-record-id').value = id;
+      document.getElementById('i-data').value = rec.shift_date || '';
+      document.getElementById('i-inicio').value = rec.time_start || '';
+      document.getElementById('i-fim').value = rec.time_end || '';
+      document.getElementById('i-descricao').value = rec.description || '';
+      document.getElementById('i-status').value = rec.status || 'em_curso';
+
+      const relacoes = await db.query('record_collaborators', `select=*&record_id=eq.${id}`);
+      selecionadosIntervencao = relacoes
+        .map(rc => collaboradoresAtivos.find(c => c.id === rc.collaborator_id))
+        .filter(Boolean);
+      renderChipsTecnicos();
+
+      document.getElementById('modal-intervencao').classList.add('aberto');
+    }
+
+    // ── Editar Avaria ──
+    document.getElementById('btn-editar-avaria').addEventListener('click', () => {
+      document.getElementById('edit-avaria-txt').value = osAtual.descricao_avaria || '';
+      document.getElementById('edit-avaria-wrap').style.display = 'block';
+    });
+    document.getElementById('btn-cancelar-avaria').addEventListener('click', () => {
+      document.getElementById('edit-avaria-wrap').style.display = 'none';
+    });
+    document.getElementById('btn-guardar-avaria').addEventListener('click', async () => {
+      const novoTexto = document.getElementById('edit-avaria-txt').value.trim();
+      await db.update('ordens_servico', osId, { descricao_avaria: novoTexto, atualizado_em: new Date().toISOString() });
+      document.getElementById('edit-avaria-wrap').style.display = 'none';
+      await carregarOS();
+    });
+
+    // ── Editar Tipo de Intervenção ──
+    document.getElementById('btn-editar-tipo').addEventListener('click', () => {
+      const atuais = osAtual.tipo_intervencao || [];
+      document.querySelectorAll('#edit-tipo-grid input[type=checkbox]').forEach(cb => { cb.checked = atuais.includes(cb.value); });
+      document.getElementById('edit-tipo-wrap').style.display = 'block';
+    });
+    document.getElementById('btn-cancelar-tipo').addEventListener('click', () => {
+      document.getElementById('edit-tipo-wrap').style.display = 'none';
+    });
+    document.getElementById('btn-guardar-tipo').addEventListener('click', async () => {
+      const selecionados = Array.from(document.querySelectorAll('#edit-tipo-grid input[type=checkbox]:checked')).map(cb => cb.value);
+      await db.update('ordens_servico', osId, { tipo_intervencao: selecionados.length ? selecionados : null, atualizado_em: new Date().toISOString() });
+      document.getElementById('edit-tipo-wrap').style.display = 'none';
+      await carregarOS();
+    });
+
+    // ── Atualizar estado da obra (protegido contra duplo clique) ──
+    document.getElementById('btn-mudar-status').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.disabled) return;
+      const novoStatus  = document.getElementById('sel-novo-status').value;
+      const responsavel = document.getElementById('responsavel-mudanca').value || null;
+      if (novoStatus === osAtual.status_atual) { alert('Estado já é o atual.'); return; }
+      if (!responsavel) { alert('Selecione o responsável antes de atualizar o estado da obra.'); return; }
+
+      btn.disabled = true;
+      const textoOrig = btn.textContent;
+      btn.textContent = 'A atualizar...';
+      try {
+        const upd = { status_atual: novoStatus, atualizado_em: new Date().toISOString() };
+        if (novoStatus === 'Fechada') upd.data_fecho = dataHoje();
+        await db.update('ordens_servico', osId, upd);
+        await db.insert('os_status_log', {
+          os_id: osId, status_anterior: osAtual.status_atual,
+          status_novo: novoStatus, responsavel
+        });
+        seletorResponsavel.reset();
+        await carregarOS(); await carregarTimeline();
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOrig;
+      }
+    });
+
+    document.getElementById('btn-atualizar-fisico').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const textoOrig = btn.textContent;
+      btn.textContent = 'A guardar...';
+      try {
+        const novoFisico = document.getElementById('sel-status-fisico').value;
+        const upd = { status_fisico: novoFisico, atualizado_em: new Date().toISOString() };
+        const nrObra = document.getElementById('campo-numero-obra').value.trim();
+        if (nrObra) upd.numero_obra = nrObra;
+        await db.update('ordens_servico', osId, upd);
+        if (novoFisico !== osAtual.status_fisico) {
+          await db.insert('os_status_fisico_log', { os_id: osId, status_fisico: novoFisico });
+        }
+        await carregarOS(); await carregarTimeline();
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOrig;
+      }
+    });
+
+    // Modal Intervenção — criar
+    const modalIntervencao = document.getElementById('modal-intervencao');
+    document.getElementById('btn-nova-intervencao').addEventListener('click', () => {
+      editandoRecordId = null;
+      document.getElementById('titulo-modal-intervencao').textContent = 'Registar Intervenção';
+      document.getElementById('badge-edicao').style.display = 'none';
+      document.getElementById('btn-submit-intervencao').textContent = 'Guardar';
+      document.getElementById('form-intervencao').reset();
+      document.getElementById('i-record-id').value = '';
+      document.getElementById('i-data').value = dataHoje();
+      selecionadosIntervencao = [];
+      renderChipsTecnicos();
+      modalIntervencao.classList.add('aberto');
+    });
+    document.getElementById('btn-cancelar-intervencao').addEventListener('click', () => {
+      modalIntervencao.classList.remove('aberto');
+      editandoRecordId = null;
+    });
+
+    document.getElementById('form-intervencao').addEventListener('submit', async ev => {
+      ev.preventDefault();
+      const btn = document.getElementById('btn-submit-intervencao');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const textoOrig = btn.textContent;
+      btn.textContent = 'A guardar...';
+
+      try {
+        const inicio = document.getElementById('i-inicio').value;
+        const fim    = document.getElementById('i-fim').value;
+        const horasDecimal = calcularHorasExcluindoAlmoco(inicio, fim);
+        const horasArredondadas = arredondarHoras(horasDecimal);
+
+        const payload = {
+          equipment_id: osAtual.equipment_id,
+          os_id:        parseInt(osId),
+          shift_date:   document.getElementById('i-data').value,
+          status:       document.getElementById('i-status').value,
+          time_start:   inicio,
+          time_end:     fim,
+          hours:        horasArredondadas,
+          description:  document.getElementById('i-descricao').value.trim(),
+          continues:    false,
+        };
+
+        let recordId;
+        if (editandoRecordId) {
+          await db.update('records', editandoRecordId, payload);
+          recordId = editandoRecordId;
+          const antigas = await db.query('record_collaborators', `select=*&record_id=eq.${recordId}`);
+          for (const a of antigas) await db.delete('record_collaborators', a.id);
+        } else {
+          const novo = await db.insert('records', payload);
+          if (novo && novo.code) throw new Error(novo.message||'Erro');
+          recordId = Array.isArray(novo) ? novo[0].id : novo.id;
+        }
+
+        for (const c of selecionadosIntervencao) {
+          await db.insert('record_collaborators', { record_id: recordId, collaborator_id: c.id });
+        }
+
+        modalIntervencao.classList.remove('aberto');
+        document.getElementById('form-intervencao').reset();
+        selecionadosIntervencao = [];
+        editandoRecordId = null;
+        recordsCache = [];
+        await carregarIntervencoes();
+        mostrarToast('Intervenção guardada com sucesso.');
+      } catch(err) {
+        alert('Erro ao guardar a intervenção: '+(err.message||err));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOrig;
+      }
+    });
+
+    // Modal Peça — criar
+    const modalPeca = document.getElementById('modal-peca');
+    document.getElementById('btn-nova-peca').addEventListener('click', () => {
+      document.getElementById('titulo-modal-peca').textContent = 'Adicionar Peça(s) Aplicada(s)';
+      document.getElementById('form-peca').reset();
+      document.getElementById('p-id').value = '';
+      document.getElementById('p-data').value = dataHoje();
+      document.getElementById('p-usar-stock').checked = false;
+      document.getElementById('pecas-linhas-container').innerHTML = '';
+      novaLinhaPeca();
+      seletorPColab.reset();
+      pecasCache = [];
+      modalPeca.classList.add('aberto');
+    });
+    document.getElementById('btn-cancelar-peca').addEventListener('click', () => modalPeca.classList.remove('aberto'));
+
+    document.getElementById('form-peca').addEventListener('submit', async ev => {
+      ev.preventDefault();
+      const btn = document.getElementById('btn-submit-peca');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const textoOrig = btn.textContent;
+      btn.textContent = 'A guardar...';
+
+      try {
+        const id = document.getElementById('p-id').value;
+        const usaStock = document.getElementById('p-usar-stock').checked;
+        const dataAplicacao = document.getElementById('p-data').value || null;
+        const colaboradorNome = document.getElementById('p-colaborador').value || null;
+        const linhas = document.querySelectorAll('.linha-peca-item');
+
+        for (const linha of linhas) {
+          const qtd = parseFloat(linha.querySelector('.linha-peca-qtd').value) || 1;
+          const unidade = linha.querySelector('.linha-peca-unidade').value;
+          let payload;
+
+          if (usaStock) {
+            const materialId = linha.querySelector('.linha-peca-material').value;
+            if (!materialId) { alert('Selecione um material do Stock em todas as linhas.'); btn.disabled=false; btn.textContent=textoOrig; return; }
+            const material = materiaisStock.find(m => m.id === materialId);
+
+            const movimento = await db.insert('stock_movimentos', {
+              tipo: 'saida', estado: 'pendente', material_id: materialId, quantidade: qtd,
+              data_movimento: dataAplicacao || dataHoje(), departamento: 'Oficina',
+              finalidade: `OS ${osAtual.numero_obra || 'S/Nº'} — ${equipAtual ? equipAtual.code : ''}`,
+              colaborador_nome: colaboradorNome || '', observacoes: `Avaria: ${osAtual.descricao_avaria || '—'}`,
+            });
+            const movId = Array.isArray(movimento) ? movimento[0].id : movimento.id;
+
+            payload = {
+              os_id: parseInt(osId), peca: material ? material.nome : 'Material do Stock',
+              data: dataAplicacao, quantidade: qtd, unidade: material ? (material.unidade||'Unidade') : unidade,
+              colaborador: colaboradorNome, material_id: materialId, stock_movimento_id: movId,
+            };
+          } else {
+            const nomePeca = linha.querySelector('.linha-peca-nome').value.trim();
+            if (!nomePeca) { alert('Preencha o nome da peça em todas as linhas.'); btn.disabled=false; btn.textContent=textoOrig; return; }
+            payload = {
+              os_id: parseInt(osId), peca: nomePeca, data: dataAplicacao,
+              quantidade: qtd, unidade, colaborador: colaboradorNome,
+              material_id: null, stock_movimento_id: null,
+            };
+            await registarMaterialSugerido(nomePeca);
+          }
+
+          if (id) await db.update('os_pecas', id, payload);
+          else    await db.insert('os_pecas', payload);
+        }
+
+        pecasCache = [];
+        modalPeca.classList.remove('aberto');
+        await carregarPecas();
+        mostrarToast(usaStock ? 'Peça(s) registada(s) e saída pendente criada no Stock.' : 'Peça(s) guardada(s) com sucesso.');
+      } catch(err) {
+        alert('Erro ao guardar peça: '+(err.message||err));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOrig;
+      }
+    });
+
+    (async function init() {
+      await carregarTecnicosBase();
+      await carregarMateriaisStock();
+      await carregarMateriaisSugeridos();
+      await carregarOS();
+      await carregarTimeline();
+      await carregarIntervencoes();
+      await carregarPecas();
+    })();
+  </script>
+</body>
+</html>

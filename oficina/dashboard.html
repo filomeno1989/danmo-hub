@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Danmo Oficina</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .filtros-bar { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:20px; }
+    .filtros-bar .form-group { margin:0; min-width:140px; }
+    .kpi-topo { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:24px; }
+    .kpi-card.clicavel { cursor:pointer; transition: transform .15s, border-color .15s; }
+    .kpi-card.clicavel:hover { transform: translateY(-2px); border-color: var(--amber); }
+    .frota-card { margin-bottom:20px; }
+    .frota-titulo {
+      font-size:13px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.5px; color:var(--amber); margin-bottom:8px;
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;
+    }
+    .frota-titulo .total-badge { font-size:11px; color:var(--text2); font-weight:400; text-transform:none; letter-spacing:0; }
+    .frota-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .frota-table thead th {
+      background:var(--navy3); color:var(--text2); font-size:10px; font-weight:700;
+      text-transform:uppercase; letter-spacing:.5px; padding:7px 10px; text-align:left;
+    }
+    .frota-table tbody td { padding:8px 10px; border-bottom:1px solid var(--border); }
+    .frota-table tbody tr:last-child td { border-bottom:none; }
+    .barra-wrap { display:flex; align-items:center; gap:8px; min-width:160px; }
+    .barra-bg { flex:1; height:8px; background:rgba(255,255,255,0.08); border-radius:4px; overflow:hidden; }
+    .barra-fill { height:100%; border-radius:4px; transition:width .4s; }
+    .barra-pct { font-size:11px; color:var(--text2); min-width:32px; text-align:right; }
+    .cor-disponivel { background:var(--green); }
+    .cor-avariada   { background:var(--red); }
+    .cor-acidentada { background:#f97316; }
+    .cor-pneumatico { background:var(--blue); }
+    .cor-revisao    { background:var(--amber); }
+    .cor-inspecao   { background:#a855f7; }
+    .cor-acessorio  { background:#64748b; }
+    .cor-concluido  { background:#22d3ee; }
+    .badge-disp { background:rgba(34,197,94,.15);  color:var(--green); }
+    .badge-av   { background:rgba(239,68,68,.15);   color:var(--red); }
+    .badge-ac   { background:rgba(249,115,22,.15);  color:#f97316; }
+    .badge-pn   { background:rgba(59,130,246,.15);  color:var(--blue); }
+    .badge-rv   { background:rgba(245,158,11,.15);  color:var(--amber); }
+    .badge-in   { background:rgba(168,85,247,.15);  color:#a855f7; }
+    .badge-aa   { background:rgba(100,116,139,.15); color:#94a3b8; }
+    .badge-co   { background:rgba(34,211,238,.15);  color:#22d3ee; }
+    .grid-2col { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    @media(max-width:700px){ .grid-2col { grid-template-columns:1fr; } }
+    .legenda { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; font-size:12px; }
+    .legenda-item {
+      display:flex; align-items:center; gap:5px; cursor:pointer; padding:4px 10px;
+      border-radius:20px; border:1px solid var(--border); transition:all .15s;
+    }
+    .legenda-item:hover { border-color:var(--amber); background:rgba(245,158,11,.06); }
+    .legenda-cor { width:10px; height:10px; border-radius:2px; }
+    .grupo-section { margin-top:12px; padding-top:10px; border-top:1px solid var(--border); }
+    .grupo-label { font-size:11px; color:var(--text2); font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+    .alerta-dias { font-size:11px; font-weight:700; }
+    .alerta-dias.grave { color:var(--red); }
+    .alerta-dias.medio { color:var(--amber); }
+
+    /* Modal genérico */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; z-index:300; }
+    .modal-overlay.aberto { display:flex; }
+    .modal-box-lg {
+      background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius);
+      padding:24px; width:100%; max-width:820px; max-height:85vh; overflow-y:auto; box-shadow:var(--shadow);
+    }
+    .modal-close-btn { float:right; background:none; border:none; color:var(--text2); font-size:20px; cursor:pointer; line-height:1; }
+  </style>
+</head>
+<body>
+  <div id="navbar" class="navbar"></div>
+
+  <main class="main">
+    <h1 class="page-title">Dashboard — Oficina</h1>
+    <p class="page-sub">Disponibilidade da frota e estado das ordens de serviço — clique nos indicadores para ver detalhes</p>
+
+    <!-- Filtros -->
+    <div class="card">
+      <div class="filtros-bar">
+        <div class="form-group">
+          <label>Data início</label>
+          <input type="date" id="f-data-ini" />
+        </div>
+        <div class="form-group">
+          <label>Data fim</label>
+          <input type="date" id="f-data-fim" />
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="f-categoria"><option value="">Todas</option></select>
+        </div>
+        <div class="form-group">
+          <label>Grupo</label>
+          <select id="f-grupo"><option value="">Todos</option></select>
+        </div>
+        <div class="form-group">
+          <label>Sector</label>
+          <select id="f-sector">
+            <option value="">Todos</option>
+            <option value="Elétrica">Elétrica</option>
+            <option value="Mecânica">Mecânica</option>
+            <option value="Serralharia">Serralharia</option>
+            <option value="Pneumática">Pneumática</option>
+            <option value="Lubrificação">Lubrificação</option>
+            <option value="Piquete">Piquete</option>
+          </select>
+        </div>
+        <div class="form-group" style="align-self:flex-end">
+          <button class="btn btn-primary" id="btn-filtrar">Aplicar</button>
+        </div>
+        <div class="form-group" style="align-self:flex-end">
+          <button class="btn btn-ghost" id="btn-limpar">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs topo -->
+    <div class="kpi-topo" id="kpi-topo">
+      <div class="kpi-card clicavel" id="kpi-oficina"><div class="kpi-label">Obras em Andamento (Oficina)</div><div class="kpi-value" id="v-oficina">—</div></div>
+      <div class="kpi-card red clicavel" id="kpi-sem-nr"><div class="kpi-label">Sem Nº de Obra</div><div class="kpi-value" id="v-sem-nr">—</div></div>
+      <div class="kpi-card blue clicavel" id="kpi-em-cdm"><div class="kpi-label">Em CdM (Aguarda Devolução)</div><div class="kpi-value" id="v-em-cdm">—</div></div>
+      <div class="kpi-card green clicavel" id="kpi-fechadas"><div class="kpi-label">Fechadas no Período</div><div class="kpi-value" id="v-fechadas">—</div></div>
+      <div class="kpi-card clicavel" id="kpi-checklist"><div class="kpi-label">Checklists Pendentes</div><div class="kpi-value" id="v-checklist">—</div></div>
+      <div class="kpi-card blue clicavel" id="kpi-total-equip"><div class="kpi-label">Total Equipamentos Ativos</div><div class="kpi-value" id="v-total-equip">—</div></div>
+      <div class="kpi-card green clicavel" id="kpi-disponiveis"><div class="kpi-label">Disponíveis</div><div class="kpi-value" id="v-disponiveis">—</div></div>
+      <div class="kpi-card red clicavel" id="kpi-equip-oficina"><div class="kpi-label">Equipamentos Na Oficina</div><div class="kpi-value" id="v-equip-oficina">—</div></div>
+    </div>
+
+    <!-- Rastreio CdM -->
+    <div class="card">
+      <div class="card-title">Rastreio CdM — Envio, Devolução e Facturação</div>
+      <div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+        <div class="kpi-card"><div class="kpi-label">Total Enviadas à CdM</div><div class="kpi-value" id="v-cdm-total">—</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Ainda na CdM</div><div class="kpi-value" id="v-cdm-atual">—</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Retornaram e Fecharam</div><div class="kpi-value" id="v-cdm-voltaram">—</div></div>
+      </div>
+      <p class="text-muted" style="font-size:12px;margin-top:10px">
+        "Ainda na CdM" são obras cujo estado actual continua CdM — significa que a máquina já saiu da oficina mas ainda não foi facturada/devolvida.
+        Se este número não bater com o que a CdM reporta, há obras "perdidas" do lado deles.
+      </p>
+      <div class="table-wrap mt-16">
+        <table>
+          <thead><tr><th>Nº Obra</th><th>Equipamento</th><th>Sector</th><th>Enviada à CdM em</th><th>Dias na CdM</th><th></th></tr></thead>
+          <tbody id="tbody-cdm-pendentes"><tr><td colspan="6">A carregar...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Checklists Pendentes -->
+    <div class="card">
+      <div class="card-title">Checklists de Manutenção Pendentes</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nº Obra</th><th>Equipamento</th><th>Checklist</th><th>Situação</th><th>Progresso</th><th></th></tr></thead>
+          <tbody id="tbody-checklist-pendentes"><tr><td colspan="6">A carregar...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Legenda / filtros por estado físico -->
+    <div class="legenda" id="legenda-estados">
+      <div class="legenda-item" data-estado="Disponível"><div class="legenda-cor cor-disponivel"></div>Disponível</div>
+      <div class="legenda-item" data-estado="Avariada"><div class="legenda-cor cor-avariada"></div>Avariada</div>
+      <div class="legenda-item" data-estado="Acidentada"><div class="legenda-cor cor-acidentada"></div>Acidentada</div>
+      <div class="legenda-item" data-estado="Pneumático"><div class="legenda-cor cor-pneumatico"></div>Pneumático</div>
+      <div class="legenda-item" data-estado="Revisão/Manutenção"><div class="legenda-cor cor-revisao"></div>Revisão/Manutenção</div>
+      <div class="legenda-item" data-estado="Inspeção"><div class="legenda-cor cor-inspecao"></div>Inspeção</div>
+      <div class="legenda-item" data-estado="Aguarda Acessório"><div class="legenda-cor cor-acessorio"></div>Aguarda Acessório</div>
+      <div class="legenda-item" data-estado="Concluído"><div class="legenda-cor cor-concluido"></div>Concluído</div>
+    </div>
+
+    <!-- Disponibilidade por frota -->
+    <div class="card">
+      <div class="card-title">Disponibilidade por Frota</div>
+      <div id="frotas-container"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Resumo por estado -->
+    <div class="grid-2col">
+      <div class="card">
+        <div class="card-title">Obras por Estado da Obra</div>
+        <div id="resumo-workflow">A carregar...</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Obras por Estado Físico</div>
+        <div id="resumo-fisico">A carregar...</div>
+      </div>
+    </div>
+
+    <!-- Obras sem nº -->
+    <div class="card">
+      <div class="card-title">Obras sem Nº de Obra (aguardam CdM)</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Equipamento</th><th>Categoria</th><th>Grupo</th><th>Sector</th><th>Abertura</th><th>Dias à espera</th><th>Avaria</th></tr>
+          </thead>
+          <tbody id="tbody-sem-nr"><tr><td colspan="7">A carregar...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal genérico de Obras -->
+  <div class="modal-overlay" id="modal-ordens">
+    <div class="modal-box-lg">
+      <button class="modal-close-btn" onclick="fecharModal('modal-ordens')">×</button>
+      <div class="card-title" id="modal-ordens-titulo">—</div>
+      <div class="table-wrap mt-16">
+        <table>
+          <thead><tr><th>Nº Obra</th><th>Equipamento</th><th>Categoria</th><th>Sector</th><th>Abertura</th><th>Estado Físico</th><th>Estado Obra</th><th></th></tr></thead>
+          <tbody id="modal-ordens-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal genérico de Equipamentos -->
+  <div class="modal-overlay" id="modal-equip">
+    <div class="modal-box-lg">
+      <button class="modal-close-btn" onclick="fecharModal('modal-equip')">×</button>
+      <div class="card-title" id="modal-equip-titulo">—</div>
+      <div class="table-wrap mt-16">
+        <table>
+          <thead><tr><th>Código</th><th>Categoria</th><th>Grupo</th><th>Estado Físico</th><th>Obra(s) Abertas</th></tr></thead>
+          <tbody id="modal-equip-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="utils.js"></script>
+  <script src="tema.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    renderNavbarOficina('dashboard');
+
+    const ESTADOS_FISICO   = ['Avariada','Acidentada','Pneumático','Revisão/Manutenção','Inspeção','Aguarda Acessório','Concluído'];
+    const ESTADOS_WORKFLOW = ['Aberta (DTEC)','Supervisão','Chefe da Oficina','Departamento Técnico','CdM','Fechada'];
+    const PRIORIDADE_FISICO = ['Acidentada','Avariada','Pneumático','Aguarda Acessório','Revisão/Manutenção','Inspeção','Concluído'];
+
+    const COR_FISICO = {
+      'Disponível':'cor-disponivel','Avariada':'cor-avariada','Acidentada':'cor-acidentada',
+      'Pneumático':'cor-pneumatico','Revisão/Manutenção':'cor-revisao','Inspeção':'cor-inspecao',
+      'Aguarda Acessório':'cor-acessorio','Concluído':'cor-concluido',
+    };
+    const BADGE_FISICO = {
+      'Disponível':'badge-disp','Avariada':'badge-av','Acidentada':'badge-ac',
+      'Pneumático':'badge-pn','Revisão/Manutenção':'badge-rv','Inspeção':'badge-in',
+      'Aguarda Acessório':'badge-aa','Concluído':'badge-co',
+    };
+
+    function diasDesde(data) { return Math.floor((new Date()-new Date(data))/86400000); }
+    function barraHTML(pct, corClass) {
+      return `<div class="barra-wrap">
+        <div class="barra-bg"><div class="barra-fill ${corClass}" style="width:${pct}%"></div></div>
+        <div class="barra-pct">${pct}%</div>
+      </div>`;
+    }
+
+    let todosEquip=[], todasOrdens=[], todasCategorias=[], todosGrupos=[], statusLogTodos=[];
+
+    async function carregarListas() {
+      todasCategorias = await db.query('categorias_equipamento','select=*&ativo=eq.true&order=nome.asc');
+      todosGrupos     = await db.query('grupos_equipamento','select=*&ativo=eq.true&order=nome.asc');
+
+      const selCat = document.getElementById('f-categoria');
+      selCat.innerHTML = '<option value="">Todas</option>';
+      todasCategorias.forEach(c =>
+        selCat.insertAdjacentHTML('beforeend',`<option value="${c.id}">${c.nome}</option>`)
+      );
+    }
+
+    function atualizarGrupos() {
+      const catId = document.getElementById('f-categoria').value;
+      const selGrupo = document.getElementById('f-grupo');
+      const gruposFiltrados = catId
+        ? todosGrupos.filter(g => String(g.categoria_id) === catId)
+        : todosGrupos;
+      selGrupo.innerHTML = '<option value="">Todos</option>';
+      gruposFiltrados.forEach(g =>
+        selGrupo.insertAdjacentHTML('beforeend',`<option value="${g.id}">${g.nome}</option>`)
+      );
+    }
+    document.getElementById('f-categoria').addEventListener('change', atualizarGrupos);
+
+    function estadoEquip(equipId, abertas) {
+      const osAbertas = abertas.filter(o => o.equipment_id === equipId);
+      if (!osAbertas.length) return 'Disponível';
+      let melhorIdx = 999;
+      let estado = 'Concluído';
+      osAbertas.forEach(o => {
+        const idx = PRIORIDADE_FISICO.indexOf(o.status_fisico);
+        if (idx !== -1 && idx < melhorIdx) { melhorIdx = idx; estado = o.status_fisico; }
+      });
+      return estado;
+    }
+
+    // ═══ MODAIS GENÉRICOS ═══
+    function abrirModal(id) { document.getElementById(id).classList.add('aberto'); }
+    function fecharModal(id) { document.getElementById(id).classList.remove('aberto'); }
+
+    function abrirModalOrdens(titulo, lista) {
+      document.getElementById('modal-ordens-titulo').textContent = `${titulo} (${lista.length})`;
+      const tbody = document.getElementById('modal-ordens-tbody');
+      if (!lista.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-muted">Nenhuma obra encontrada.</td></tr>'; abrirModal('modal-ordens'); return; }
+      const mapaEquip = {}; todosEquip.forEach(e => mapaEquip[e.id]=e);
+      tbody.innerHTML = lista.map(o => {
+        const eq = mapaEquip[o.equipment_id] || {};
+        const badge = BADGE_FISICO[o.status_fisico] || 'badge-gray';
+        return `<tr>
+          <td>${o.numero_obra || '<span class="text-muted">s/nº</span>'}</td>
+          <td>${eq.code||'—'}</td>
+          <td>${eq.fleet_type||'—'}</td>
+          <td>${o.sector||'—'}</td>
+          <td>${formatarData(o.data_abertura)}</td>
+          <td><span class="badge ${badge}">${o.status_fisico||'—'}</span></td>
+          <td>${o.status_atual}</td>
+          <td><a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">Abrir →</a></td>
+        </tr>`;
+      }).join('');
+      abrirModal('modal-ordens');
+    }
+
+    function abrirModalEquip(titulo, listaEquip, abertas) {
+      document.getElementById('modal-equip-titulo').textContent = `${titulo} (${listaEquip.length})`;
+      const tbody = document.getElementById('modal-equip-tbody');
+      if (!listaEquip.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Nenhum equipamento encontrado.</td></tr>'; abrirModal('modal-equip'); return; }
+      tbody.innerHTML = listaEquip.map(e => {
+        const est = estadoEquip(e.id, abertas);
+        const badge = BADGE_FISICO[est] || '';
+        const osAb = abertas.filter(o => o.equipment_id === e.id);
+        const obras = osAb.length
+          ? osAb.map(o => `<a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">${o.numero_obra||'S/Nº'}</a>`).join(', ')
+          : '—';
+        return `<tr>
+          <td>${e.code}</td>
+          <td>${e.fleet_type||'—'}</td>
+          <td>${e.group_name||'—'}</td>
+          <td><span class="badge ${badge}">${est}</span></td>
+          <td>${obras}</td>
+        </tr>`;
+      }).join('');
+      abrirModal('modal-equip');
+    }
+
+    // ═══ CARREGAMENTO PRINCIPAL ═══
+    async function carregarDados() {
+      const dataIni    = document.getElementById('f-data-ini').value;
+      const dataFim    = document.getElementById('f-data-fim').value;
+      const catId      = document.getElementById('f-categoria').value;
+      const grupoId    = document.getElementById('f-grupo').value;
+      const sectFiltro = document.getElementById('f-sector').value;
+
+      todosEquip = await db.query('equipment','select=*&active=eq.true');
+      let qOrdens = 'select=*';
+      if (dataIni)    qOrdens += `&data_abertura=gte.${dataIni}`;
+      if (dataFim)    qOrdens += `&data_abertura=lte.${dataFim}`;
+      if (sectFiltro) qOrdens += `&sector=eq.${encodeURIComponent(sectFiltro)}`;
+      todasOrdens = await db.query('ordens_servico', qOrdens);
+
+      let equipFiltrados = [...todosEquip];
+      if (catId) {
+        const catObj = todasCategorias.find(c => String(c.id) === catId);
+        if (catObj) equipFiltrados = equipFiltrados.filter(e => e.fleet_type === catObj.nome);
+      }
+      if (grupoId) {
+        const grupoObj = todosGrupos.find(g => String(g.id) === grupoId);
+        if (grupoObj) equipFiltrados = equipFiltrados.filter(e => e.group_name === grupoObj.nome);
+      }
+
+      // ── Novas categorias de negócio ──
+      const naOficina  = todasOrdens.filter(o => !['CdM','Fechada'].includes(o.status_atual));
+      const emCdm      = todasOrdens.filter(o => o.status_atual === 'CdM');
+      const fechadas   = todasOrdens.filter(o => o.status_atual === 'Fechada');
+      const semNr      = naOficina.filter(o => !o.numero_obra);
+
+      // Equipamentos fisicamente na oficina = têm OS não fechada (inclui CdM ainda? Não — se está em CdM já saiu fisicamente)
+      const equipComOSNaOficina = new Set(naOficina.map(o => o.equipment_id));
+      const totalEquip   = equipFiltrados.length;
+      const equipNaOfic  = equipFiltrados.filter(e => equipComOSNaOficina.has(e.id)).length;
+      const disponiveis  = totalEquip - equipNaOfic;
+
+      // KPIs topo
+      document.getElementById('v-oficina').textContent      = naOficina.length;
+      document.getElementById('v-sem-nr').textContent       = semNr.length;
+      document.getElementById('v-em-cdm').textContent       = emCdm.length;
+      document.getElementById('v-fechadas').textContent     = fechadas.length;
+      document.getElementById('v-total-equip').textContent  = totalEquip;
+      document.getElementById('v-disponiveis').textContent  = disponiveis;
+      document.getElementById('v-equip-oficina').textContent= equipNaOfic;
+
+      // Clicks dos KPIs
+      document.getElementById('kpi-oficina').onclick     = () => abrirModalOrdens('Obras em Andamento (Oficina)', naOficina);
+      document.getElementById('kpi-sem-nr').onclick      = () => abrirModalOrdens('Obras sem Nº de Obra', semNr);
+      document.getElementById('kpi-em-cdm').onclick      = () => abrirModalOrdens('Obras em CdM (Aguardam Devolução)', emCdm);
+      document.getElementById('kpi-fechadas').onclick    = () => abrirModalOrdens('Obras Fechadas no Período', fechadas);
+      document.getElementById('kpi-total-equip').onclick = () => abrirModalEquip('Todos os Equipamentos Activos', equipFiltrados, naOficina);
+      document.getElementById('kpi-disponiveis').onclick = () => abrirModalEquip('Equipamentos Disponíveis', equipFiltrados.filter(e=>!equipComOSNaOficina.has(e.id)), naOficina);
+      document.getElementById('kpi-equip-oficina').onclick = () => abrirModalEquip('Equipamentos Na Oficina', equipFiltrados.filter(e=>equipComOSNaOficina.has(e.id)), naOficina);
+
+      // Legenda clicável
+      document.querySelectorAll('.legenda-item').forEach(el => {
+        el.onclick = () => {
+          const estado = el.dataset.estado;
+          const lista = estado === 'Disponível'
+            ? equipFiltrados.filter(e => estadoEquip(e.id, naOficina) === 'Disponível')
+            : equipFiltrados.filter(e => estadoEquip(e.id, naOficina) === estado);
+          abrirModalEquip(`Equipamentos — ${estado}`, lista, naOficina);
+        };
+      });
+
+      renderFrotas(equipFiltrados, naOficina, catId, grupoId);
+      renderResumoWorkflow(todasOrdens);
+      renderResumoFisico(naOficina);
+      renderSemNr(semNr);
+      await renderRastreioCdM(emCdm, todasOrdens);
+      await renderChecklistsPendentes(naOficina);
+    }
+
+    // ═══ RASTREIO CdM ═══
+    async function renderRastreioCdM(emCdm, todasOrdensFiltradas) {
+      const idsFiltrados = todasOrdensFiltradas.map(o => o.id);
+      let logCdm = [];
+      if (idsFiltrados.length) {
+        const idsStr = idsFiltrados.join(',');
+        logCdm = await db.query('os_status_log', `select=*&status_novo=eq.CdM&os_id=in.(${idsStr})`);
+      }
+      const idsPassaramPorCdm = new Set(logCdm.map(l => l.os_id));
+      const totalEnviadas = idsPassaramPorCdm.size;
+      const aindaNaCdm = emCdm.length;
+      const voltaram = totalEnviadas - aindaNaCdm;
+
+      document.getElementById('v-cdm-total').textContent    = totalEnviadas;
+      document.getElementById('v-cdm-atual').textContent    = aindaNaCdm;
+      document.getElementById('v-cdm-voltaram').textContent = voltaram >= 0 ? voltaram : 0;
+
+      // Data de entrada em CdM por obra (a mais recente)
+      const mapaDataCdm = {};
+      logCdm.forEach(l => {
+        if (!mapaDataCdm[l.os_id] || new Date(l.data_mudanca) > new Date(mapaDataCdm[l.os_id])) {
+          mapaDataCdm[l.os_id] = l.data_mudanca;
+        }
+      });
+
+      const mapaEquip = {}; todosEquip.forEach(e => mapaEquip[e.id]=e);
+      const tbody = document.getElementById('tbody-cdm-pendentes');
+      if (!emCdm.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Nenhuma obra pendente na CdM.</td></tr>'; return; }
+
+      tbody.innerHTML = emCdm
+        .map(o => ({ o, dataCdm: mapaDataCdm[o.id] || o.atualizado_em || o.data_abertura }))
+        .sort((a,b) => new Date(a.dataCdm) - new Date(b.dataCdm))
+        .map(({o, dataCdm}) => {
+          const eq = mapaEquip[o.equipment_id] || {};
+          const dias = diasDesde(dataCdm);
+          const classe = dias > 30 ? 'grave' : dias > 14 ? 'medio' : '';
+          return `<tr>
+            <td><a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">${o.numero_obra||'S/Nº'}</a></td>
+            <td>${eq.code||'—'}</td>
+            <td>${o.sector||'—'}</td>
+            <td>${formatarData(dataCdm)}</td>
+            <td class="alerta-dias ${classe}">${dias} dia${dias!==1?'s':''}</td>
+            <td><a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">Ver →</a></td>
+          </tr>`;
+        }).join('');
+    }
+
+    // ═══ CHECKLISTS PENDENTES ═══
+    async function renderChecklistsPendentes(naOficina) {
+      const obrasRevisao = naOficina.filter(o => (o.tipo_intervencao||[]).includes('Revisão'));
+      const tbody = document.getElementById('tbody-checklist-pendentes');
+
+      if (!obrasRevisao.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Nenhuma obra em revisão no momento.</td></tr>';
+        document.getElementById('v-checklist').textContent = 0;
+        document.getElementById('kpi-checklist').onclick = () => abrirModalOrdens('Checklists Pendentes', []);
+        return;
+      }
+
+      const osIds = obrasRevisao.map(o => o.id).join(',');
+      const checklists = await db.query('checklist_preenchidos', `select=*&os_id=in.(${osIds})&substituido=eq.false`);
+      const templateIds = [...new Set(checklists.map(c => c.template_id))].join(',');
+      const templates = templateIds ? await db.query('checklist_templates', `select=id,nome&id=in.(${templateIds})`) : [];
+      const mapaTemplate = {}; templates.forEach(t => mapaTemplate[t.id] = t.nome);
+
+      const checklistIds = checklists.map(c => c.id).join(',');
+      const itens = checklistIds ? await db.query('checklist_preenchidos_itens', `select=checklist_id,executado,estado&checklist_id=in.(${checklistIds})`) : [];
+
+      const mapaEquip = {}; todosEquip.forEach(e => mapaEquip[e.id]=e);
+      const pendentes = [];
+
+      obrasRevisao.forEach(o => {
+        const ck = checklists.find(c => c.os_id === o.id);
+        const eq = mapaEquip[o.equipment_id] || {};
+        if (!ck) {
+          pendentes.push({ o, eq, nome: '—', situacao: 'Não iniciado', progresso: '0/0', urgente: true });
+          return;
+        }
+        const itensDoCk = itens.filter(i => i.checklist_id === ck.id);
+        const total = itensDoCk.length;
+        const feitos = itensDoCk.filter(i => i.executado || i.estado).length;
+        if (feitos < total) {
+          pendentes.push({ o, eq, nome: mapaTemplate[ck.template_id]||'—', situacao: 'Incompleto', progresso: `${feitos}/${total}`, urgente:false, checklistId: ck.id });
+        }
+      });
+
+      document.getElementById('v-checklist').textContent = pendentes.length;
+      document.getElementById('kpi-checklist').onclick = () => abrirModalOrdens('Obras com Checklist Pendente', pendentes.map(p=>p.o));
+
+      if (!pendentes.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Todos os checklists em dia.</td></tr>'; return; }
+
+      tbody.innerHTML = pendentes.map(p => `<tr>
+        <td>${p.o.numero_obra||'S/Nº'}</td>
+        <td>${p.eq.code||'—'}</td>
+        <td>${p.nome}</td>
+        <td><span class="badge ${p.urgente?'badge-red':'badge-amber'}">${p.situacao}</span></td>
+        <td>${p.progresso}</td>
+        <td><a href="os_detalhe.html?id=${p.o.id}" style="color:var(--amber)">Abrir Obra →</a></td>
+      </tr>`).join('');
+    }
+
+    // ═══ FROTAS ═══
+    function renderFrotas(equips, abertas, catIdFiltro, grupoIdFiltro) {
+      const container = document.getElementById('frotas-container');
+      let categoriasParaMostrar;
+      if (catIdFiltro) {
+        const catObj = todasCategorias.find(c => String(c.id) === catIdFiltro);
+        categoriasParaMostrar = catObj ? [catObj] : [];
+      } else {
+        categoriasParaMostrar = todasCategorias;
+      }
+
+      if (!categoriasParaMostrar.length) {
+        container.innerHTML = '<p class="text-muted">Sem categorias cadastradas. Registe em Configurações.</p>';
+        return;
+      }
+
+      let html = '';
+      categoriasParaMostrar.forEach(cat => {
+        const equipCat = equips.filter(e => e.fleet_type === cat.nome);
+        const gruposDaCat = todosGrupos.filter(g => g.categoria_id === cat.id);
+        const gruposParaMostrar = grupoIdFiltro
+          ? gruposDaCat.filter(g => String(g.id) === grupoIdFiltro)
+          : gruposDaCat;
+
+        const total = equipCat.length;
+        const disponiveis = equipCat.filter(e => estadoEquip(e.id, abertas) === 'Disponível').length;
+        const pctDisp = total > 0 ? Math.round(disponiveis/total*100) : 0;
+
+        html += `<div class="frota-card">
+          <div class="frota-titulo">
+            ${cat.nome}
+            <span class="total-badge">${total} equipamentos | ${disponiveis} disponíveis (${pctDisp}%)</span>
+          </div>`;
+
+        if (total === 0) {
+          html += `<p class="text-muted" style="font-size:12px;margin-bottom:8px">Sem equipamentos cadastrados nesta categoria.</p>`;
+        } else {
+          html += tabelaEstados(equipCat, abertas, total);
+        }
+
+        if (gruposParaMostrar.length > 0) {
+          gruposParaMostrar.forEach(grupo => {
+            const equipGrupo = equipCat.filter(e => e.group_name === grupo.nome);
+            const totalG = equipGrupo.length;
+            const dispG  = equipGrupo.filter(e => estadoEquip(e.id, abertas) === 'Disponível').length;
+            const pctG   = totalG > 0 ? Math.round(dispG/totalG*100) : 0;
+
+            html += `<div class="grupo-section">
+              <div class="grupo-label">${grupo.nome} — ${totalG} equip. | ${dispG} disp. (${pctG}%)</div>`;
+            if (totalG === 0) {
+              html += `<p class="text-muted" style="font-size:12px">Sem equipamentos neste grupo.</p>`;
+            } else {
+              html += tabelaEstados(equipGrupo, abertas, totalG);
+              html += detalheEquip(equipGrupo, abertas);
+            }
+            html += `</div>`;
+          });
+        } else if (total > 0) {
+          html += detalheEquip(equipCat, abertas);
+        }
+
+        html += `</div>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function tabelaEstados(equipLista, abertas, total) {
+      const contagem = { 'Disponível': 0 };
+      ESTADOS_FISICO.forEach(s => contagem[s] = 0);
+      equipLista.forEach(e => {
+        const est = estadoEquip(e.id, abertas);
+        if (contagem[est] !== undefined) contagem[est]++;
+        else contagem[est] = 1;
+      });
+
+      let html = `<table class="frota-table">
+        <thead><tr><th>Estado</th><th>Qtd</th><th style="width:200px">Distribuição</th><th>%</th></tr></thead>
+        <tbody>`;
+      const todosEstados = ['Disponível', ...ESTADOS_FISICO];
+      todosEstados.forEach(est => {
+        const qtd = contagem[est] || 0;
+        if (!qtd) return;
+        const pct   = total > 0 ? Math.round(qtd/total*100) : 0;
+        const cor   = COR_FISICO[est] || 'cor-disponivel';
+        const badge = BADGE_FISICO[est] || '';
+        html += `<tr>
+          <td><span class="badge ${badge}">${est}</span></td>
+          <td>${qtd}</td>
+          <td>${barraHTML(pct, cor)}</td>
+          <td>${pct}%</td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      return html;
+    }
+
+    function detalheEquip(equipLista, abertas) {
+      let html = `<details style="margin-top:8px">
+        <summary style="cursor:pointer;font-size:11px;color:var(--text2);user-select:none;">
+          Ver detalhe por máquina (${equipLista.length})
+        </summary>
+        <div class="table-wrap" style="margin-top:6px">
+          <table class="frota-table">
+            <thead><tr><th>Código</th><th>Grupo</th><th>Estado</th><th>Obra(s) abertas</th></tr></thead>
+            <tbody>`;
+      equipLista.sort((a,b)=>(a.code||'').localeCompare(b.code||'')).forEach(e => {
+        const est   = estadoEquip(e.id, abertas);
+        const badge = BADGE_FISICO[est] || '';
+        const osAb  = abertas.filter(o => o.equipment_id === e.id);
+        const obras = osAb.map(o => `<a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">${o.numero_obra||'S/Nº'}</a>`).join(', ') || '—';
+        html += `<tr>
+          <td>${e.code}</td>
+          <td>${e.group_name||'—'}</td>
+          <td><span class="badge ${badge}">${est}</span></td>
+          <td>${obras}</td>
+        </tr>`;
+      });
+      html += `</tbody></table></div></details>`;
+      return html;
+    }
+
+    function renderResumoWorkflow(ordens) {
+      const total = ordens.length || 1;
+      let html = `<table class="frota-table">
+        <thead><tr><th>Estado</th><th>Qtd</th><th style="width:150px">Barra</th></tr></thead><tbody>`;
+      ESTADOS_WORKFLOW.forEach(est => {
+        const qtd = ordens.filter(o => o.status_atual === est).length;
+        if (!qtd) return;
+        const pct = Math.round(qtd/total*100);
+        html += `<tr><td>${est}</td><td>${qtd}</td><td>${barraHTML(pct,'cor-revisao')}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+      document.getElementById('resumo-workflow').innerHTML = html;
+    }
+
+    function renderResumoFisico(naOficina) {
+      const total = naOficina.length || 1;
+      let html = `<table class="frota-table">
+        <thead><tr><th>Estado Físico</th><th>Qtd</th><th style="width:150px">Barra</th></tr></thead><tbody>`;
+      ESTADOS_FISICO.forEach(est => {
+        const qtd = naOficina.filter(o => o.status_fisico === est).length;
+        if (!qtd) return;
+        const pct   = Math.round(qtd/total*100);
+        const cor   = COR_FISICO[est] || 'cor-avariada';
+        const badge = BADGE_FISICO[est] || '';
+        html += `<tr>
+          <td><span class="badge ${badge}">${est}</span></td>
+          <td>${qtd}</td>
+          <td>${barraHTML(pct,cor)}</td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      document.getElementById('resumo-fisico').innerHTML = html;
+    }
+
+    function renderSemNr(semNr) {
+      const tbody = document.getElementById('tbody-sem-nr');
+      const mapaEquip = {};
+      todosEquip.forEach(e => mapaEquip[e.id] = e);
+      if (!semNr.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-muted">Nenhuma obra sem número.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = semNr
+        .sort((a,b) => new Date(a.data_abertura)-new Date(b.data_abertura))
+        .map(o => {
+          const eq   = mapaEquip[o.equipment_id] || {};
+          const dias = diasDesde(o.data_abertura);
+          const cor  = dias>14?'color:var(--red);font-weight:700':dias>7?'color:var(--amber)':'';
+          const avaria = o.descricao_avaria
+            ? (o.descricao_avaria.length>50?o.descricao_avaria.slice(0,50)+'…':o.descricao_avaria)
+            : '—';
+          return `<tr>
+            <td><a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">${eq.code||'—'}</a></td>
+            <td>${eq.fleet_type||'—'}</td>
+            <td>${eq.group_name||'—'}</td>
+            <td>${o.sector||'—'}</td>
+            <td>${formatarData(o.data_abertura)}</td>
+            <td style="${cor}">${dias} dia${dias!==1?'s':''}</td>
+            <td title="${o.descricao_avaria||''}">${avaria}</td>
+          </tr>`;
+        }).join('');
+    }
+
+    document.getElementById('btn-filtrar').addEventListener('click', carregarDados);
+    document.getElementById('btn-limpar').addEventListener('click', () => {
+      ['f-data-ini','f-data-fim','f-categoria','f-grupo','f-sector'].forEach(id =>
+        document.getElementById(id).value = ''
+      );
+      atualizarGrupos();
+      carregarDados();
+    });
+
+    (async function init() {
+      await carregarListas();
+      atualizarGrupos();
+      await carregarDados();
+    })();
+  </script>
+</body>
+</html>

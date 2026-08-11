@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Equipamentos — Danmo Oficina</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      align-items: center; justify-content: center; z-index: 200;
+    }
+    .modal-overlay.aberto { display: flex; }
+    .modal-box {
+      background: var(--navy2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 24px; width: 100%; max-width: 440px; box-shadow: var(--shadow);
+      max-height: 90vh; overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar" class="navbar"></div>
+
+  <main class="main">
+    <div class="flex-between mt-16">
+      <h1 class="page-title" style="margin-bottom:0">Equipamentos</h1>
+      <button class="btn btn-primary" id="btn-novo-equip">+ Novo Equipamento</button>
+    </div>
+    <p class="page-sub">Cadastro de máquinas da oficina</p>
+
+    <div class="card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="filtro-categoria"><option value="">Todas</option></select>
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="filtro-ativo">
+            <option value="">Todos</option>
+            <option value="true">Ativos</option>
+            <option value="false">Inativos</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Buscar código</label>
+          <input type="text" id="filtro-busca" placeholder="Ex: 45-30" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Categoria</th>
+              <th>Grupo</th>
+              <th>Modelo</th>
+              <th>Ano Aquisição</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-equip">
+            <tr><td colspan="7">A carregar...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="modal-equip">
+    <div class="modal-box">
+      <div class="card-title" id="titulo-modal-equip">Novo Equipamento</div>
+      <form id="form-equip">
+        <input type="hidden" id="e-id" />
+        <div class="form-group mt-16">
+          <label>Código</label>
+          <input type="text" id="e-code" required placeholder="Ex: 45-30" />
+        </div>
+        <div class="form-group mt-16">
+          <label>Nome</label>
+          <input type="text" id="e-name" placeholder="Opcional" />
+        </div>
+        <div class="form-group mt-16">
+          <label>Categoria</label>
+          <select id="e-fleet" required></select>
+        </div>
+        <div class="form-group mt-16">
+          <label>Grupo</label>
+          <select id="e-group"></select>
+        </div>
+        <div class="form-group mt-16">
+          <label>Modelo</label>
+          <input type="text" id="e-model" />
+        </div>
+        <div class="form-group mt-16">
+          <label>Ano de Aquisição</label>
+          <input type="number" id="e-ano-aq" min="1980" max="2100" />
+        </div>
+        <div class="form-group mt-16">
+          <label>Ano de Abate (se aplicável)</label>
+          <input type="number" id="e-ano-abate" min="1980" max="2100" />
+        </div>
+        <div class="form-group mt-16">
+          <label>Ativo</label>
+          <select id="e-active">
+            <option value="true">Sim</option>
+            <option value="false">Não</option>
+          </select>
+        </div>
+        <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
+          <button type="button" class="btn btn-ghost" id="btn-cancelar-equip">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="utils.js"></script>
+  <script src="tema.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    renderNavbarOficina('equipamentos');
+
+    let todosEquip = [];
+    let categorias = [];
+    let grupos = [];
+
+    async function carregarListasConfig() {
+      categorias = await db.query('categorias_equipamento', 'select=*&ativo=eq.true&order=nome.asc');
+      grupos = await db.query('grupos_equipamento', 'select=*&ativo=eq.true&order=nome.asc');
+
+      const selFleet = document.getElementById('e-fleet');
+      selFleet.innerHTML = categorias.map((c) => `<option value="${c.nome}">${c.nome}</option>`).join('');
+
+      atualizarGruposDoSelect();
+
+      const selCategoriaFiltro = document.getElementById('filtro-categoria');
+      selCategoriaFiltro.innerHTML =
+        '<option value="">Todas</option>' + categorias.map((c) => `<option value="${c.nome}">${c.nome}</option>`).join('');
+    }
+
+    function atualizarGruposDoSelect() {
+      const categoriaSelecionada = document.getElementById('e-fleet').value;
+      const cat = categorias.find((c) => c.nome === categoriaSelecionada);
+      const selGroup = document.getElementById('e-group');
+      const gruposFiltrados = cat ? grupos.filter((g) => g.categoria_id === cat.id) : [];
+      selGroup.innerHTML =
+        '<option value="">— Sem grupo —</option>' +
+        gruposFiltrados.map((g) => `<option value="${g.nome}">${g.nome}</option>`).join('');
+    }
+
+    document.getElementById('e-fleet').addEventListener('change', atualizarGruposDoSelect);
+
+    async function carregarEquipamentos() {
+      todosEquip = await db.query('equipment', 'select=*&order=code.asc');
+      renderizarTabela();
+    }
+
+    function renderizarTabela() {
+      const filtroCategoria = document.getElementById('filtro-categoria').value;
+      const filtroAtivo = document.getElementById('filtro-ativo').value;
+      const busca = document.getElementById('filtro-busca').value.trim().toLowerCase();
+
+      let lista = [...todosEquip];
+      if (filtroCategoria) lista = lista.filter((e) => e.fleet_type === filtroCategoria);
+      if (filtroAtivo) lista = lista.filter((e) => String(e.active) === filtroAtivo);
+      if (busca) lista = lista.filter((e) => (e.code || '').toLowerCase().includes(busca));
+
+      const tbody = document.getElementById('tbody-equip');
+      if (lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7">Nenhum equipamento encontrado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = lista
+        .map(
+          (e) => `
+        <tr>
+          <td>${e.code}</td>
+          <td>${e.fleet_type || '—'}</td>
+          <td>${e.group_name || '—'}</td>
+          <td>${e.model || '—'}</td>
+          <td>${e.year_acquired || '—'}</td>
+          <td><span class="badge ${e.active ? 'badge-green' : 'badge-gray'}">${e.active ? 'Ativo' : 'Inativo'}</span></td>
+          <td>
+  <button class="btn btn-ghost btn-sm" onclick="window.location.href='maquina_historico.html?id=${e.id}'" style="margin-right:4px">📊 Histórico</button>
+  <button class="btn btn-ghost btn-sm" onclick="editarEquip(${e.id})">Editar</button>
+</td>
+        </tr>`
+        )
+        .join('');
+    }
+
+    document.getElementById('filtro-categoria').addEventListener('change', renderizarTabela);
+    document.getElementById('filtro-ativo').addEventListener('change', renderizarTabela);
+    document.getElementById('filtro-busca').addEventListener('input', renderizarTabela);
+
+    const modal = document.getElementById('modal-equip');
+
+    function abrirModalNovo() {
+      document.getElementById('form-equip').reset();
+      document.getElementById('e-id').value = '';
+      atualizarGruposDoSelect();
+      document.getElementById('titulo-modal-equip').textContent = 'Novo Equipamento';
+      modal.classList.add('aberto');
+    }
+
+    function editarEquip(id) {
+      const e = todosEquip.find((x) => x.id === id);
+      if (!e) return;
+      document.getElementById('e-id').value = e.id;
+      document.getElementById('e-code').value = e.code || '';
+      document.getElementById('e-name').value = e.name || '';
+      document.getElementById('e-fleet').value = e.fleet_type || '';
+      atualizarGruposDoSelect();
+      document.getElementById('e-group').value = e.group_name || '';
+      document.getElementById('e-model').value = e.model || '';
+      document.getElementById('e-ano-aq').value = e.year_acquired || '';
+      document.getElementById('e-ano-abate').value = e.year_decommissioned || '';
+      document.getElementById('e-active').value = String(e.active);
+      document.getElementById('titulo-modal-equip').textContent = `Editar — ${e.code}`;
+      modal.classList.add('aberto');
+    }
+
+    document.getElementById('btn-novo-equip').addEventListener('click', abrirModalNovo);
+    document.getElementById('btn-cancelar-equip').addEventListener('click', () => modal.classList.remove('aberto'));
+
+    document.getElementById('form-equip').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const id = document.getElementById('e-id').value;
+      const payload = {
+        code: document.getElementById('e-code').value.trim(),
+        name: document.getElementById('e-name').value.trim() || null,
+        fleet_type: document.getElementById('e-fleet').value.trim(),
+        group_name: document.getElementById('e-group').value.trim() || null,
+        model: document.getElementById('e-model').value.trim() || null,
+        year_acquired: document.getElementById('e-ano-aq').value || null,
+        year_decommissioned: document.getElementById('e-ano-abate').value || null,
+        active: document.getElementById('e-active').value === 'true',
+      };
+
+      try {
+        if (id) {
+          await db.update('equipment', id, payload);
+        } else {
+          await db.insert('equipment', payload);
+        }
+        modal.classList.remove('aberto');
+        await carregarEquipamentos();
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao guardar o equipamento.');
+      }
+    });
+
+    (async function init() {
+      await carregarListasConfig();
+      await carregarEquipamentos();
+    })();
+  </script>
+</body>
+</html>
