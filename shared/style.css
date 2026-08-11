@@ -71,23 +71,23 @@
 
 /* ── Tema Escuro ─────────────────────────────────────────── */
 [data-tema="escuro"] {
-  --cor-fundo:          #0F172A;
-  --cor-superficie:     #1E293B;
+  --cor-fundo:          #1E293B;
+  --cor-superficie:     #334155;
   --cor-texto:          #E2E8F0;
   --cor-texto-sec:      #94A3B8;
-  --cor-borda:          #334155;
-  --cor-navy:           #0F172A;
-  --cor-navy-hover:     #1E293B;
+  --cor-borda:          #475569;
+  --cor-navy:           #020617;
+  --cor-navy-hover:     #0F172A;
   --cor-navy-claro:     #1E3A5F;
   --cor-ambar-claro:    #451A03;
   --cor-sucesso-bg:     #052E16;
   --cor-erro-bg:        #450A0A;
   --cor-aviso-bg:       #451A03;
   --cor-info-bg:        #172554;
-  --sombra-sm:   0 1px 2px rgba(0,0,0,0.3);
-  --sombra-md:   0 4px 6px rgba(0,0,0,0.4);
-  --sombra-lg:   0 10px 25px rgba(0,0,0,0.5);
-  --sidebar-colh: #0A0F1A;
+  --sombra-sm:   0 1px 2px rgba(0,0,0,0.4);
+  --sombra-md:   0 4px 6px rgba(0,0,0,0.5);
+  --sombra-lg:   0 10px 25px rgba(0,0,0,0.6);
+  --sidebar-colh: #020617;
 }
 
 /* ── Reset Base ──────────────────────────────────────────── */
