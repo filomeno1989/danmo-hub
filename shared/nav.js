@@ -2,7 +2,6 @@
  * nav.js — Topbar + Sidebar unificados (Danmo Hub)
  * Injeta a navegação completa dentro de <div id="navbar"></div>.
  * Todas as aplicações do Hub usam ESTE ficheiro.
- * Requer: shared/style.css, shared/auth.js, shared/tema.js já carregados antes.
  * Última atualização: 2026-08-11
  */
 
@@ -14,7 +13,7 @@
   const BASE = srcAttr.replace(/shared\/nav\.js.*$/, '');
 
   const MODULOS = [
-    { id: 'inicio', label: 'Painel Principal', icon: '&#9776;', href: 'index.html' },
+    { id: 'inicio', label: 'Painel Principal', icon: '&#127968;', href: 'index.html' },
 
     { id: 'oficina', label: 'Oficina & Manutenção', icon: '&#9881;', pasta: 'oficina',
       sub: [
@@ -32,13 +31,13 @@
         { label: 'Finanças & Faturas',       href: 'financeiro/index.html' }
       ] },
 
-    { id: 'stock', label: 'Gestão de Stock', icon: '&#9638;', href: 'stock/index.html', pasta: 'stock' },
+    { id: 'stock', label: 'Gestão de Stock', icon: '&#128230;', href: 'stock/index.html', pasta: 'stock' },
 
-    { id: 'hst', label: 'Portal HST', icon: '&#9762;', href: 'hst/index.html', pasta: 'hst' },
+    { id: 'hst', label: 'Portal HST', icon: '&#9888;', href: 'hst/index.html', pasta: 'hst' },
 
     { id: 'ferramentaria', label: 'Ferramentaria', icon: '&#128295;', href: '#', dev: true },
 
-    { id: 'gestao', label: 'Gestão & Registos', icon: '&#9881;', href: '#', dev: true }
+    { id: 'gestao', label: 'Gestão & Registos', icon: '&#128203;', href: '#', dev: true }
   ];
 
   const caminhoAtual = window.location.pathname;
@@ -52,11 +51,11 @@
       const aberto = ehAtivo(mod);
       const subHtml = mod.sub.map(s => {
         const subAtivo = caminhoAtual.endsWith(s.href) || caminhoAtual.includes(s.href);
-        return `<a href="${BASE}${s.href}" class="${subAtivo ? 'ativo' : ''}">${s.label}</a>`;
+        return `<a href="${BASE}${s.href}" class="${subAtivo ? 'ativo' : ''}"><span>${s.label}</span></a>`;
       }).join('');
       return `
         <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn${aberto ? ' ativo' : ''}" data-alvo="sub-${mod.id}" aria-expanded="${aberto}">
+          <button class="sidebar-modulo-btn${aberto ? ' ativo' : ''}" data-alvo="sub-${mod.id}" aria-expanded="${aberto}" title="${mod.label}">
             <span class="modulo-icon">${mod.icon}</span>
             <span class="modulo-label">${mod.label}</span>
             <span class="modulo-seta">&#9654;</span>
@@ -67,10 +66,10 @@
     if (mod.dev) {
       return `
         <li class="sidebar-modulo">
-          <span class="sidebar-modulo-btn" style="opacity:.5;cursor:default;">
+          <span class="sidebar-modulo-btn sidebar-dev-item" title="${mod.label} (Em Desenvolvimento)">
             <span class="modulo-icon">${mod.icon}</span>
             <span class="modulo-label">${mod.label}</span>
-            <span class="badge badge-aviso" style="margin-left:auto;font-size:9px;">Dev</span>
+            <span class="badge badge-aviso sidebar-dev-badge">Dev</span>
           </span>
         </li>`;
     }
@@ -79,7 +78,7 @@
       : ehAtivo(mod);
     return `
       <li class="sidebar-modulo">
-        <a href="${BASE}${mod.href}" class="sidebar-modulo-btn${ativo ? ' ativo' : ''}">
+        <a href="${BASE}${mod.href}" class="sidebar-modulo-btn${ativo ? ' ativo' : ''}" title="${mod.label}">
           <span class="modulo-icon">${mod.icon}</span>
           <span class="modulo-label">${mod.label}</span>
         </a>
@@ -92,7 +91,7 @@
         ${MODULOS.map(htmlModulo).join('')}
         <div class="sidebar-separador"></div>
         <li class="sidebar-modulo">
-          <button class="sidebar-modulo-btn" id="btn-sair" style="color:var(--cor-vermelho-danmo);">
+          <button class="sidebar-modulo-btn sidebar-sair-btn" id="btn-sair" title="Terminar Sessão">
             <span class="modulo-icon">&#10006;</span>
             <span class="modulo-label">Terminar Sessão</span>
           </button>
@@ -102,21 +101,26 @@
 
   const topbarHtml = `
     <header class="topbar">
-      <a href="${BASE}index.html" class="topbar-logo">
-        <img src="${BASE}shared/logos/danmo-logo.png" alt="Logo Danmo Service System" width="36" height="36">
-        <div class="logo-texto">Portal Danmo <span>Service System, Lda</span></div>
-      </a>
+      <div class="topbar-esquerda-grupo">
+        <button id="btn-menu-mobile" class="topbar-hamburguer-btn" aria-label="Alternar menu" title="Recolher / Expandir Menu">
+          &#9776;
+        </button>
+        <a href="${BASE}index.html" class="topbar-logo">
+          <img src="${BASE}shared/logos/danmo-logo.png" alt="Logo Danmo Service System" width="36" height="36">
+          <div class="logo-texto">Portal Danmo <span>Service System, Lda</span></div>
+        </a>
+      </div>
       <div class="topbar-centro">
         <span class="topbar-data" id="topbar-data"></span>
         <span class="topbar-relogio" id="topbar-relogio"></span>
       </div>
       <div class="topbar-direita">
-        <button class="topbar-tema-btn" id="btn-tema" aria-label="Alternar tema" title="Claro / Escuro">&#9790;</button>
+        <button class="topbar-tema-btn" id="btn-tema" aria-label="Alternar tema" title="Alternar Modo Claro / Escuro">&#9790;</button>
         <button class="topbar-notif-btn" id="btn-notif" aria-label="Notificações" title="Notificações">
           &#128276;
           <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
         </button>
-        <div class="topbar-perfil" id="perfil-botao" tabindex="0" role="button" aria-label="Menu do utilizador">
+        <div class="topbar-perfil" id="perfil-botao" tabindex="0" role="button" aria-label="Menu do utilizador" title="Perfil do Utilizador">
           <div class="avatar" id="topbar-avatar">?</div>
           <div class="perfil-info">
             <span class="perfil-nome" id="topbar-nome">Utilizador</span>
@@ -129,14 +133,14 @@
   const modalHtml = `
     <div class="perfil-dropdown" id="perfil-menu" style="display:none;">
       <div class="perfil-dropdown-cabecalho">
-        <span>Meu Perfil</span>
+        <span>Painel do Utilizador</span>
         <button class="modal-fechar" id="perfil-fechar" aria-label="Fechar">&times;</button>
       </div>
       <div class="perfil-dropdown-corpo">
-        <p><strong>Nome:</strong> <span id="perfil-nome-detalhe"></span></p>
-        <p><strong>Código:</strong> <span id="perfil-codigo-detalhe"></span></p>
-        <p><strong>Cargo:</strong> <span id="perfil-cargo-detalhe"></span></p>
-        <p><strong>Nível:</strong> <span id="perfil-nivel-detalhe"></span></p>
+        <div class="perfil-item-info"><strong>Nome:</strong> <span id="perfil-nome-detalhe"></span></div>
+        <div class="perfil-item-info"><strong>Código:</strong> <span id="perfil-codigo-detalhe"></span></div>
+        <div class="perfil-item-info"><strong>Cargo:</strong> <span id="perfil-cargo-detalhe"></span></div>
+        <div class="perfil-item-info"><strong>Nível:</strong> <span id="perfil-nivel-detalhe"></span></div>
       </div>
       <div class="perfil-dropdown-rodape">
         <button class="btn btn-vermelho btn-sm" id="perfil-sair" style="width:100%;">Terminar Sessão</button>
@@ -263,16 +267,8 @@
       });
     }
 
-    if (!document.getElementById('btn-menu-mobile')) {
-      const btnMenu = document.createElement('button');
-      btnMenu.id = 'btn-menu-mobile';
-      btnMenu.setAttribute('aria-label', 'Alternar menu');
-      btnMenu.innerHTML = '&#9776;';
-      btnMenu.style.cssText = 'background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px;transition:color 0.2s;';
-      const topbarLogo = document.querySelector('.topbar-logo');
-      if (topbarLogo && topbarLogo.parentElement) {
-        topbarLogo.parentElement.insertBefore(btnMenu, topbarLogo);
-      }
+    const btnMenu = document.getElementById('btn-menu-mobile');
+    if (btnMenu) {
       btnMenu.addEventListener('click', () => {
         document.body.classList.toggle('sidebar-recolhida');
       });
