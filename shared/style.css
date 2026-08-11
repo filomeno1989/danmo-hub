@@ -441,7 +441,7 @@ body.sidebar-recolhida .main {
   transition: margin-left var(--transicao);
 }
 
-/* ── KPI CARDS E GRELHAS (RESTAURADAS) ───────────────────── */
+/* ── KPI CARDS E GRELHAS ─────────────────────────────────── */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -481,6 +481,54 @@ body.sidebar-recolhida .main {
   font-size: var(--tamanho-sm);
   color: var(--cor-texto-sec);
   margin-top: 4px;
+}
+
+/* ── TABELAS UNIFICADAS (ATIVIDADE RECENTE E OUTRAS) ─────── */
+.tabela-container,
+.table-wrap {
+  background: var(--cor-superficie);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-sm);
+  border: 1px solid var(--cor-borda);
+  overflow-x: auto;
+  margin-top: 16px;
+}
+
+.tabela,
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--tamanho-sm);
+  text-align: left;
+}
+
+.tabela thead th,
+table thead th {
+  background: var(--cor-navy);
+  color: #FFFFFF;
+  padding: 12px 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tabela tbody td,
+table tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--cor-borda);
+  color: var(--cor-texto);
+}
+
+.tabela tbody tr:hover,
+table tbody tr:hover {
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.tabela-vazia,
+.text-muted {
+  text-align: center;
+  padding: 30px 16px;
+  color: var(--cor-texto-sec);
+  font-style: italic;
 }
 
 /* ── DROPDOWN DE PERFIL ELEGANTE ─────────────────────────── */
@@ -573,26 +621,6 @@ body.sidebar-recolhida .main {
   padding: 24px;
   margin-bottom: 24px;
   transition: background var(--transicao), border-color var(--transicao);
-}
-
-.tabela-container {
-  background: var(--cor-superficie);
-  border-radius: var(--raio-lg);
-  box-shadow: var(--sombra-sm);
-  border: 1px solid var(--cor-borda);
-  overflow-x: auto;
-}
-
-.tabela thead th {
-  background: var(--cor-navy);
-  color: #FFFFFF;
-  padding: 12px 16px;
-  font-weight: 600;
-}
-.tabela tbody td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--cor-borda);
-  color: var(--cor-texto);
 }
 
 .btn {
