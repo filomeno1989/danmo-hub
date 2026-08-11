@@ -41,20 +41,22 @@ function protegerPagina() {
 
 /**
  * Iniciar sessão — verifica credenciais na tabela 'users' do Supabase.
+ * Aceita código de utilizador (ex: DM0069) ou e-mail.
  * Retorna { sucesso: true, utilizador: {...} } ou { sucesso: false, erro: '...' }
  */
-async function iniciarSessao(email, senha) {
+async function iniciarSessao(codigo, senha) {
   try {
-    const { data: utilizador, error } = await db
+    var termo = codigo.trim();
+    var { data: utilizador, error } = await db
       .from('users')
       .select('id, name, email, role, department, active')
-      .eq('email', email.trim().toLowerCase())
+      .or('code.eq.' + termo + ',email.eq.' + termo.toLowerCase())
       .eq('password', senha)
       .eq('active', true)
-      .single();
+      .maybeSingle();
 
     if (error || !utilizador) {
-      return { sucesso: false, erro: 'E-mail ou senha incorretos.' };
+      return { sucesso: false, erro: 'Código ou senha incorretos.' };
     }
 
     /* Guardar sessão (sem guardar a senha) */
