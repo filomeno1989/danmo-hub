@@ -108,9 +108,7 @@
   <script src="../shared/tema.js"></script>
   <script src="../shared/nav.js"></script>
   <script>
-    renderNavbarOficina('equipamentos');
-
-    const params = new URLSearchParams(window.location.search);
+   const params = new URLSearchParams(window.location.search);
     const equipId = params.get('id');
 
     if (!equipId) { alert('Máquina não especificada.'); window.location.href='equipamentos.html'; }
