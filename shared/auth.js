@@ -27,7 +27,7 @@ function verificarSessao() {
 
 /**
  * Bloqueia o render da página se não autenticado.
- * Usar: if (!protegerPagina()) { /* página vai parar aqui */ }
+ * Exemplo: var user = protegerPagina();
  * Retorna o utilizador logado ou null (e redireciona).
  */
 function protegerPagina() {
