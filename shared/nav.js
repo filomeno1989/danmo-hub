@@ -142,7 +142,6 @@
         <button class="btn btn-vermelho btn-sm" id="perfil-sair" style="width:100%;">Terminar Sessão</button>
       </div>
     </div>`;
-    </div>`;
 
   function montar() {
     const alvo = document.getElementById('navbar');
@@ -214,25 +213,21 @@
   }
 
   function ativarEventos() {
-    const perfilBotao = document.getElementById('perfil-botao');
-    const perfilMenu = document.getElementById('perfil-menu');
-    const perfilFechar = document.getElementById('perfil-fechar');
-    
-    if (perfilBotao && perfilMenu) {
-      perfilBotao.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const aberto = perfilMenu.style.display === 'block';
-        perfilMenu.style.display = aberto ? 'none' : 'block';
-      });
-      
-      if (perfilFechar) {
-        perfilFechar.addEventListener('click', () => { perfilMenu.style.display = 'none'; });
-      }
-
-      // Fecha ao clicar fora
-      document.addEventListener('click', (e) => {
-        if (!perfilMenu.contains(e.target) && !perfilBotao.contains(e.target)) {
-          perfilMenu.style.display = 'none';
+    const nav = document.querySelector('.sidebar-nav');
+    if (nav) {
+      nav.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-alvo]');
+        if (!btn) return;
+        e.preventDefault();
+        const submenu = document.getElementById(btn.getAttribute('data-alvo'));
+        if (!submenu) return;
+        const aberto = submenu.classList.contains('visivel');
+        document.querySelectorAll('.sidebar-submenu').forEach(s => s.classList.remove('visivel'));
+        document.querySelectorAll('[data-alvo]').forEach(b => { b.classList.remove('ativo'); b.setAttribute('aria-expanded', 'false'); });
+        if (!aberto) {
+          submenu.classList.add('visivel');
+          btn.classList.add('ativo');
+          btn.setAttribute('aria-expanded', 'true');
         }
       });
     }
@@ -253,10 +248,18 @@
     const perfilMenu = document.getElementById('perfil-menu');
     const perfilFechar = document.getElementById('perfil-fechar');
     if (perfilBotao && perfilMenu) {
-      perfilBotao.addEventListener('click', () => perfilMenu.classList.add('visivel'));
-      if (perfilFechar) perfilFechar.addEventListener('click', () => perfilMenu.classList.remove('visivel'));
-      perfilMenu.addEventListener('click', function (e) {
-        if (e.target === this) this.classList.remove('visivel');
+      perfilBotao.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const aberto = perfilMenu.style.display === 'block';
+        perfilMenu.style.display = aberto ? 'none' : 'block';
+      });
+      if (perfilFechar) {
+        perfilFechar.addEventListener('click', () => { perfilMenu.style.display = 'none'; });
+      }
+      document.addEventListener('click', (e) => {
+        if (!perfilMenu.contains(e.target) && !perfilBotao.contains(e.target)) {
+          perfilMenu.style.display = 'none';
+        }
       });
     }
 
