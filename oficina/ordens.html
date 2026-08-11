@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ordens de Serviço — Danmo Oficina</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="../shared/style.css" />
+  <link rel="stylesheet" href="../shared/oficina.css" />
   <style>
     .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:200; }
     .modal-overlay.aberto { display:flex; }
@@ -220,11 +221,11 @@
     </div>
   </div>
 
-  <script src="supabase.js"></script>
-  <script src="auth.js"></script>
-  <script src="utils.js"></script>
-  <script src="tema.js"></script>
-  <script src="nav.js"></script>
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
   <script>
     renderNavbarOficina('ordens');
 
