@@ -88,9 +88,9 @@
       <div class="login-erro" id="login-erro" role="alert"></div>
       <form class="login-form" id="form-login" novalidate>
         <div class="form-grupo">
-          <label class="form-label" for="login-email">E-mail</label>
-          <input class="form-input" type="email" id="login-email"
-                 placeholder="seu.email@danmo.co.mz" required autocomplete="email" autofocus>
+          <label class="form-label" for="login-codigo">Código de Utilizador</label>
+          <input class="form-input" type="text" id="login-codigo"
+                 placeholder="Ex: DM0069" required autocomplete="username" autofocus>
         </div>
         <div class="form-grupo">
           <label class="form-label" for="login-senha">Senha</label>
@@ -114,19 +114,19 @@
     /* Login */
     document.getElementById('form-login').addEventListener('submit', function(e) {
       e.preventDefault();
-      var email = document.getElementById('login-email').value;
+      var codigo = document.getElementById('login-codigo').value;
       var senha = document.getElementById('login-senha').value;
       var erroEl = document.getElementById('login-erro');
       var btnLogin = document.getElementById('btn-login');
-      if (!email || !senha) {
-        erroEl.textContent = 'Preencha o e-mail e a senha.';
+      if (!codigo || !senha) {
+        erroEl.textContent = 'Preencha o código e a senha.';
         erroEl.classList.add('visivel');
         return;
       }
       btnLogin.disabled = true;
       btnLogin.textContent = 'A verificar...';
       erroEl.classList.remove('visivel');
-      iniciarSessao(email, senha).then(function(resultado) {
+      iniciarSessao(codigo, senha).then(function(resultado) {
         if (resultado.sucesso) {
           window.location.replace('index.html');
         } else {
@@ -134,7 +134,7 @@
           erroEl.classList.add('visivel');
           btnLogin.disabled = false;
           btnLogin.textContent = 'Entrar no Sistema';
-          document.getElementById('login-senha').focus();
+          document.getElementById('login-codigo').focus();
         }
       }).catch(function() {
         erroEl.textContent = 'Erro de ligação ao servidor. Tente novamente.';
