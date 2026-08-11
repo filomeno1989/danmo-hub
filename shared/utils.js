@@ -275,3 +275,115 @@ function debounce(fn, delay) {
 function normalizarTexto(str) {
   return (str || '').trim().toLowerCase();
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   COMPATIBILIDADE LEGADA (NÃO APAGAR)
+   Mantém as páginas antigas do portal a funcionar sem falhas
+   ═══════════════════════════════════════════════════════════════ */
+
+// Atalhos para nomes de funções de Datas
+function formatarData(d, h) { return formataData(d, h); }
+function fmtData(d, h) { return formataData(d, h); }
+function hoje() { return dataHojeISO(); }
+
+// Atalho para Notificações (Toast)
+function showToast(msg, tipo) { mostrarToast(msg, tipo); }
+
+// Atalhos para Fechar/Abrir Modais e Manipular Inputs
+function fecharModal(id) { document.getElementById(id)?.classList.remove('open', 'aberto', 'visivel'); }
+function abrirModal(id) { document.getElementById(id)?.classList.add('open', 'aberto'); }
+function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val ?? ''; }
+function getVal(id) { return document.getElementById(id)?.value ?? ''; }
+
+// Atalho para Diálogo de Confirmação
+function confirmar(msg, callback) { if (confirmarAcao(msg)) callback(); }
+
+// Atalho para Formatação de Número Simples (sem MZN)
+function fmtNum(n) {
+  if (isNaN(n) || n === null || n === undefined) return '0,00';
+  return Number(n).toLocaleString('pt-MZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Extenso corrigido para o Módulo de Faturação
+function numPorExtenso(numero) {
+  numero = Math.round(numero * 100) / 100;
+  if (!numero || numero === 0) return 'Zero meticais';
+
+  const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
+  const dezenas10 = ['dez', 'onze', 'doze', 'treze', 'catorze', 'quinze', 'dezasseis', 'dezassete', 'dezoito', 'dezanove'];
+  const dezenas = ['', 'dez', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+  const centenas = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+
+  function converteBloco(n) {
+    if (n === 0) return '';
+    if (n === 100) return 'cem'; 
+    let c = Math.floor(n / 100);
+    let d = Math.floor((n % 100) / 10);
+    let u = n % 10;
+    let partes = [];
+    if (c > 0) partes.push(centenas[c]); 
+    if (d === 1) {
+      partes.push(dezenas10[u]);
+    } else {
+      if (d > 1) partes.push(dezenas[d]);
+      if (u > 0) partes.push(unidades[u]);
+    }
+    return partes.join(' e ');
+  }
+
+  let meticais = Math.floor(numero);
+  let centavos = Math.round((numero - meticais) * 100);
+  let resultado = [];
+  
+  if (meticais > 0) {
+    let bilhoes = Math.floor(meticais / 1000000000);
+    let milhoes = Math.floor((meticais % 1000000000) / 1000000);
+    let milhares = Math.floor((meticais % 1000000) / 1000);
+    let resto = meticais % 1000;
+    let partesMeticais = [];
+    
+    if (bilhoes > 0) partesMeticais.push(converteBloco(bilhoes) + (bilhoes === 1 ? ' bilião' : ' biliões'));
+    if (milhoes > 0) partesMeticais.push(converteBloco(milhoes) + (milhoes === 1 ? ' milhão' : ' milhões'));
+    if (milhares > 0) {
+      let strMilhares = converteBloco(milhares);
+      if (strMilhares === 'um') strMilhares = ''; 
+      partesMeticais.push((strMilhares ? strMilhares + ' ' : '') + 'mil');
+    }
+    if (resto > 0) {
+      let strResto = converteBloco(resto);
+      if (partesMeticais.length > 0) {
+         if (resto < 100 || resto % 100 === 0) partesMeticais.push('e ' + strResto);
+         else partesMeticais.push(strResto); 
+      } else {
+         partesMeticais.push(strResto);
+      }
+    } else if ((bilhoes > 0 || milhoes > 0) && milhares === 0 && resto === 0) {
+      partesMeticais.push('de');
+    }
+    
+    let strExtenso = partesMeticais.join(' ').replace(/\s+/g, ' ').trim();
+    strExtenso += (meticais === 1 ? ' metical' : ' meticais');
+    resultado.push(strExtenso);
+  }
+  
+  if (centavos > 0) {
+    let strCentavos = converteBloco(centavos) + (centavos === 1 ? ' centavo' : ' centavos');
+    resultado.push(strCentavos);
+  }
+  
+  let finalStr = resultado.join(' e ');
+  return finalStr.charAt(0).toUpperCase() + finalStr.slice(1);
+}
+
+// Gerar próximo número de documento ex: "005/26"
+function proximoNumero(tipo, lista) {
+  const anoActual = new Date().getFullYear().toString().slice(-2);
+  const docs = lista.filter(d => d.tipo === tipo);
+  let maxNum = 0;
+  docs.forEach(d => {
+    const match = (d.numero || '').match(/^(\d+)\//);
+    if (match) { const n = parseInt(match[1]); if (n > maxNum) maxNum = n; }
+  });
+  return String(maxNum + 1).padStart(3, '0') + '/' + anoActual;
+}
