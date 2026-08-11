@@ -71,23 +71,23 @@
 
 /* ── Tema Escuro ─────────────────────────────────────────── */
 [data-tema="escuro"] {
-  --cor-fundo:          #1E293B;
-  --cor-superficie:     #334155;
+  --cor-fundo:          #0F172A;
+  --cor-superficie:     #1E293B;
   --cor-texto:          #E2E8F0;
   --cor-texto-sec:      #94A3B8;
-  --cor-borda:          #475569;
-  --cor-navy:           #020617;
-  --cor-navy-hover:     #0F172A;
+  --cor-borda:          #334155;
+  --cor-navy:           #0F172A;
+  --cor-navy-hover:     #1E293B;
   --cor-navy-claro:     #1E3A5F;
   --cor-ambar-claro:    #451A03;
   --cor-sucesso-bg:     #052E16;
   --cor-erro-bg:        #450A0A;
   --cor-aviso-bg:       #451A03;
   --cor-info-bg:        #172554;
-  --sombra-sm:   0 1px 2px rgba(0,0,0,0.4);
-  --sombra-md:   0 4px 6px rgba(0,0,0,0.5);
-  --sombra-lg:   0 10px 25px rgba(0,0,0,0.6);
-  --sidebar-colh: #020617;
+  --sombra-sm:   0 1px 2px rgba(0,0,0,0.3);
+  --sombra-md:   0 4px 6px rgba(0,0,0,0.4);
+  --sombra-lg:   0 10px 25px rgba(0,0,0,0.5);
+  --sidebar-colh: #0A0F1A;
 }
 
 /* ── Reset Base ──────────────────────────────────────────── */
@@ -934,4 +934,32 @@ img { max-width: 100%; display: block; }
   .tabela tbody td {
     padding: 8px 10px;
   }
+}
+
+/* ── CORREÇÃO DE VISIBILIDADE MODO CLARO ────────────────── */
+/* Estas regras forçam a cor do texto a ficar escura quando o tema
+   claro está ativo, prevenindo que textos fiquem "invisíveis" 
+   se o HTML tiver alguma classe antiga a forçar o branco. */
+
+html[data-tema="claro"] body,
+html[data-tema="claro"] .main,
+html[data-tema="claro"] .conteudo-principal,
+html[data-tema="claro"] .dashboard-container {
+  color: #1A1A2E !important;
+}
+
+html[data-tema="claro"] .pagina-titulo,
+html[data-tema="claro"] h1,
+html[data-tema="claro"] h2,
+html[data-tema="claro"] h3,
+html[data-tema="claro"] .kpi-valor,
+html[data-tema="claro"] .form-label {
+  color: #0A1628 !important;
+}
+
+html[data-tema="claro"] .pagina-subtitulo,
+html[data-tema="claro"] .kpi-label,
+html[data-tema="claro"] .kpi-carregando,
+html[data-tema="claro"] .texto-secundario {
+  color: #555B6E !important;
 }
