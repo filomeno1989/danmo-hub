@@ -644,3 +644,109 @@ table tbody tr:hover {
 .btn-ambar:hover { background: var(--cor-ambar-hover); }
 .btn-vermelho { background: var(--cor-vermelho-danmo); color: #FFFFFF; }
 .btn-vermelho:hover { background: var(--cor-vermelho-hover); }
+.btn-secundario { background: transparent; color: var(--cor-texto); border: 1px solid var(--cor-borda); }
+.btn-secundario:hover { background: var(--cor-fundo); border-color: var(--cor-texto-sec); }
+.btn-verde { background: var(--cor-verde-danmo); color: #FFFFFF; }
+.btn-verde:hover { background: var(--cor-verde-hover); }
+.btn-sm { padding: 5px 12px; font-size: var(--tamanho-xs); }
+
+/* ── BADGES (usados em Oficina, Ferramentaria, etc.) ─────── */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  white-space: nowrap;
+}
+.badge-info      { background: var(--cor-info-bg);    color: var(--cor-info); }
+.badge-sucesso   { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+.badge-aviso     { background: var(--cor-aviso-bg);   color: var(--cor-aviso); }
+.badge-erro      { background: var(--cor-erro-bg);    color: var(--cor-erro); }
+.badge-secundario{ background: var(--cor-borda);      color: var(--cor-texto-sec); }
+
+/* ── FORMULÁRIOS (inputs, selects, textareas) ────────────── */
+.form-grupo { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.form-label { font-size: var(--tamanho-sm); font-weight: 600; color: var(--cor-texto); }
+.form-input,
+.form-select,
+.form-textarea {
+  padding: 9px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font-family: var(--fonte-principal);
+  font-size: var(--tamanho-base);
+  width: 100%;
+  transition: border-color var(--transicao);
+}
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--cor-ambar);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+}
+.form-textarea { resize: vertical; min-height: 70px; font-family: inherit; }
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+/* ── MODAL GENÉRICO (Nova Ferramenta, Devolução, Histórico, etc.) ── */
+.modal-fundo {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+.modal-fundo.open,
+.modal-fundo.aberto,
+.modal-fundo.visivel {
+  display: flex;
+}
+.modal {
+  background: var(--cor-superficie);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-lg);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: dropdownFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+.modal-titulo { font-weight: 700; font-size: var(--tamanho-lg); color: var(--cor-texto); }
+.modal-corpo { padding: 20px; }
+.modal-rodape {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+/* ── SPINNER DE CARREGAMENTO ─────────────────────────────── */
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--cor-borda);
+  border-top-color: var(--cor-ambar);
+  border-radius: 50%;
+  animation: spin-danmo .7s linear infinite;
+  margin: 0 auto;
+}
+@keyframes spin-danmo { to { transform: rotate(360deg); } }

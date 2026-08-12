@@ -35,7 +35,16 @@
 
     { id: 'hst', label: 'Portal HST', icon: '&#9888;', href: 'hst/index.html', pasta: 'hst' },
 
-    { id: 'ferramentaria', label: 'Ferramentaria', icon: '&#128295;', href: '#', dev: true },
+    { id: 'ferramentaria', label: 'Ferramentaria', icon: '&#128295;', pasta: 'ferramentaria',
+      sub: [
+        { label: 'Painel',          href: 'ferramentaria/dashboard.html' },
+        { label: 'Inventário',      href: 'ferramentaria/inventario.html' },
+        { label: 'Empréstimos',     href: 'ferramentaria/emprestimos.html' },
+        { label: 'Devoluções',      href: 'ferramentaria/devolucoes.html' },
+        { label: 'Danos',           href: 'ferramentaria/danos.html' },
+        { label: 'Ferramenteiros',  href: 'ferramentaria/ferramenteiros.html' },
+        { label: 'Relatórios',      href: 'ferramentaria/relatorios.html' }
+      ] },
 
     { id: 'gestao', label: 'Gestão & Registos', icon: '&#128203;', href: '#', dev: true }
   ];
