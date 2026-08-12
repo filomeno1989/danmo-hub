@@ -265,19 +265,34 @@
 
     /* ---------- data loading ---------- */
     (async function init() {
+      /* Cada fonte de dados carrega de forma INDEPENDENTE — se uma falhar
+         (ex: tool_damage com erro de rede), as outras duas continuam e o
+         painel mostra o que conseguir, em vez de ficar tudo preso em
+         "A processar..." por causa de uma única falha (era o que o
+         Promise.all fazia antes). */
+      var resultados = await Promise.allSettled([
+        db.query('tool_movements', 'select=*&order=data_saida.desc&limit=2000'),
+        db.query('tools', 'select=id,code,nome,estado,active'),
+        db.query('tool_damage', 'select=*&order=created_at.desc&limit=1000')
+      ]);
+
+      var falhas = [];
+      var movements = [], tools = [], damages = [];
+
+      if (resultados[0].status === 'fulfilled') { movements = resultados[0].value || []; }
+      else { falhas.push('empréstimos/devoluções'); console.error('Erro ao carregar tool_movements:', resultados[0].reason); }
+
+      if (resultados[1].status === 'fulfilled') { tools = resultados[1].value || []; }
+      else { falhas.push('ferramentas'); console.error('Erro ao carregar tools:', resultados[1].reason); }
+
+      if (resultados[2].status === 'fulfilled') { damages = resultados[2].value || []; }
+      else { falhas.push('danos'); console.error('Erro ao carregar tool_damage:', resultados[2].reason); }
+
+      if (falhas.length > 0) {
+        mostrarToast('Não foi possível carregar: ' + falhas.join(', ') + '. A mostrar apenas os dados disponíveis.', 'erro');
+      }
+
       try {
-        /* Parallel queries for dashboard speed */
-        var [movementsRes, toolsRes, damageRes] = await Promise.all([
-          db.query('tool_movements', 'select=*&order=data_saida.desc&limit=2000'),
-          db.query('tools', 'select=id,code,nome,estado,active'),
-          db.query('tool_damage', 'select=*&order=created_at.desc&limit=1000')
-        ]);
-
-        var movements = movementsRes || [];
-        var tools = toolsRes || [];
-        var damages = damageRes || [];
-
-        /* Build tool lookup map */
         var toolMap = {};
         tools.forEach(function(t) { toolMap[t.id] = t; });
 
@@ -429,8 +444,8 @@
         }
 
       } catch (err) {
-        console.error('Erro ao carregar dashboard:', err);
-        mostrarToast('Erro ao carregar dados do painel central.', 'erro');
+        console.error('Erro ao processar dados do dashboard:', err);
+        mostrarToast('Erro ao processar os dados carregados.', 'erro');
         document.getElementById('fora-loading').style.display = 'none';
         document.getElementById('problemas-loading').style.display = 'none';
         document.getElementById('chart-ferramentas-container').innerHTML = '<div class="tabela-vazia">Erro ao carregar.</div>';

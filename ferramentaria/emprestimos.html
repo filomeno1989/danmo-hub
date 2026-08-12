@@ -361,16 +361,6 @@
         var toolMap = {};
         toolsData.forEach(function(t) { toolMap[t.id] = t; });
 
-        var staffIds = [];
-        emprestimos.forEach(function(m) {
-          if (m.entregue_por && staffIds.indexOf(m.entregue_por) === -1) staffIds.push(m.entregue_por);
-        });
-        var staffFilter = staffIds.map(function(id) { return 'id=eq.' + id; }).join('&');
-        var staffRes = staffFilter ? await db.query('tool_staff', 'select=id,nome&' + staffFilter) : [];
-        var staffData = staffRes || [];
-        var staffMap = {};
-        staffData.forEach(function(s) { staffMap[s.id] = s; });
-
         emprestimos.forEach(function(m) {
           var tool = toolMap[m.tool_id] || {};
           var dias = diasDesde(m.data_saida);
