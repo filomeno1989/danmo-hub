@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatórios e Estatísticas — Ferramentaria — Danmo Hub</title>
+  
+  <!-- CSS Global do Danmo Hub -->
+  <link rel="stylesheet" href="../shared/style.css" />
+  
+  <style>
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .report-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+    .report-grid .full-width {
+      grid-column: 1 / -1;
+    }
+    
+    /* Adaptação para a grelha de relatórios não quebrar os nossos cartões KPI */
+    .kpi-row-relatorio {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .kpi-card-mini {
+      background: var(--cor-superficie);
+      border-radius: var(--raio-md);
+      padding: 16px;
+      box-shadow: var(--sombra-sm);
+      border: 1px solid var(--cor-borda);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .row-red {
+      background: var(--cor-erro-bg) !important;
+    }
+    
+    .severidade-summary {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .severidade-item {
+      padding: 6px 14px;
+      border-radius: var(--raio-md);
+      font-size: var(--tamanho-sm);
+      font-weight: 600;
+      border: 1px solid var(--cor-borda);
+    }
+    .sev-leve { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); border-color: rgba(16, 185, 129, 0.2); }
+    .sev-moderado { background: var(--cor-aviso-bg); color: var(--cor-aviso); border-color: rgba(245, 158, 11, 0.2); }
+    .sev-grave { background: var(--cor-erro-bg); color: var(--cor-erro); border-color: rgba(239, 68, 68, 0.2); }
+    
+    .inv-kpi-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .inv-kpi {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      background: var(--cor-superficie);
+      border-radius: var(--raio-md);
+      border: 1px solid var(--cor-borda);
+      box-shadow: var(--sombra-sm);
+    }
+    .inv-kpi .inv-count {
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--cor-texto);
+    }
+  </style>
+</head>
+<body>
+  <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
+  <div id="navbar"></div>
+  
+  <main class="main">
+    <h1 class="pagina-titulo">Relatórios e Estatísticas</h1>
+    <p class="pagina-subtitulo">Análise detalhada e métricas de desempenho da ferramentaria</p>
+
+    <!-- Filtros -->
+    <div class="card">
+      <div class="flex-between" style="flex-wrap:wrap;gap:16px;">
+        <div class="filter-bar">
+          <label class="form-label" style="margin-bottom: 0;">De:</label>
+          <input class="form-input" type="date" id="f-data-inicio" />
+          <label class="form-label" style="margin-bottom: 0; margin-left: 8px;">Até:</label>
+          <input class="form-input" type="date" id="f-data-fim" />
+        </div>
+        <button class="btn btn-primario" id="btn-gerar">Gerar Relatório</button>
+      </div>
+    </div>
+
+    <!-- Container dos Relatórios -->
+    <div id="relatorios-container" style="display:none;">
+      <div class="report-grid">
+
+        <!-- 1. Movimentação Geral -->
+        <div class="card" id="card-movimentacao" style="margin-bottom: 0;">
+          <div class="form-label" style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 8px;">
+            Movimentação Geral
+          </div>
+          <div id="mov-kpi-row" class="kpi-row-relatorio"></div>
+        </div>
+
+        <!-- 2. Ferramentas Mais Emprestadas -->
+        <div class="card" id="card-mais-emprestadas" style="margin-bottom: 0;">
+          <div class="form-label" style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 8px;">
+            Ferramentas Mais Emprestadas
+          </div>
+          <div class="tabela-container">
+            <div id="mais-empty" class="tabela-vazia" style="display:none;">Sem dados para este período.</div>
+            <table class="tabela" id="tabela-mais" style="display:none;">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Nome</th>
+                  <th>Vezes Emprestada</th>
+                  <th>Último Empréstimo</th>
+                </tr>
+              </thead>
+              <tbody id="mais-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. Colaboradores com Mais Movimentações -->
+        <div class="card" id="card-colaboradores" style="margin-bottom: 0;">
+          <div class="form-label" style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 8px;">
+            Colaboradores com Mais Movimentações
+          </div>
+          <div class="tabela-container">
+            <div id="colab-empty" class="tabela-vazia" style="display:none;">Sem dados para este período.</div>
+            <table class="tabela" id="tabela-colab" style="display:none;">
+              <thead>
+                <tr>
+                  <th>Colaborador</th>
+                  <th>Departamento</th>
+                  <th>Empréstimos</th>
+                  <th>Atrasos</th>
+                </tr>
+              </thead>
+              <tbody id="colab-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 4. Mapa de Danos -->
+        <div class="card" id="card-danos" style="margin-bottom: 0;">
+          <div class="form-label" style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 8px;">
+            Mapa de Danos
+          </div>
+          <div id="danos-summary"></div>
+          <div class="tabela-container">
+            <div id="danos-tipo-empty" class="tabela-vazia" style="display:none;">Sem danos registados neste período.</div>
+            <table class="tabela" id="tabela-danos-tipo" style="display:none;">
+              <thead>
+                <tr>
+                  <th>Tipo de Dano</th>
+                  <th>Ocorrências</th>
+                </tr>
+              </thead>
+              <tbody id="danos-tipo-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 5. Ferramentas Nunca Devolvidas -->
+        <div class="card full-width" id="card-nao-devolvidas" style="margin-bottom: 0;">
+          <div class="form-label" style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 8px;">
+            Ferramentas Nunca Devolvidas (Na Rua)
+          </div>
+          <div class="tabela-container">
+            <div id="nao-dev-empty" class="tabela-vazia" style="display:none;">Todas as ferramentas emprestadas já foram devolvidas.</div>
+            <table class="tabela" id="tabela-nao-dev" style="display:none;">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Ferramenta</th>
+                  <th>Quem Levou</th>
+                  <th>Departamento</th>
+                  <th>Data Saída</th>
+                  <th>Tempo em Atraso</th>
+                </tr>
+              </thead>
+              <tbody id="nao-dev-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 6. Estado do Inventário -->
+        <div class="card full-width" id="card-inventario" style="margin-bottom: 0;">
+          <div class="form-label" style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 8px;">
+            Estado Atual do Inventário
+          </div>
+          <div id="inv-kpi-row" class="inv-kpi-row"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="relatorios-loading" class="spinner" style="padding:48px;text-align:center; display:none;">A processar dados do relatório...</div>
+  </main>
+
+  <!-- Scripts Unificados do Danmo Hub -->
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+  
+  <script>
+    /* ── Set Defaults ── */
+    (function setDefaults() {
+      var now = new Date();
+      var firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      document.getElementById('f-data-inicio').value = firstDay.toISOString().split('T')[0];
+      document.getElementById('f-data-fim').value = now.toISOString().split('T')[0];
+    })();
+
+    /* ── Helpers ── */
+    function tempoAtraso(dateStr) {
+      if (!dateStr) return '—';
+      var dias = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+      if (dias < 1) return 'Hoje';
+      if (dias === 1) return '1 dia';
+      return dias + ' dias';
+    }
+
+    function kpiHtml(value, label) {
+      return '<div class="kpi-card-mini"><div class="kpi-valor">' + value + '</div><div class="kpi-label">' + label + '</div></div>';
+    }
+
+    function invKpiHtml(count, label, badgeClass) {
+      return '<div class="inv-kpi"><span class="badge ' + badgeClass + '">' + label.toUpperCase() + '</span><span class="inv-count">' + count + '</span></div>';
+    }
+
+    /* ── Generate Report ── */
+    document.getElementById('btn-gerar').addEventListener('click', generateReport);
+
+    async function generateReport() {
+      var di = document.getElementById('f-data-inicio').value;
+      var df = document.getElementById('f-data-fim').value;
+
+      var container = document.getElementById('relatorios-container');
+      var loading = document.getElementById('relatorios-loading');
+
+      container.style.display = 'none';
+      loading.style.display = 'block';
+
+      try {
+        /* Busca todos os movimentos e filtramos as datas diretamente no JavaScript para evitar erros 404 */
+        var movRes = await db.query('tool_movements', 'select=*&tipo=eq.emprestimo&order=created_at.desc&limit=2000');
+        var allMovements = movRes || [];
+        
+        var periodMovements = allMovements.filter(function(m) {
+          if (!m.data_saida) return false;
+          var mDate = m.data_saida.split('T')[0];
+          return mDate >= di && mDate <= df;
+        });
+
+        var toolsRes = await db.query('tools', 'select=id,code,nome,estado,active&limit=500');
+        var toolsList = toolsRes || [];
+        var toolsMap = {};
+        toolsList.forEach(function(t) { toolsMap[t.id] = t; });
+
+        var danosRes = await db.query('tool_damage', 'select=*&limit=1000');
+        var danosList = danosRes || [];
+        var filteredDanos = danosList.filter(function(d) {
+          if (!d.created_at) return false;
+          var dDate = d.created_at.split('T')[0];
+          return dDate >= di && dDate <= df;
+        });
+
+        /* ── 1. Movimentação Geral ── */
+        var totalEmprestimos = periodMovements.length;
+        var totalDevolucoes = periodMovements.filter(function(m) { return m.data_devolucao !== null; }).length;
+        var devolucoesNoPrazo = 0;
+        var devolucoesAtrasadas = 0;
+
+        periodMovements.forEach(function(m) {
+          if (m.data_devolucao && m.prazo_devolucao) {
+            var devDateOnly = m.data_devolucao.split('T')[0];
+            var prazoOnly = m.prazo_devolucao.split('T')[0];
+            if (devDateOnly <= prazoOnly) {
+              devolucoesNoPrazo++;
+            } else {
+              devolucoesAtrasadas++;
+            }
+          }
+        });
+
+        var totalDevolvidas = devolucoesNoPrazo + devolucoesAtrasadas;
+        var taxaNoPrazo = totalDevolvidas > 0 ? Math.round((devolucoesNoPrazo / totalDevolvidas) * 100) : 0;
+        var taxaAtraso = totalDevolvidas > 0 ? Math.round((devolucoesAtrasadas / totalDevolvidas) * 100) : 0;
+
+        document.getElementById('mov-kpi-row').innerHTML =
+          kpiHtml(totalEmprestimos, 'Total de Empréstimos') +
+          kpiHtml(totalDevolucoes, 'Total de Devoluções') +
+          kpiHtml(taxaNoPrazo + '%', 'Taxa no Prazo') +
+          kpiHtml(taxaAtraso + '%', 'Taxa de Atraso');
+
+        /* ── 2. Ferramentas Mais Emprestadas ── */
+        var toolLoanCount = {};
+        var toolLastLoan = {};
+        periodMovements.forEach(function(m) {
+          if (m.tool_id) {
+            toolLoanCount[m.tool_id] = (toolLoanCount[m.tool_id] || 0) + 1;
+            if (!toolLastLoan[m.tool_id] || new Date(m.data_saida) > new Date(toolLastLoan[m.tool_id])) {
+              toolLastLoan[m.tool_id] = m.data_saida;
+            }
+          }
+        });
+
+        var topTools = Object.keys(toolLoanCount).map(function(tid) {
+          var tool = toolsMap[tid] || {};
+          return {
+            code: tool.code || '—',
+            nome: tool.nome || '—',
+            count: toolLoanCount[tid],
+            lastLoan: toolLastLoan[tid]
+          };
+        }).sort(function(a, b) { return b.count - a.count; }).slice(0, 5);
+
+        var maisTbody = document.getElementById('mais-tbody');
+        var maisTable = document.getElementById('tabela-mais');
+        var maisEmpty = document.getElementById('mais-empty');
+        maisTbody.innerHTML = '';
+
+        if (topTools.length === 0) {
+          maisTable.style.display = 'none';
+          maisEmpty.style.display = 'block';
+        } else {
+          maisEmpty.style.display = 'none';
+          topTools.forEach(function(t) {
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+              '<td>' + t.code + '</td>' +
+              '<td>' + t.nome + '</td>' +
+              '<td><span class="badge badge-info">' + t.count + ' vezes</span></td>' +
+              '<td>' + formatarData(t.lastLoan) + '</td>';
+            maisTbody.appendChild(tr);
+          });
+          maisTable.style.display = 'table';
+        }
+
+        /* ── 3. Colaboradores com Mais Movimentações ── */
+        var colabMap = {};
+        periodMovements.forEach(function(m) {
+          var key = (m.colaborador || '—') + '|||' + (m.departamento || '—');
+          if (!colabMap[key]) {
+            colabMap[key] = { colaborador: m.colaborador || '—', departamento: m.departamento || '—', total: 0, atrasadas: 0 };
+          }
+          colabMap[key].total++;
+          if (m.data_devolucao && m.prazo_devolucao) {
+             var dDateOnly = m.data_devolucao.split('T')[0];
+             var pDateOnly = m.prazo_devolucao.split('T')[0];
+             if (dDateOnly > pDateOnly) colabMap[key].atrasadas++;
+          }
+        });
+
+        var topColabs = Object.values(colabMap).sort(function(a, b) { return b.total - a.total; }).slice(0, 5);
+
+        var colabTbody = document.getElementById('colab-tbody');
+        var colabTable = document.getElementById('tabela-colab');
+        var colabEmpty = document.getElementById('colab-empty');
+        colabTbody.innerHTML = '';
+
+        if (topColabs.length === 0) {
+          colabTable.style.display = 'none';
+          colabEmpty.style.display = 'block';
+        } else {
+          colabEmpty.style.display = 'none';
+          topColabs.forEach(function(c) {
+            var tr = document.createElement('tr');
+            var atrBadge = c.atrasadas > 0 ? '<span class="badge badge-erro">' + c.atrasadas + '</span>' : '<span class="badge badge-sucesso">0</span>';
+            tr.innerHTML =
+              '<td>' + c.colaborador + '</td>' +
+              '<td>' + c.departamento + '</td>' +
+              '<td><span class="badge badge-info">' + c.total + '</span></td>' +
+              '<td>' + atrBadge + '</td>';
+            colabTbody.appendChild(tr);
+          });
+          colabTable.style.display = 'table';
+        }
+
+        /* ── 4. Mapa de Danos ── */
+        var totalDanos = filteredDanos.length;
+        var custoTotal = 0;
+        var sevCounts = { leve: 0, moderado: 0, grave: 0 };
+        var tipoDanoCount = {};
+
+        filteredDanos.forEach(function(d) {
+          custoTotal += parseFloat(d.custo_reparacao) || 0;
+          if (d.severidade && sevCounts.hasOwnProperty(d.severidade)) {
+            sevCounts[d.severidade]++;
+          }
+          if (d.tipo_dano) {
+            tipoDanoCount[d.tipo_dano] = (tipoDanoCount[d.tipo_dano] || 0) + 1;
+          }
+        });
+
+        var custoFmt = custoTotal.toLocaleString('pt-AO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('danos-summary').innerHTML =
+          '<div class="kpi-row-relatorio">' +
+            kpiHtml(totalDanos, 'Total Incidentes') +
+            kpiHtml('<span style="color:var(--cor-vermelho-danmo)">' + custoFmt + '</span> MZN', 'Custo Total') +
+          '</div>' +
+          '<div class="severidade-summary">' +
+            '<span class="severidade-item sev-leve">Leves: ' + sevCounts.leve + '</span>' +
+            '<span class="severidade-item sev-moderado">Moderados: ' + sevCounts.moderado + '</span>' +
+            '<span class="severidade-item sev-grave">Graves: ' + sevCounts.grave + '</span>' +
+          '</div>';
+
+        var danosTipoTbody = document.getElementById('danos-tipo-tbody');
+        var danosTipoTable = document.getElementById('tabela-danos-tipo');
+        var danosTipoEmpty = document.getElementById('danos-tipo-empty');
+        danosTipoTbody.innerHTML = '';
+
+        var tiposSorted = Object.keys(tipoDanoCount).map(function(k) {
+          return { tipo: k, count: tipoDanoCount[k] };
+        }).sort(function(a, b) { return b.count - a.count; });
+
+        if (tiposSorted.length === 0) {
+          danosTipoTable.style.display = 'none';
+          danosTipoEmpty.style.display = 'block';
+        } else {
+          danosTipoEmpty.style.display = 'none';
+          tiposSorted.forEach(function(t) {
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+              '<td>' + t.tipo + '</td>' +
+              '<td><span class="badge badge-aviso">' + t.count + ' Ocorrências</span></td>';
+            danosTipoTbody.appendChild(tr);
+          });
+          danosTipoTable.style.display = 'table';
+        }
+
+        /* ── 5. Ferramentas Nunca Devolvidas ── */
+        var naoDevolvidas = periodMovements.filter(function(m) {
+          return !m.data_devolucao;
+        }).sort(function(a, b) {
+          return new Date(a.data_saida) - new Date(b.data_saida);
+        });
+
+        var naoDevTbody = document.getElementById('nao-dev-tbody');
+        var naoDevTable = document.getElementById('tabela-nao-dev');
+        var naoDevEmpty = document.getElementById('nao-dev-empty');
+        naoDevTbody.innerHTML = '';
+
+        if (naoDevolvidas.length === 0) {
+          naoDevTable.style.display = 'none';
+          naoDevEmpty.style.display = 'block';
+        } else {
+          naoDevEmpty.style.display = 'none';
+          naoDevolvidas.forEach(function(m) {
+            var tool = toolsMap[m.tool_id] || {};
+            var dias = Math.floor((Date.now() - new Date(m.data_saida).getTime()) / 86400000);
+            var tr = document.createElement('tr');
+            if (dias > 30) tr.className = 'row-red';
+            
+            var toolStr = (tool.code || '—') + (tool.estado === 'inutilizado' ? ' <span class="badge badge-erro" style="font-size:0.6rem">Inutilizada</span>' : '');
+            
+            tr.innerHTML =
+              '<td>' + toolStr + '</td>' +
+              '<td>' + (tool.nome || '—') + '</td>' +
+              '<td>' + (m.colaborador || '—') + '</td>' +
+              '<td>' + (m.departamento || '—') + '</td>' +
+              '<td>' + formatarData(m.data_saida) + '</td>' +
+              '<td><span style="font-weight:600;' + (dias>30?'color:var(--cor-erro)':'') + '">' + tempoAtraso(m.data_saida) + '</span></td>';
+            naoDevTbody.appendChild(tr);
+          });
+          naoDevTable.style.display = 'table';
+        }
+
+        /* ── 6. Estado do Inventário ── */
+        var estadoCounts = {};
+        toolsList.forEach(function(t) {
+          if (t.active) {
+            var e = t.estado || 'novo';
+            estadoCounts[e] = (estadoCounts[e] || 0) + 1;
+          }
+        });
+
+        var estadoBadgeMap = {
+          'novo': 'badge-info',
+          'bom': 'badge-sucesso',
+          'desgastado': 'badge-aviso',
+          'avariado': 'badge-erro',
+          'inutilizado': 'badge-secundario',
+          'emprestado': 'badge-aviso'
+        };
+
+        var estados = ['novo', 'bom', 'emprestado', 'desgastado', 'avariado', 'inutilizado'];
+        var invHtml = '';
+        estados.forEach(function(e) {
+          var count = estadoCounts[e] || 0;
+          var cls = estadoBadgeMap[e] || 'badge-secundario';
+          invHtml += invKpiHtml(count, e, cls);
+        });
+        document.getElementById('inv-kpi-row').innerHTML = invHtml;
+
+        loading.style.display = 'none';
+        container.style.display = 'block';
+
+      } catch (err) {
+        console.error('Erro ao gerar relatório:', err);
+        loading.style.display = 'none';
+        mostrarToast('Erro ao gerar relatório.', 'erro');
+      }
+    }
+
+    /* Auto-generate on first load */
+    document.addEventListener("DOMContentLoaded", function() {
+      setTimeout(generateReport, 500); 
+    });
+  </script>
+</body>
+</html>

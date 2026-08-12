@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventário — Ferramentaria — Danmo Hub</title>
+  
+  <!-- CSS Global do Danmo Hub -->
+  <link rel="stylesheet" href="../shared/style.css" />
+  
+  <style>
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .filter-bar input,
+    .filter-bar select {
+      min-width: 150px;
+      flex: 1;
+    }
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .link-action {
+      color: var(--cor-info);
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 12px;
+      transition: color var(--transicao);
+    }
+    .link-action:hover { 
+      color: var(--cor-ambar); 
+    }
+    /* Grid de formulário para o modal */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-grupo.full-width {
+      grid-column: 1 / -1;
+    }
+    /* Adaptação para a tabela de histórico dentro do modal */
+    .history-table-wrap {
+      margin-top: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid var(--cor-borda);
+      border-radius: var(--raio-md);
+    }
+    .history-table-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--tamanho-sm);
+    }
+    .history-table-wrap th,
+    .history-table-wrap td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--cor-borda);
+      color: var(--cor-texto);
+    }
+    .history-table-wrap th {
+      background: var(--cor-navy);
+      color: #FFFFFF;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
+  <div id="navbar"></div>
+  
+  <main class="main">
+    <h1 class="pagina-titulo">Inventário de Ferramentas</h1>
+    <p class="pagina-subtitulo">Gestão completa do inventário e estado das ferramentas</p>
+
+    <!-- Barra de filtros -->
+    <div class="card">
+      <div class="flex-between" style="flex-wrap:wrap;gap:16px;">
+        <div class="filter-bar">
+          <input class="form-input" type="text" id="f-search" placeholder="Pesquisar código ou nome..." />
+          <select class="form-select" id="f-categoria">
+            <option value="">Todas as categorias</option>
+          </select>
+          <select class="form-select" id="f-estado">
+            <option value="">Todos os estados</option>
+            <option value="novo">Novo</option>
+            <option value="bom">Bom</option>
+            <option value="desgastado">Desgastado</option>
+            <option value="avariado">Avariado</option>
+            <option value="inutilizado">Inutilizado</option>
+            <option value="emprestado">Emprestado</option>
+          </select>
+        </div>
+        <button class="btn btn-primario" id="btn-nova">Nova Ferramenta</button>
+      </div>
+    </div>
+
+    <!-- Tabela Principal -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+        <div class="form-label" style="font-size: 1.1rem; margin: 0;">Lista de Ferramentas</div>
+        <span class="badge badge-info" id="count-ferramentas" style="font-size: 1rem; padding: 4px 12px;">0</span>
+      </div>
+      <div class="tabela-container">
+        <div id="inventario-loading" class="spinner" style="padding:32px;text-align:center;">A carregar inventário...</div>
+        <div id="inventario-empty" class="tabela-vazia" style="display:none;">Nenhuma ferramenta encontrada.</div>
+        <table class="tabela" id="tabela-inventario" style="display:none;">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nome</th>
+              <th>Categoria</th>
+              <th>Marca</th>
+              <th>Estado</th>
+              <th>Localização</th>
+              <th>Qtd</th>
+              <th>Valor Unit.</th>
+              <th>Acções</th>
+            </tr>
+          </thead>
+          <tbody id="inventario-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Nova/Editar Ferramenta -->
+  <div id="modal-ferramenta" class="modal-fundo">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="modal-ferramenta-title">Nova Ferramenta</span>
+        <button class="modal-fechar" id="btn-fechar-ferr-x" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="form-grid">
+          <div class="form-grupo">
+            <label class="form-label" for="m-codigo">Código *</label>
+            <input class="form-input" type="text" id="m-codigo" required />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="m-nome">Nome *</label>
+            <input class="form-input" type="text" id="m-nome" required />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="m-categoria">Categoria *</label>
+            <select class="form-select" id="m-categoria" required>
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="m-marca">Marca</label>
+            <input class="form-input" type="text" id="m-marca" />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="m-estado">Estado</label>
+            <select class="form-select" id="m-estado">
+              <option value="novo">Novo</option>
+              <option value="bom">Bom</option>
+              <option value="desgastado">Desgastado</option>
+              <option value="avariado">Avariado</option>
+              <option value="inutilizado">Inutilizado</option>
+              <option value="emprestado">Emprestado</option>
+            </select>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="m-localizacao">Localização</label>
+            <input class="form-input" type="text" id="m-localizacao" />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="m-quantidade">Quantidade</label>
+            <input class="form-input" type="number" id="m-quantidade" min="1" value="1" />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="m-unidade">Unidade</label>
+            <select class="form-select" id="m-unidade">
+              <option value="unidade">unidade</option>
+              <option value="kit">kit</option>
+              <option value="conjunto">conjunto</option>
+            </select>
+          </div>
+          <div class="form-grupo full-width">
+            <label class="form-label" for="m-valor">Valor Unitário</label>
+            <input class="form-input" type="number" id="m-valor" step="0.01" min="0" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" id="btn-cancelar-ferr">Cancelar</button>
+        <button class="btn btn-verde" id="btn-guardar-ferr">Guardar Ferramenta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Histórico -->
+  <div id="modal-historico" class="modal-fundo">
+    <div class="modal" style="max-width: 800px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="modal-historico-title">Histórico da Ferramenta</span>
+        <button class="modal-fechar" id="btn-fechar-hist-x" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="history-table-wrap">
+          <div id="historico-loading" class="spinner" style="padding:24px;text-align:center;">A carregar histórico...</div>
+          <div id="historico-empty" class="tabela-vazia" style="display:none;">Sem movimentos registados.</div>
+          <table id="tabela-historico" style="display:none;">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Colaborador</th>
+                <th>Operador (Ent./Rec.)</th>
+                <th>Data e Hora</th>
+                <th>Estado</th>
+                <th>Observações</th>
+              </tr>
+            </thead>
+            <tbody id="historico-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" id="btn-fechar-hist">Fechar Relatório</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts Unificados do Danmo Hub -->
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+  
+  <script>
+    /* ── Globals ── */
+    var allTools = [];
+    var categoriesMap = {};
+    var editingToolId = null;
+
+    /* ── Helpers ── */
+    function estadoBadge(estado) {
+      var map = {
+        novo: 'badge-info',
+        bom: 'badge-sucesso',
+        desgastado: 'badge-aviso',
+        avariado: 'badge-erro',
+        inutilizado: 'badge-erro',
+        emprestado: 'badge-aviso'
+      };
+      var cls = map[estado] || 'badge-secundario';
+      return '<span class="badge ' + cls + '">' + (estado || '—') + '</span>';
+    }
+
+    function formatValor(v) {
+      if (!v && v !== 0) return '—';
+      return parseFloat(v).toLocaleString('pt-AO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function truncarObs(texto, max) {
+      if (!texto) return '—';
+      if (texto.length <= max) return texto;
+      return texto.substring(0, max) + '...';
+    }
+
+    function escapeAttr(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function tipoBadge(tipo) {
+      if (tipo === 'emprestimo') return '<span class="badge badge-aviso">empréstimo</span>';
+      if (tipo === 'devolucao') return '<span class="badge badge-sucesso">devolução</span>';
+      return '<span class="badge badge-secundario">' + (tipo || '—') + '</span>';
+    }
+
+    /* ── Load Categories ── */
+    async function loadCategories() {
+      try {
+        var res = await db.query('tool_categories', 'select=*&active=eq.true&order=nome.asc');
+        var cats = res || [];
+        var htmlFilter = '<option value="">Todas as categorias</option>';
+        var htmlModal = '<option value="">Seleccionar...</option>';
+        cats.forEach(function(c) {
+          categoriesMap[c.id] = c.nome;
+          htmlFilter += '<option value="' + c.id + '">' + c.nome + '</option>';
+          htmlModal += '<option value="' + c.id + '">' + c.nome + '</option>';
+        });
+        document.getElementById('f-categoria').innerHTML = htmlFilter;
+        document.getElementById('m-categoria').innerHTML = htmlModal;
+      } catch (err) {
+        console.error('Erro ao carregar categorias:', err);
+      }
+    }
+
+    /* ── Load Tools ── */
+    async function loadTools() {
+      var loadingEl = document.getElementById('inventario-loading');
+      var emptyEl = document.getElementById('inventario-empty');
+      var tableEl = document.getElementById('tabela-inventario');
+      var tbody = document.getElementById('inventario-tbody');
+      var countEl = document.getElementById('count-ferramentas');
+
+      loadingEl.style.display = 'block';
+      emptyEl.style.display = 'none';
+      tableEl.style.display = 'none';
+      tbody.innerHTML = '';
+
+      try {
+        var res = await db.query('tools', 'select=*&active=eq.true&order=code.asc&limit=500');
+        allTools = res || [];
+
+        countEl.textContent = allTools.length;
+
+        if (allTools.length === 0) {
+          loadingEl.style.display = 'none';
+          emptyEl.style.display = 'block';
+          return;
+        }
+
+        renderTools(allTools);
+        loadingEl.style.display = 'none';
+        tableEl.style.display = 'table';
+      } catch (err) {
+        console.error('Erro ao carregar ferramentas:', err);
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        mostrarToast('Erro ao carregar inventário.', 'erro');
+      }
+    }
+
+    /* ── Render Tools ── */
+    function renderTools(tools) {
+      var tbody = document.getElementById('inventario-tbody');
+      var tableEl = document.getElementById('tabela-inventario');
+      var emptyEl = document.getElementById('inventario-empty');
+      var countEl = document.getElementById('count-ferramentas');
+
+      tbody.innerHTML = '';
+      countEl.textContent = tools.length;
+
+      if (tools.length === 0) {
+        tableEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      tableEl.style.display = 'table';
+
+      tools.forEach(function(t) {
+        var tr = document.createElement('tr');
+        var catName = categoriesMap[t.category_id] || '—';
+        tr.innerHTML =
+          '<td>' + (t.code || '—') + '</td>' +
+          '<td>' + (t.nome || '—') + '</td>' +
+          '<td>' + catName + '</td>' +
+          '<td>' + (t.marca || '—') + '</td>' +
+          '<td>' + estadoBadge(t.estado) + '</td>' +
+          '<td>' + (t.localizacao || '—') + '</td>' +
+          '<td>' + (t.quantidade || 0) + '</td>' +
+          '<td>' + formatValor(t.valor_unitario) + '</td>' +
+          '<td>' +
+            '<span class="link-action" data-action="editar" data-id="' + t.id + '">Editar</span>' +
+            '<span class="link-action" data-action="historico" data-id="' + t.id + '" data-code="' + escapeAttr(t.code) + '" data-nome="' + escapeAttr(t.nome) + '">Histórico</span>' +
+          '</td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* ── Real-time Filters ── */
+    function applyFilters() {
+      var search = (document.getElementById('f-search').value || '').trim().toUpperCase();
+      var catId = document.getElementById('f-categoria').value;
+      var estado = document.getElementById('f-estado').value;
+
+      var filtered = allTools.filter(function(t) {
+        if (search) {
+          var code = (t.code || '').toUpperCase();
+          var nome = (t.nome || '').toUpperCase();
+          if (code.indexOf(search) === -1 && nome.indexOf(search) === -1) return false;
+        }
+        if (catId && t.category_id !== catId) return false;
+        if (estado && t.estado !== estado) return false;
+        return true;
+      });
+
+      renderTools(filtered);
+    }
+
+    document.getElementById('f-search').addEventListener('input', applyFilters);
+    document.getElementById('f-categoria').addEventListener('change', applyFilters);
+    document.getElementById('f-estado').addEventListener('change', applyFilters);
+
+    /* ── Event Delegation for Table Actions ── */
+    document.getElementById('inventario-tbody').addEventListener('click', function(e) {
+      var link = e.target.closest('.link-action');
+      if (!link) return;
+
+      var action = link.dataset.action;
+      var id = link.dataset.id;
+
+      if (action === 'editar') {
+        openEditModal(id);
+      } else if (action === 'historico') {
+        openHistoricoModal(id, link.dataset.code, link.dataset.nome);
+      }
+    });
+
+    /* ── Modal Nova Ferramenta ── */
+    document.getElementById('btn-nova').addEventListener('click', function() {
+      editingToolId = null;
+      document.getElementById('modal-ferramenta-title').textContent = 'Nova Ferramenta';
+      document.getElementById('m-codigo').value = '';
+      document.getElementById('m-codigo').readOnly = false;
+      document.getElementById('m-nome').value = '';
+      document.getElementById('m-categoria').value = '';
+      document.getElementById('m-marca').value = '';
+      document.getElementById('m-estado').value = 'novo';
+      document.getElementById('m-localizacao').value = '';
+      document.getElementById('m-quantidade').value = '1';
+      document.getElementById('m-unidade').value = 'unidade';
+      document.getElementById('m-valor').value = '';
+      abrirModal('modal-ferramenta');
+    });
+
+    function openEditModal(id) {
+      var tool = allTools.find(function(t) { return t.id === id; });
+      if (!tool) return;
+
+      editingToolId = id;
+      document.getElementById('modal-ferramenta-title').textContent = 'Editar Ferramenta';
+      document.getElementById('m-codigo').value = tool.code || '';
+      document.getElementById('m-codigo').readOnly = true;
+      document.getElementById('m-nome').value = tool.nome || '';
+      document.getElementById('m-categoria').value = tool.category_id || '';
+      document.getElementById('m-marca').value = tool.marca || '';
+      document.getElementById('m-estado').value = tool.estado || 'bom';
+      document.getElementById('m-localizacao').value = tool.localizacao || '';
+      document.getElementById('m-quantidade').value = tool.quantidade || 1;
+      document.getElementById('m-unidade').value = tool.unidade || 'unidade';
+      document.getElementById('m-valor').value = tool.valor_unitario || '';
+      abrirModal('modal-ferramenta');
+    }
+
+    document.getElementById('btn-cancelar-ferr').addEventListener('click', function() {
+      fecharModal('modal-ferramenta');
+      editingToolId = null;
+    });
+    document.getElementById('btn-fechar-ferr-x').addEventListener('click', function() {
+      fecharModal('modal-ferramenta');
+      editingToolId = null;
+    });
+
+    /* ── Save Ferramenta ── */
+    document.getElementById('btn-guardar-ferr').addEventListener('click', async function() {
+      var codigo = document.getElementById('m-codigo').value.trim();
+      var nome = document.getElementById('m-nome').value.trim();
+      var categoria = document.getElementById('m-categoria').value;
+      var marca = document.getElementById('m-marca').value.trim() || null;
+      var estado = document.getElementById('m-estado').value || 'novo';
+      var localizacao = document.getElementById('m-localizacao').value.trim() || null;
+      var quantidade = parseInt(document.getElementById('m-quantidade').value) || 1;
+      var unidade = document.getElementById('m-unidade').value || 'unidade';
+      var valor = parseFloat(document.getElementById('m-valor').value) || 0;
+
+      if (!codigo || !nome || !categoria) {
+        mostrarToast('Preencha os campos obrigatórios (Código, Nome, Categoria).', 'erro');
+        return;
+      }
+
+      var data = {
+        code: codigo,
+        nome: nome,
+        category_id: categoria,
+        marca: marca,
+        estado: estado,
+        localizacao: localizacao,
+        quantidade: quantidade,
+        unidade: unidade,
+        valor_unitario: valor,
+        active: true
+      };
+
+      try {
+        if (editingToolId) {
+          var movRes = await db.query('tool_movements', 'select=id&tool_id=eq.' + editingToolId + '&tipo=eq.emprestimo&data_devolucao=is.null&limit=1');
+          var activeLoan = (movRes || []).length > 0;
+          if (activeLoan && estado !== 'emprestado') {
+            data.estado = 'emprestado';
+          }
+
+          await db.update('tools', editingToolId, data);
+          mostrarToast('Ferramenta actualizada com sucesso', 'sucesso');
+        } else {
+          await db.insert('tools', data);
+          mostrarToast('Ferramenta criada com sucesso', 'sucesso');
+        }
+
+        fecharModal('modal-ferramenta');
+        editingToolId = null;
+        await loadTools();
+      } catch (err) {
+        console.error('Erro ao guardar ferramenta:', err);
+        mostrarToast('Erro ao guardar ferramenta.', 'erro');
+      }
+    });
+
+    /* ── Modal Histórico ── */
+    function openHistoricoModal(toolId, code, nome) {
+      document.getElementById('modal-historico-title').textContent = 'Histórico — ' + (code || '') + ' ' + (nome || '');
+      document.getElementById('historico-loading').style.display = 'block';
+      document.getElementById('historico-empty').style.display = 'none';
+      document.getElementById('tabela-historico').style.display = 'none';
+      document.getElementById('historico-tbody').innerHTML = '';
+      
+      abrirModal('modal-historico');
+      loadHistorico(toolId);
+    }
+
+    async function loadHistorico(toolId) {
+      var loadingEl = document.getElementById('historico-loading');
+      var emptyEl = document.getElementById('historico-empty');
+      var tableEl = document.getElementById('tabela-historico');
+      var tbody = document.getElementById('historico-tbody');
+
+      try {
+        var res = await db.query('tool_movements', 'select=*&tool_id=eq.' + toolId + '&order=created_at.desc&limit=200');
+        var movs = res || [];
+
+        loadingEl.style.display = 'none';
+
+        if (movs.length === 0) {
+          emptyEl.style.display = 'block';
+          return;
+        }
+
+        movs.forEach(function(m) {
+          var tr = document.createElement('tr');
+          var pessoa = m.tipo === 'emprestimo' ? (m.entregue_por || '—') : (m.recebido_por || m.entregue_por || '—');
+          var dataMov = m.tipo === 'emprestimo' ? (m.data_saida || m.created_at) : (m.data_devolucao || m.created_at);
+          var estado = m.tipo === 'emprestimo' ? (m.estado_ao_sair || '—') : (m.estado_ao_voltar || '—');
+          var obs = m.observacoes_saida || m.observacoes_devolucao || '';
+
+          tr.innerHTML =
+            '<td>' + tipoBadge(m.tipo) + '</td>' +
+            '<td>' + (m.colaborador || '—') + '</td>' +
+            '<td>' + pessoa + '</td>' +
+            '<td>' + formatarData(dataMov, true) + '</td>' +
+            '<td>' + estadoBadge(estado) + '</td>' +
+            '<td title="' + escapeAttr(obs) + '">' + truncarObs(obs, 40) + '</td>';
+
+          tbody.appendChild(tr);
+        });
+
+        tableEl.style.display = 'table';
+      } catch (err) {
+        console.error('Erro ao carregar histórico:', err);
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        mostrarToast('Erro ao carregar histórico.', 'erro');
+      }
+    }
+
+    document.getElementById('btn-fechar-hist').addEventListener('click', function() {
+      fecharModal('modal-historico');
+    });
+    document.getElementById('btn-fechar-hist-x').addEventListener('click', function() {
+      fecharModal('modal-historico');
+    });
+
+    /* ── Init ── */
+    (async function init() {
+      await loadCategories();
+      await loadTools();
+    })();
+  </script>
+</body>
+</html>

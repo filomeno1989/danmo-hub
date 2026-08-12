@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ferramenteiros — Ferramentaria — Danmo Hub</title>
+  
+  <!-- CSS Global do Danmo Hub -->
+  <link rel="stylesheet" href="../shared/style.css" />
+  
+  <style>
+    .link-action {
+      color: var(--cor-info);
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 12px;
+      transition: color var(--transicao);
+    }
+    .link-action:hover { color: var(--cor-ambar); }
+    
+    .link-danger {
+      color: var(--cor-vermelho-danmo);
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity var(--transicao);
+    }
+    .link-danger:hover { opacity: .8; }
+  </style>
+</head>
+<body>
+  <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
+  <div id="navbar"></div>
+  
+  <main class="main">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h1 class="pagina-titulo">Ferramenteiros</h1>
+        <p class="pagina-subtitulo">Gestão dos operadores e responsáveis da ferramentaria</p>
+      </div>
+      <button class="btn btn-primario" id="btn-novo">Novo Ferramenteiro</button>
+    </div>
+
+    <!-- Tabela Principal -->
+    <div class="card" style="margin-top:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+        <div class="form-label" style="font-size: 1.1rem; margin: 0;">Ferramenteiros Activos</div>
+        <span class="badge badge-info" id="count-staff" style="font-size: 1rem; padding: 4px 12px;">0</span>
+      </div>
+      <div class="tabela-container">
+        <div id="staff-loading" class="spinner" style="padding:32px;text-align:center;">A carregar ferramenteiros...</div>
+        <div id="staff-empty" class="tabela-vazia" style="display:none;">Nenhum ferramenteiro registado.</div>
+        <table class="tabela" id="tabela-staff" style="display:none;">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Código</th>
+              <th>Turno</th>
+              <th>Empréstimos Registados</th>
+              <th>Acções</th>
+            </tr>
+          </thead>
+          <tbody id="staff-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Novo/Editar Ferramenteiro -->
+  <div id="modal-staff" class="modal-fundo">
+    <div class="modal" style="max-width: 480px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="modal-staff-title">Novo Ferramenteiro</span>
+        <button class="modal-fechar" id="btn-fechar-x" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="form-grupo">
+          <label class="form-label" for="m-nome">Nome Completo *</label>
+          <input class="form-input" type="text" id="m-nome" required placeholder="Ex: João Silva" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="m-codigo">Código de Colaborador</label>
+          <input class="form-input" type="text" id="m-codigo" placeholder="Opcional" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="m-turno">Turno de Trabalho</label>
+          <select class="form-select" id="m-turno">
+            <option value="Diurno">Diurno</option>
+            <option value="Noturno">Noturno</option>
+            <option value="1o Turno">1º Turno</option>
+            <option value="2o Turno">2º Turno</option>
+            <option value="3o Turno">3º Turno</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" id="btn-cancelar">Cancelar</button>
+        <button class="btn btn-verde" id="btn-guardar">Guardar Registo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts Unificados do Danmo Hub -->
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+  
+  <script>
+    /* ── Globals ── */
+    var allStaff = [];
+    var loanCounts = {};
+    var editingId = null;
+
+    /* ── Load & Render ── */
+    async function loadStaff() {
+      var loadingEl = document.getElementById('staff-loading');
+      var emptyEl = document.getElementById('staff-empty');
+      var tableEl = document.getElementById('tabela-staff');
+      var tbody = document.getElementById('staff-tbody');
+      var countEl = document.getElementById('count-staff');
+
+      loadingEl.style.display = 'block';
+      emptyEl.style.display = 'none';
+      tableEl.style.display = 'none';
+      tbody.innerHTML = '';
+
+      try {
+        var res = await db.query('tool_staff', 'select=*&active=eq.true&order=nome.asc');
+        allStaff = res || [];
+        countEl.textContent = allStaff.length;
+
+        if (allStaff.length === 0) {
+          loadingEl.style.display = 'none';
+          emptyEl.style.display = 'block';
+          return;
+        }
+
+        /* Fetch all loan counts by entregue_por name */
+        loanCounts = {};
+        var movRes = await db.query('tool_movements', 'select=entregue_por');
+        var movs = movRes || [];
+        movs.forEach(function(m) {
+          if (m.entregue_por) {
+            loanCounts[m.entregue_por] = (loanCounts[m.entregue_por] || 0) + 1;
+          }
+        });
+
+        allStaff.forEach(function(s) {
+          var tr = document.createElement('tr');
+          var count = loanCounts[s.nome] || 0;
+          tr.innerHTML =
+            '<td>' + (s.nome || '—') + '</td>' +
+            '<td>' + (s.codigo || '—') + '</td>' +
+            '<td>' + (s.turno || '—') + '</td>' +
+            '<td><span class="badge badge-info">' + count + ' empréstimos</span></td>' +
+            '<td>' +
+              '<span class="link-action" data-action="editar" data-id="' + s.id + '">Editar</span>' +
+              '<span class="link-danger" data-action="desactivar" data-id="' + s.id + '">Desactivar</span>' +
+            '</td>';
+          tbody.appendChild(tr);
+        });
+
+        loadingEl.style.display = 'none';
+        tableEl.style.display = 'table';
+      } catch (err) {
+        console.error('Erro ao carregar ferramenteiros:', err);
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        mostrarToast('Erro ao carregar ferramenteiros.', 'erro');
+      }
+    }
+
+    /* ── Event Delegation ── */
+    document.getElementById('staff-tbody').addEventListener('click', async function(e) {
+      var link = e.target.closest('[data-action]');
+      if (!link) return;
+
+      var action = link.dataset.action;
+      var id = link.dataset.id;
+
+      if (action === 'editar') {
+        openEditModal(id);
+      } else if (action === 'desactivar') {
+        if (!confirm('Tem a certeza que deseja desactivar este ferramenteiro? Ele deixará de aparecer nas opções de empréstimo.')) return;
+        try {
+          await db.update('tool_staff', id, { active: false });
+          mostrarToast('Ferramenteiro desactivado com sucesso.', 'sucesso');
+          await loadStaff();
+        } catch (err) {
+          console.error('Erro ao desactivar:', err);
+          mostrarToast('Erro ao desactivar ferramenteiro.', 'erro');
+        }
+      }
+    });
+
+    /* ── Modal ── */
+    document.getElementById('btn-novo').addEventListener('click', function() {
+      editingId = null;
+      document.getElementById('modal-staff-title').textContent = 'Novo Ferramenteiro';
+      document.getElementById('m-nome').value = '';
+      document.getElementById('m-codigo').value = '';
+      document.getElementById('m-turno').value = 'Diurno';
+      abrirModal('modal-staff');
+    });
+
+    function openEditModal(id) {
+      var staff = allStaff.find(function(s) { return s.id === id; });
+      if (!staff) return;
+      editingId = id;
+      document.getElementById('modal-staff-title').textContent = 'Editar Ferramenteiro';
+      document.getElementById('m-nome').value = staff.nome || '';
+      document.getElementById('m-codigo').value = staff.codigo || '';
+      document.getElementById('m-turno').value = staff.turno || 'Diurno';
+      abrirModal('modal-staff');
+    }
+
+    /* Fechar Modal */
+    document.getElementById('btn-cancelar').addEventListener('click', function() {
+      fecharModal('modal-staff');
+      editingId = null;
+    });
+    
+    document.getElementById('btn-fechar-x').addEventListener('click', function() {
+      fecharModal('modal-staff');
+      editingId = null;
+    });
+
+    /* ── Save ── */
+    document.getElementById('btn-guardar').addEventListener('click', async function() {
+      var nome = document.getElementById('m-nome').value.trim();
+      var codigo = document.getElementById('m-codigo').value.trim() || null;
+      var turno = document.getElementById('m-turno').value;
+
+      if (!nome) {
+        mostrarToast('Preencha o nome do ferramenteiro.', 'erro');
+        return;
+      }
+
+      var data = {
+        nome: nome,
+        codigo: codigo,
+        turno: turno,
+        active: true
+      };
+
+      try {
+        if (editingId) {
+          await db.update('tool_staff', editingId, data);
+          mostrarToast('Ferramenteiro actualizado com sucesso.', 'sucesso');
+        } else {
+          await db.insert('tool_staff', data);
+          mostrarToast('Ferramenteiro registado com sucesso.', 'sucesso');
+        }
+        fecharModal('modal-staff');
+        editingId = null;
+        await loadStaff();
+      } catch (err) {
+        console.error('Erro ao guardar ferramenteiro:', err);
+        mostrarToast('Erro ao guardar os dados do ferramenteiro.', 'erro');
+      }
+    });
+
+    /* ── Init ── */
+    loadStaff();
+  </script>
+</body>
+</html>

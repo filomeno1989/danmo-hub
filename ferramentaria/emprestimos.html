@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Empréstimos — Ferramentaria — Danmo Hub</title>
+  
+  <!-- CSS Global do Danmo Hub -->
+  <link rel="stylesheet" href="../shared/style.css" />
+  
+  <style>
+    /* Grid para organizar o formulário lado a lado no ecrã do PC */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+    }
+    
+    .link-devolver {
+      color: var(--cor-info);
+      cursor: pointer;
+      font-weight: 600;
+      transition: color var(--transicao);
+    }
+    .link-devolver:hover { 
+      color: var(--cor-ambar); 
+    }
+
+    /* Autocomplete adaptado ao Modo Escuro / Claro do Hub */
+    .autocomplete-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--cor-superficie);
+      border: 1px solid var(--cor-borda);
+      border-radius: var(--raio-md);
+      max-height: 180px;
+      overflow-y: auto;
+      z-index: 50;
+      box-shadow: var(--sombra-md);
+      margin-top: 4px;
+    }
+    .autocomplete-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: var(--tamanho-sm);
+      border-bottom: 1px solid var(--cor-borda);
+      color: var(--cor-texto);
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover,
+    .autocomplete-item.active { background: var(--cor-navy-claro); color: #FFFFFF; }
+    .autocomplete-item small { color: var(--cor-texto-sec); margin-left: 8px; }
+    .autocomplete-item:hover small,
+    .autocomplete-item.active small { color: rgba(255,255,255,0.7); }
+  </style>
+</head>
+<body>
+  <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
+  <div id="navbar"></div>
+  
+  <main class="main">
+    <h1 class="pagina-titulo">Empréstimos</h1>
+    <p class="pagina-subtitulo">Registar e gerir empréstimos de ferramentas da ferramentaria</p>
+
+    <!-- Formulário de Empréstimo -->
+    <div class="card">
+      <div class="form-label" style="font-size: 1.1rem; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--cor-borda);">
+        Registar Empréstimo
+      </div>
+      <form id="form-emprestimo" autocomplete="off">
+        <div class="form-grid">
+          <div class="form-grupo" style="position:relative;">
+            <label class="form-label" for="f-ferramenta">Ferramenta</label>
+            <input class="form-input" type="text" id="f-ferramenta" placeholder="Ex: FER-001" required />
+            <div id="ferramenta-autocomplete" class="autocomplete-list" style="display:none;"></div>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="f-colaborador">Nome do Colaborador</label>
+            <input class="form-input" type="text" id="f-colaborador" placeholder="Nome completo" required />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="f-departamento">Departamento</label>
+            <select class="form-select" id="f-departamento" required>
+              <option value="">Seleccionar departamento...</option>
+              <option>Mecânica</option>
+              <option>Elétrica</option>
+              <option>Serralharia</option>
+              <option>Pneumática</option>
+              <option>Lubrificação</option>
+              <option>Piquete</option>
+              <option>Direcção</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="f-os">Nº da Obra / OS</label>
+            <input class="form-input" type="text" id="f-os" placeholder="Opcional — deixar vazio se não houver OS" />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="f-equip">Equipamento</label>
+            <input class="form-input" type="text" id="f-equip" placeholder="Opcional — deixar vazio se não houver equipamento" />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="f-prazo">Prazo de Devolução</label>
+            <input class="form-input" type="date" id="f-prazo" required />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="f-entregue">Entregue por</label>
+            <select class="form-select" id="f-entregue" required>
+              <option value="">Seleccionar ferramenteiro...</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grupo" style="margin-top: 8px;">
+          <label class="form-label" for="f-obs">Observações</label>
+          <textarea class="form-textarea" id="f-obs" rows="2" placeholder="Opcional"></textarea>
+        </div>
+        <div class="flex-between">
+          <button type="button" class="btn btn-secundario" id="btn-limpar">Limpar</button>
+          <button type="submit" class="btn btn-primario">Registar Empréstimo</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tabela de Empréstimos Activos -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+        <div class="form-label" style="font-size: 1.1rem; margin: 0;">Empréstimos Activos</div>
+        <span class="badge badge-info" id="count-activos" style="font-size: 1rem; padding: 4px 12px;">0</span>
+      </div>
+      <div class="tabela-container">
+        <div id="emprestimos-loading" class="spinner" style="padding:32px;text-align:center;">A carregar empréstimos...</div>
+        <div id="emprestimos-empty" class="tabela-vazia" style="display:none;">Nenhum empréstimo activo neste momento.</div>
+        <table class="tabela" id="tabela-emprestimos" style="display:none;">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Ferramenta</th>
+              <th>Colaborador</th>
+              <th>Departamento</th>
+              <th>Data Saída</th>
+              <th>Prazo</th>
+              <th>Dias</th>
+              <th>Estado</th>
+              <th>Acções</th>
+            </tr>
+          </thead>
+          <tbody id="emprestimos-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal de Devolução (Refatorado para as classes globais do Danmo Hub) -->
+  <div id="modal-devolucao" class="modal-fundo">
+    <div class="modal">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo">Registar Devolução</span>
+        <button class="modal-fechar" id="btn-fechar-modal" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <p class="texto-secundario" id="modal-info" style="margin-bottom: 16px; font-weight: 600; color: var(--cor-texto);"></p>
+        <div class="form-grupo">
+          <label class="form-label" for="d-estado">Estado ao Voltar</label>
+          <select class="form-select" id="d-estado" required>
+            <option value="">Seleccionar estado...</option>
+            <option>bom</option>
+            <option>sujo</option>
+            <option>desgastado</option>
+            <option>torto</option>
+            <option>avariado</option>
+            <option>perdido</option>
+          </select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="d-recebido">Quem Recebeu</label>
+          <select class="form-select" id="d-recebido" required>
+            <option value="">Seleccionar ferramenteiro...</option>
+          </select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="d-obs">Observações</label>
+          <textarea class="form-textarea" id="d-obs" rows="2" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button type="button" class="btn btn-secundario" id="btn-cancelar-dev">Cancelar</button>
+        <button type="button" class="btn btn-verde" id="btn-confirmar-dev">Confirmar Devolução</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts Unificados do Danmo Hub -->
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+  
+  <script>
+    /* ── Globals ── */
+    var allTools = [];
+    var staffList = [];
+    var currentDevId = null;
+    var autocompleteIndex = -1;
+
+    /* ── Helpers ── */
+    function diasDesde(dateStr) {
+      if (!dateStr) return '—';
+      return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+    }
+
+    function fmtDias(d) {
+      if (d === 1) return '1 dia';
+      return d + ' dias';
+    }
+
+    function isAtrasada(prazo) {
+      if (!prazo) return false;
+      var hoje = new Date(); hoje.setHours(0,0,0,0);
+      return new Date(prazo) < hoje;
+    }
+
+    function addDays(date, days) {
+      var d = new Date(date);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split('T')[0];
+    }
+
+    /* ── Load Ferramenteiros ── */
+    async function loadStaff() {
+      try {
+        var res = await db.query('tool_staff', 'select=*&active=eq.true&order=nome.asc');
+        staffList = res || [];
+        var html = '<option value="">Seleccionar ferramenteiro...</option>';
+        staffList.forEach(function(s) {
+          html += '<option value="' + s.id + '">' + s.nome + '</option>';
+        });
+        document.getElementById('f-entregue').innerHTML = html;
+        document.getElementById('d-recebido').innerHTML = html;
+      } catch (err) {
+        console.error('Erro ao carregar ferramenteiros:', err);
+      }
+    }
+
+    /* ── Load Tools (for autocomplete) ── */
+    async function loadTools() {
+      try {
+        var res = await db.query('tools', 'select=id,code,nome,estado,active');
+        allTools = res || [];
+      } catch (err) {
+        console.error('Erro ao carregar ferramentas:', err);
+      }
+    }
+
+    /* ── Autocomplete ── */
+    var fFerramenta = document.getElementById('f-ferramenta');
+    var fAutoList = document.getElementById('ferramenta-autocomplete');
+
+    fFerramenta.addEventListener('input', function() {
+      var val = this.value.trim().toUpperCase();
+      autocompleteIndex = -1;
+      if (val.length < 1) { fAutoList.style.display = 'none'; return; }
+      var matches = allTools.filter(function(t) {
+        return t.active && (t.code.toUpperCase().indexOf(val) !== -1 || t.nome.toUpperCase().indexOf(val) !== -1);
+      }).slice(0, 8);
+      if (matches.length === 0) { fAutoList.style.display = 'none'; return; }
+      var html = '';
+      matches.forEach(function(t, i) {
+        html += '<div class="autocomplete-item" data-code="' + t.code + '" data-index="' + i + '">' + t.code + ' <small>' + t.nome + ' (' + t.estado + ')</small></div>';
+      });
+      fAutoList.innerHTML = html;
+      fAutoList.style.display = 'block';
+    });
+
+    fFerramenta.addEventListener('keydown', function(e) {
+      var items = fAutoList.querySelectorAll('.autocomplete-item');
+      if (!items.length || fAutoList.style.display === 'none') return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        autocompleteIndex = Math.min(autocompleteIndex + 1, items.length - 1);
+        highlightAutocomplete(items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        autocompleteIndex = Math.max(autocompleteIndex - 1, 0);
+        highlightAutocomplete(items);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (autocompleteIndex >= 0 && items[autocompleteIndex]) {
+          selectAutocompleteItem(items[autocompleteIndex]);
+        }
+      } else if (e.key === 'Escape') {
+        fAutoList.style.display = 'none';
+        autocompleteIndex = -1;
+      }
+    });
+
+    function highlightAutocomplete(items) {
+      items.forEach(function(it, i) {
+        it.classList.toggle('active', i === autocompleteIndex);
+      });
+    }
+
+    fAutoList.addEventListener('click', function(e) {
+      var item = e.target.closest('.autocomplete-item');
+      if (item) selectAutocompleteItem(item);
+    });
+
+    function selectAutocompleteItem(item) {
+      fFerramenta.value = item.dataset.code;
+      fAutoList.style.display = 'none';
+      autocompleteIndex = -1;
+    }
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#f-ferramenta') && !e.target.closest('#ferramenta-autocomplete')) {
+        fAutoList.style.display = 'none';
+      }
+    });
+
+    /* ── Load & Render Active Loans ── */
+    async function loadEmprestimos() {
+      var loadingEl = document.getElementById('emprestimos-loading');
+      var emptyEl = document.getElementById('emprestimos-empty');
+      var tableEl = document.getElementById('tabela-emprestimos');
+      var tbody = document.getElementById('emprestimos-tbody');
+      var countEl = document.getElementById('count-activos');
+
+      loadingEl.style.display = 'block';
+      emptyEl.style.display = 'none';
+      tableEl.style.display = 'none';
+      tbody.innerHTML = '';
+
+      try {
+        var movRes = await db.query('tool_movements', 'select=*&tipo=eq.emprestimo&data_devolucao=is.null&order=data_saida.desc');
+        var emprestimos = movRes || [];
+        countEl.textContent = emprestimos.length;
+
+        if (emprestimos.length === 0) {
+          loadingEl.style.display = 'none';
+          emptyEl.style.display = 'block';
+          return;
+        }
+
+        var toolIds = [];
+        emprestimos.forEach(function(m) {
+          if (m.tool_id && toolIds.indexOf(m.tool_id) === -1) toolIds.push(m.tool_id);
+        });
+        var toolFilter = toolIds.map(function(id) { return 'id=eq.' + id; }).join('&');
+        var toolRes = await db.query('tools', 'select=id,code,nome&' + toolFilter);
+        var toolsData = toolRes || [];
+        var toolMap = {};
+        toolsData.forEach(function(t) { toolMap[t.id] = t; });
+
+        var staffIds = [];
+        emprestimos.forEach(function(m) {
+          if (m.entregue_por && staffIds.indexOf(m.entregue_por) === -1) staffIds.push(m.entregue_por);
+        });
+        var staffFilter = staffIds.map(function(id) { return 'id=eq.' + id; }).join('&');
+        var staffRes = staffFilter ? await db.query('tool_staff', 'select=id,nome&' + staffFilter) : [];
+        var staffData = staffRes || [];
+        var staffMap = {};
+        staffData.forEach(function(s) { staffMap[s.id] = s; });
+
+        emprestimos.forEach(function(m) {
+          var tool = toolMap[m.tool_id] || {};
+          var dias = diasDesde(m.data_saida);
+          var atraso = isAtrasada(m.prazo_devolucao);
+          var tr = document.createElement('tr');
+
+          var diasHtml = atraso
+            ? '<span style="color: var(--cor-erro); font-weight: 700;">' + fmtDias(dias) + '</span>'
+            : fmtDias(dias);
+
+          var prazoHtml = m.prazo_devolucao ? formatarData(m.prazo_devolucao) : '—';
+
+          var estadoBadge = atraso
+            ? '<span class="badge badge-erro">ATRASADA</span>'
+            : '<span class="badge badge-aviso">Pendente</span>';
+
+          tr.innerHTML =
+            '<td>' + (tool.code || '—') + '</td>' +
+            '<td>' + (tool.nome || '—') + '</td>' +
+            '<td>' + (m.colaborador || '—') + '</td>' +
+            '<td>' + (m.departamento || '—') + '</td>' +
+            '<td>' + formatarData(m.data_saida) + '</td>' +
+            '<td>' + prazoHtml + '</td>' +
+            '<td>' + diasHtml + '</td>' +
+            '<td>' + estadoBadge + '</td>' +
+            '<td><span class="link-devolver" data-id="' + m.id + '" data-tool-id="' + (m.tool_id || '') + '" data-tool-code="' + (tool.code || '') + '" data-tool-nome="' + (tool.nome || '') + '" data-colab="' + (m.colaborador || '') + '">Devolver</span></td>';
+
+          tbody.appendChild(tr);
+        });
+
+        loadingEl.style.display = 'none';
+        tableEl.style.display = 'table';
+
+      } catch (err) {
+        console.error('Erro ao carregar empréstimos:', err);
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        mostrarToast('Erro ao carregar empréstimos.', 'erro');
+      }
+    }
+
+    /* ── Submit Form ── */
+    document.getElementById('form-emprestimo').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      var ferramentaCode = document.getElementById('f-ferramenta').value.trim().toUpperCase();
+      var colaborador = document.getElementById('f-colaborador').value.trim();
+      var departamento = document.getElementById('f-departamento').value;
+      var osId = document.getElementById('f-os').value.trim() || null;
+      var equipId = document.getElementById('f-equip').value.trim() || null;
+      var prazo = document.getElementById('f-prazo').value;
+      var entreguePor = document.getElementById('f-entregue').value;
+      var obs = document.getElementById('f-obs').value.trim() || null;
+
+      if (!ferramentaCode || !colaborador || !departamento || !entreguePor) {
+        mostrarToast('Preencha os campos obrigatórios.', 'erro');
+        return;
+      }
+
+      var tool = allTools.find(function(t) {
+        return t.active && t.code.toUpperCase() === ferramentaCode;
+      });
+
+      if (!tool) {
+        mostrarToast('Ferramenta não encontrada', 'erro');
+        return;
+      }
+
+      var staffMember = staffList.find(function(s) { return s.id === entreguePor; });
+      var entregueNome = staffMember ? staffMember.nome : '';
+
+      try {
+        await db.insert('tool_movements', {
+          tool_id: tool.id,
+          tipo: 'emprestimo',
+          colaborador: colaborador,
+          departamento: departamento,
+          os_id: osId,
+          equipamento_id: equipId,
+          estado_ao_sair: tool.estado || 'bom',
+          entregue_por: entregueNome,
+          data_saida: new Date().toISOString(),
+          prazo_devolucao: prazo,
+          observacoes_saida: obs
+        });
+
+        await db.update('tools', tool.id, { estado: 'emprestado' });
+
+        clearForm();
+        await loadEmprestimos();
+        mostrarToast('Empréstimo registado com sucesso', 'sucesso');
+      } catch (err) {
+        console.error('Erro ao registar empréstimo:', err);
+        mostrarToast('Erro ao registar empréstimo.', 'erro');
+      }
+    });
+
+    function clearForm() {
+      document.getElementById('form-emprestimo').reset();
+      setDefaultPrazo();
+    }
+
+    document.getElementById('btn-limpar').addEventListener('click', clearForm);
+
+    function setDefaultPrazo() {
+      document.getElementById('f-prazo').value = addDays(new Date(), 1);
+    }
+
+    /* ── Devolução Modal ── */
+    var modalDev = document.getElementById('modal-devolucao');
+    var modalInfo = document.getElementById('modal-info');
+
+    document.getElementById('emprestimos-tbody').addEventListener('click', function(e) {
+      var link = e.target.closest('.link-devolver');
+      if (!link) return;
+      currentDevId = link.dataset.id;
+      var toolCode = link.dataset.toolCode;
+      var toolNome = link.dataset.toolNome;
+      var colab = link.dataset.colab;
+      modalInfo.textContent = toolCode + ' — ' + toolNome + ' | Colaborador: ' + colab;
+      document.getElementById('d-estado').value = '';
+      document.getElementById('d-recebido').value = '';
+      document.getElementById('d-obs').value = '';
+      abrirModal('modal-devolucao');
+    });
+
+    document.getElementById('btn-cancelar-dev').addEventListener('click', function() {
+      fecharModal('modal-devolucao');
+      currentDevId = null;
+    });
+    
+    document.getElementById('btn-fechar-modal').addEventListener('click', function() {
+      fecharModal('modal-devolucao');
+      currentDevId = null;
+    });
+
+    document.getElementById('btn-confirmar-dev').addEventListener('click', async function() {
+      var estadoVoltar = document.getElementById('d-estado').value;
+      var recebidoPor = document.getElementById('d-recebido').value;
+      var obsDev = document.getElementById('d-obs').value.trim() || null;
+
+      if (!estadoVoltar || !recebidoPor) {
+        mostrarToast('Preencha o estado e quem recebeu.', 'erro');
+        return;
+      }
+
+      if (!currentDevId) return;
+
+      var staffMember = staffList.find(function(s) { return s.id === recebidoPor; });
+      var recebidoNome = staffMember ? staffMember.nome : '';
+
+      try {
+        var movRes = await db.query('tool_movements', 'select=*&id=eq.' + currentDevId);
+        var mov = (movRes || [])[0];
+        if (!mov) { mostrarToast('Empréstimo não encontrado.', 'erro'); return; }
+
+        await db.insert('tool_movements', {
+          tool_id: mov.tool_id,
+          tipo: 'devolucao',
+          colaborador: mov.colaborador,
+          departamento: mov.departamento,
+          os_id: mov.os_id,
+          equipamento_id: mov.equipamento_id,
+          estado_ao_voltar: estadoVoltar,
+          recebido_por: recebidoNome,
+          observacoes_devolucao: obsDev,
+          data_saida: mov.data_saida,
+          data_devolucao: new Date().toISOString(),
+          prazo_devolucao: mov.prazo_devolucao
+        });
+
+        await db.update('tool_movements', currentDevId, {
+          data_devolucao: new Date().toISOString(),
+          estado_ao_voltar: estadoVoltar,
+          recebido_por: recebidoNome,
+          observacoes_devolucao: obsDev
+        });
+
+        var novoEstado = 'bom';
+        if (estadoVoltar === 'avariado') {
+          novoEstado = 'avariado';
+        } else if (estadoVoltar === 'perdido') {
+          novoEstado = 'inutilizado';
+        }
+        await db.update('tools', mov.tool_id, { estado: novoEstado });
+
+        var estadosDanosos = ['avariado', 'torto', 'perdido'];
+        if (estadosDanosos.indexOf(estadoVoltar) !== -1) {
+          await db.insert('tool_damage', {
+            tool_id: mov.tool_id,
+            movement_id: currentDevId,
+            estado_reportado: estadoVoltar,
+            status: 'reportado',
+            colaborador: mov.colaborador,
+            observacoes: obsDev || 'Devolução com problema — ' + estadoVoltar,
+            created_at: new Date().toISOString()
+          });
+        }
+
+        fecharModal('modal-devolucao');
+        currentDevId = null;
+        await loadEmprestimos();
+        mostrarToast('Devolução registada com sucesso', 'sucesso');
+
+      } catch (err) {
+        console.error('Erro ao registar devolução:', err);
+        mostrarToast('Erro ao registar devolução.', 'erro');
+      }
+    });
+
+    /* ── Init ── */
+    (async function init() {
+      setDefaultPrazo();
+      await Promise.all([loadStaff(), loadTools()]);
+      await loadEmprestimos();
+    })();
+  </script>
+</body>
+</html>

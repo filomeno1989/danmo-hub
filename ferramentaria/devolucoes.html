@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Histórico de Devoluções — Ferramentaria — Danmo Hub</title>
+  
+  <!-- CSS Global do Danmo Hub -->
+  <link rel="stylesheet" href="../shared/style.css" />
+  
+  <style>
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .filter-bar input,
+    .filter-bar select {
+      min-width: 150px;
+      flex: 1;
+    }
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .gap-8 {
+      display: flex;
+      gap: 8px;
+    }
+    .filtro-label {
+      font-size: 0.85rem;
+      color: var(--cor-texto-sec);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
+  <div id="navbar"></div>
+  
+  <main class="main">
+    <h1 class="pagina-titulo">Histórico de Devoluções</h1>
+    <p class="pagina-subtitulo">Consulte o registo de todas as ferramentas que já foram devolvidas à ferramentaria</p>
+
+    <!-- Filtros de Pesquisa -->
+    <div class="card">
+      <div class="form-label" style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 8px;">
+        Filtros de Pesquisa
+      </div>
+      <div class="flex-between" style="flex-wrap:wrap;gap:16px;">
+        <div class="filter-bar">
+          <span class="filtro-label">Período de:</span>
+          <input class="form-input" type="date" id="f-data-inicio" title="Data Inicial" />
+          
+          <span class="filtro-label">até:</span>
+          <input class="form-input" type="date" id="f-data-fim" title="Data Final" />
+          
+          <select class="form-select" id="f-estado">
+            <option value="">Todos os Estados</option>
+            <option value="bom">Bom</option>
+            <option value="sujo">Sujo</option>
+            <option value="desgastado">Desgastado</option>
+            <option value="torto">Torto</option>
+            <option value="avariado">Avariado</option>
+            <option value="perdido">Perdido</option>
+          </select>
+          
+          <input class="form-input" type="text" id="f-colaborador" placeholder="Nome do Colaborador..." />
+        </div>
+        <div class="gap-8">
+          <button class="btn btn-primario" id="btn-filtrar">Pesquisar</button>
+          <button class="btn btn-secundario" id="btn-limpar">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela de Relatório -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+        <div class="form-label" style="font-size: 1.1rem; margin: 0;">Relatório de Ferramentas Devolvidas</div>
+        <span class="badge badge-info" id="count-devolucoes" style="font-size: 1rem; padding: 4px 12px;">0</span>
+      </div>
+      <div class="tabela-container">
+        <div id="devolucoes-loading" class="spinner" style="padding:32px;text-align:center;">A carregar histórico...</div>
+        <div id="devolucoes-empty" class="tabela-vazia" style="display:none;">Nenhuma devolução encontrada com estes filtros.</div>
+        <table class="tabela" id="tabela-devolucoes" style="display:none;">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Ferramenta</th>
+              <th>Colaborador</th>
+              <th>Departamento</th>
+              <th>Estado ao Voltar</th>
+              <th>Recebido Por</th>
+              <th>Data e Hora</th>
+              <th>Observações</th>
+            </tr>
+          </thead>
+          <tbody id="devolucoes-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Scripts Unificados do Danmo Hub -->
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+  
+  <script>
+    /* ── Helpers ── */
+    function estadoBadge(estado) {
+      var map = {
+        bom: 'badge-sucesso',
+        sujo: 'badge-aviso',
+        desgastado: 'badge-aviso',
+        torto: 'badge-erro',
+        avariado: 'badge-erro',
+        perdido: 'badge-erro'
+      };
+      var cls = map[estado] || 'badge-secundario';
+      return '<span class="badge ' + cls + '">' + (estado || '—') + '</span>';
+    }
+
+    function truncarObs(texto, max) {
+      if (!texto) return '—';
+      if (texto.length <= max) return texto;
+      return texto.substring(0, max) + '...';
+    }
+
+    function escapeAttr(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    /* ── Load & Render ── */
+    async function loadDevolucoes(filtros) {
+      var loadingEl = document.getElementById('devolucoes-loading');
+      var emptyEl = document.getElementById('devolucoes-empty');
+      var tableEl = document.getElementById('tabela-devolucoes');
+      var tbody = document.getElementById('devolucoes-tbody');
+      var countEl = document.getElementById('count-devolucoes');
+
+      loadingEl.style.display = 'block';
+      emptyEl.style.display = 'none';
+      tableEl.style.display = 'none';
+      tbody.innerHTML = '';
+
+      try {
+        var qf = 'tipo=eq.devolucao';
+        var movRes = await db.query('tool_movements', 'select=*&' + qf + '&order=created_at.desc&limit=500');
+        var devolucoes = movRes || [];
+
+        var empRes = await db.query('tool_movements', 'select=*&tipo=eq.emprestimo&data_devolucao=not.null&order=data_devolucao.desc&limit=500');
+        var empDevs = empRes || [];
+
+        var allDevs = [];
+        var seenIds = {};
+        devolucoes.forEach(function(m) {
+          if (!seenIds[m.id]) { seenIds[m.id] = true; allDevs.push(m); }
+        });
+        empDevs.forEach(function(m) {
+          if (!seenIds[m.id]) { seenIds[m.id] = true; allDevs.push(m); }
+        });
+
+        allDevs.sort(function(a, b) {
+          var da = a.data_devolucao || a.created_at;
+          var db2 = b.data_devolucao || b.created_at;
+          return (db2 || '').localeCompare(da || '');
+        });
+
+        var toolIds = [];
+        allDevs.forEach(function(m) {
+          if (m.tool_id && toolIds.indexOf(m.tool_id) === -1) toolIds.push(m.tool_id);
+        });
+
+        var toolMap = {};
+        if (toolIds.length > 0) {
+          var toolFilter = toolIds.map(function(id) { return 'id=eq.' + id; }).join('&');
+          var toolRes = await db.query('tools', 'select=id,code,nome&' + toolFilter);
+          (toolRes || []).forEach(function(t) { toolMap[t.id] = t; });
+        }
+
+        var dataInicio = filtros.dataInicio || '';
+        var dataFim = filtros.dataFim || '';
+        var estadoFiltro = filtros.estado || '';
+        var colaboradorFiltro = (filtros.colaborador || '').toUpperCase();
+
+        var filtered = allDevs.filter(function(m) {
+          var devDate = m.data_devolucao || m.created_at;
+          if (dataInicio && devDate && devDate < dataInicio) return false;
+          if (dataFim && devDate && devDate > dataFim + 'T23:59:59') return false;
+          var estado = m.estado_ao_voltar || '';
+          if (estadoFiltro && estado !== estadoFiltro) return false;
+          if (colaboradorFiltro) {
+            var colab = (m.colaborador || '').toUpperCase();
+            if (colab.indexOf(colaboradorFiltro) === -1) return false;
+          }
+          return true;
+        });
+
+        var hasFilters = dataInicio || dataFim || estadoFiltro || colaboradorFiltro;
+        if (!hasFilters) filtered = filtered.slice(0, 50);
+
+        countEl.textContent = filtered.length;
+
+        if (filtered.length === 0) {
+          loadingEl.style.display = 'none';
+          emptyEl.style.display = 'block';
+          return;
+        }
+
+        filtered.forEach(function(m) {
+          var tool = toolMap[m.tool_id] || {};
+          var tr = document.createElement('tr');
+          var estado = m.estado_ao_voltar || '';
+          var obs = m.observacoes_devolucao || m.observacoes_saida || '';
+          var devDate = m.data_devolucao || m.created_at;
+
+          tr.innerHTML =
+            '<td>' + (tool.code || '—') + '</td>' +
+            '<td>' + (tool.nome || '—') + '</td>' +
+            '<td>' + (m.colaborador || '—') + '</td>' +
+            '<td>' + (m.departamento || '—') + '</td>' +
+            '<td>' + estadoBadge(estado) + '</td>' +
+            '<td>' + (m.recebido_por || '—') + '</td>' +
+            '<td>' + formatarData(devDate, true) + '</td>' +
+            '<td title="' + escapeAttr(obs) + '">' + truncarObs(obs, 50) + '</td>';
+
+          tbody.appendChild(tr);
+        });
+
+        loadingEl.style.display = 'none';
+        tableEl.style.display = 'table';
+
+      } catch (err) {
+        console.error('Erro ao carregar devoluções:', err);
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        mostrarToast('Erro ao carregar histórico.', 'erro');
+      }
+    }
+
+    /* ── Filter Events ── */
+    function getFiltros() {
+      return {
+        dataInicio: document.getElementById('f-data-inicio').value,
+        dataFim: document.getElementById('f-data-fim').value,
+        estado: document.getElementById('f-estado').value,
+        colaborador: document.getElementById('f-colaborador').value.trim()
+      };
+    }
+
+    document.getElementById('btn-filtrar').addEventListener('click', function() {
+      loadDevolucoes(getFiltros());
+    });
+
+    document.getElementById('btn-limpar').addEventListener('click', function() {
+      document.getElementById('f-data-inicio').value = '';
+      document.getElementById('f-data-fim').value = '';
+      document.getElementById('f-estado').value = '';
+      document.getElementById('f-colaborador').value = '';
+      loadDevolucoes({});
+    });
+
+    /* ── Init ── */
+    loadDevolucoes({});
+  </script>
+</body>
+</html>

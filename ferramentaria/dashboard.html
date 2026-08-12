@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel — Ferramentaria — Danmo Hub</title>
+  
+  <!-- CSS Global do Danmo Hub -->
+  <link rel="stylesheet" href="../shared/style.css" />
+  
+  <style>
+    /* Grelha de KPIs clicáveis */
+    .kpi-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+      gap: 16px; 
+      margin-bottom: 32px; 
+    }
+    .kpi-card { 
+      cursor: pointer; 
+      transition: transform var(--transicao), box-shadow var(--transicao); 
+      background: var(--cor-superficie);
+      border-radius: var(--raio-md);
+      padding: 20px;
+      border: 1px solid var(--cor-borda);
+    }
+    .kpi-card:hover { 
+      transform: translateY(-4px); 
+      box-shadow: var(--sombra-md); 
+    }
+    .kpi-card.kpi-aviso { border-bottom: 4px solid var(--cor-aviso); }
+    .kpi-card.kpi-erro { border-bottom: 4px solid var(--cor-erro); }
+    .kpi-card.kpi-info { border-bottom: 4px solid var(--cor-info); }
+    .kpi-card.kpi-sucesso { border-bottom: 4px solid var(--cor-sucesso); }
+    
+    .kpi-label { font-size: 0.9rem; color: var(--cor-texto-sec); font-weight: 600; margin-bottom: 8px; }
+    .kpi-value { font-size: 2rem; font-weight: 700; color: var(--cor-texto); }
+    .kpi-sub { font-size: 0.82rem; color: var(--cor-texto-sec); margin-top: 4px; font-weight: 500; }
+    
+    .red-bold { color: var(--cor-erro); font-weight: 700; }
+    .mt-32 { margin-top: 32px; }
+
+    /* Estilos para os Minigráficos de Barras (HTML Puro) */
+    .graficos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 32px;
+    }
+    .bar-chart-row { 
+      display: flex; 
+      align-items: center; 
+      margin-bottom: 12px; 
+    }
+    .bar-chart-label { 
+      width: 140px; 
+      font-size: 0.85rem; 
+      font-weight: 600; 
+      white-space: nowrap; 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+      padding-right: 12px; 
+      color: var(--cor-texto-sec);
+    }
+    .bar-chart-track { 
+      flex: 1; 
+      background: var(--cor-fundo); 
+      border-radius: 4px; 
+      height: 12px; 
+      overflow: hidden; 
+    }
+    .bar-chart-fill { 
+      background: var(--cor-info); 
+      height: 100%; 
+      border-radius: 4px; 
+      transition: width 1s ease-out;
+    }
+    .fill-erro { background: var(--cor-erro); }
+    .bar-chart-value { 
+      margin-left: 12px; 
+      font-size: 0.85rem; 
+      font-weight: bold; 
+      width: 40px; 
+      text-align: right; 
+    }
+  </style>
+</head>
+<body>
+  <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
+  <div id="navbar"></div>
+  
+  <main class="main">
+    <h1 class="pagina-titulo">Painel Principal — Ferramentaria</h1>
+    <p class="pagina-subtitulo">Visão geral executiva: ferramentas na rua, atrasos e registo de danos</p>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="kpi-card kpi-aviso" data-target="tabela-fora">
+        <div class="kpi-label">Ferramentas Fora</div>
+        <div class="kpi-value" id="kpi-fora"><div class="spinner" style="width:20px;height:20px;"></div></div>
+      </div>
+      <div class="kpi-card kpi-erro" data-target="tabela-fora">
+        <div class="kpi-label">Devoluções Atrasadas</div>
+        <div class="kpi-value" id="kpi-atrasadas"><div class="spinner" style="width:20px;height:20px;"></div></div>
+      </div>
+      <div class="kpi-card kpi-erro" data-target="tabela-problemas">
+        <div class="kpi-label">Ferramentas Avariadas</div>
+        <div class="kpi-value" id="kpi-avariadas"><div class="spinner" style="width:20px;height:20px;"></div></div>
+      </div>
+      <div class="kpi-card kpi-aviso" data-target="tabela-problemas">
+        <div class="kpi-label">Danos Este Mês</div>
+        <div class="kpi-value" id="kpi-danos"><div class="spinner" style="width:20px;height:20px;"></div></div>
+        <div class="kpi-sub" id="kpi-danos-custo"></div>
+      </div>
+      <div class="kpi-card kpi-info" data-target="kpi-grid">
+        <div class="kpi-label">Total Disponível</div>
+        <div class="kpi-value" id="kpi-total"><div class="spinner" style="width:20px;height:20px;"></div></div>
+      </div>
+    </div>
+
+    <!-- Secção de Gráficos (Top 5) -->
+    <div class="graficos-grid">
+      <div class="card" style="margin-bottom: 0;">
+        <div class="form-label" style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 8px;">
+          Top 5: Mais Emprestadas
+        </div>
+        <div id="chart-ferramentas-container">
+          <div class="spinner" style="padding:24px;text-align:center;">A processar...</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom: 0;">
+        <div class="form-label" style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 8px;">
+          Top 5: Colaboradores com Mais Danos
+        </div>
+        <div id="chart-danos-container">
+          <div class="spinner" style="padding:24px;text-align:center;">A processar...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela: Ferramentas Fora -->
+    <div class="card mt-32" id="tabela-fora">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+        <div class="form-label" style="font-size: 1.1rem; margin: 0;">Ferramentas Fora Agora</div>
+      </div>
+      <div class="tabela-container">
+        <div id="fora-loading" class="spinner" style="padding:32px;text-align:center;">A carregar ferramentas na rua...</div>
+        <div id="fora-empty" class="tabela-vazia" style="display:none;">Nenhuma ferramenta emprestada neste momento.</div>
+        <table class="tabela" id="tabela-fora-table" style="display:none;">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Ferramenta</th>
+              <th>Quem Levou</th>
+              <th>Departamento</th>
+              <th>Há Quanto Tempo</th>
+              <th>Prazo</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="fora-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tabela: Últimas Devoluções com Problema -->
+    <div class="card mt-32" id="tabela-problemas">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+        <div class="form-label" style="font-size: 1.1rem; margin: 0;">Últimas Devoluções com Problema</div>
+      </div>
+      <div class="tabela-container">
+        <div id="problemas-loading" class="spinner" style="padding:32px;text-align:center;">A carregar histórico...</div>
+        <div id="problemas-empty" class="tabela-vazia" style="display:none;">Nenhuma devolução com problema registada recentemente.</div>
+        <table class="tabela" id="tabela-problemas-table" style="display:none;">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Ferramenta</th>
+              <th>Quem Devolveu</th>
+              <th>Estado ao Voltar</th>
+              <th>Recebido Por</th>
+              <th>Data da Devolução</th>
+            </tr>
+          </thead>
+          <tbody id="problemas-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Scripts Unificados do Danmo Hub -->
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+  
+  <script>
+    /* ---------- helpers ---------- */
+    function diasDesde(dateStr) {
+      if (!dateStr) return '—';
+      return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+    }
+
+    function fmtDias(d) {
+      if (d === 0) return 'Hoje';
+      if (d === 1) return '1 dia';
+      return d + ' dias';
+    }
+
+    function isAtrasada(prazo) {
+      if (!prazo) return false;
+      var hoje = new Date(); 
+      hoje.setHours(0,0,0,0);
+      var dataPrazo = new Date(prazo);
+      dataPrazo.setHours(0,0,0,0);
+      return dataPrazo < hoje;
+    }
+
+    function badgeEstadoDev(estado) {
+      var map = {
+        'sujo': 'badge-aviso',
+        'desgastado': 'badge-aviso',
+        'torto': 'badge-erro',
+        'avariado': 'badge-erro',
+        'perdido': 'badge-secundario'
+      };
+      var cls = map[estado.toLowerCase()] || 'badge-secundario';
+      return '<span class="badge ' + cls + '">' + (estado || '—').toUpperCase() + '</span>';
+    }
+
+    /* ---------- KPI click → scroll ---------- */
+    document.getElementById('kpi-grid').addEventListener('click', function(e) {
+      var card = e.target.closest('.kpi-card[data-target]');
+      if (!card) return;
+      var target = document.getElementById(card.dataset.target);
+      if (target) {
+        var topPos = target.getBoundingClientRect().top + window.pageYOffset - 80;
+        window.scrollTo({ top: topPos, behavior: 'smooth' });
+      }
+    });
+
+    /* ---------- Render Charts HTML ---------- */
+    function renderBarChart(containerId, data, maxVal, isDanger) {
+      var container = document.getElementById(containerId);
+      if (data.length === 0) {
+        container.innerHTML = '<div class="tabela-vazia">Sem dados suficientes.</div>';
+        return;
+      }
+      var html = '';
+      data.forEach(function(item) {
+        var percent = maxVal > 0 ? (item.count / maxVal) * 100 : 0;
+        var fillClass = isDanger ? 'bar-chart-fill fill-erro' : 'bar-chart-fill';
+        html += 
+          '<div class="bar-chart-row">' +
+            '<div class="bar-chart-label" title="' + item.label + '">' + item.label + '</div>' +
+            '<div class="bar-chart-track">' +
+              '<div class="' + fillClass + '" style="width: ' + percent + '%;"></div>' +
+            '</div>' +
+            '<div class="bar-chart-value">' + item.count + '</div>' +
+          '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    /* ---------- data loading ---------- */
+    (async function init() {
+      try {
+        /* Parallel queries for dashboard speed */
+        var [movementsRes, toolsRes, damageRes] = await Promise.all([
+          db.query('tool_movements', 'select=*&order=data_saida.desc&limit=2000'),
+          db.query('tools', 'select=id,code,nome,estado,active'),
+          db.query('tool_damage', 'select=*&order=created_at.desc&limit=1000')
+        ]);
+
+        var movements = movementsRes || [];
+        var tools = toolsRes || [];
+        var damages = damageRes || [];
+
+        /* Build tool lookup map */
+        var toolMap = {};
+        tools.forEach(function(t) { toolMap[t.id] = t; });
+
+        /* ---- KPIs ---- */
+        
+        /* 1. Ferramentas Fora */
+        var fora = movements.filter(function(m) {
+          return m.tipo === 'emprestimo' && !m.data_devolucao;
+        });
+        document.getElementById('kpi-fora').textContent = fora.length;
+
+        /* 2. Devoluções Atrasadas */
+        var atrasadas = fora.filter(function(m) {
+          return m.prazo_devolucao && isAtrasada(m.prazo_devolucao);
+        });
+        document.getElementById('kpi-atrasadas').textContent = atrasadas.length;
+
+        /* 3. Ferramentas Avariadas */
+        var avariadas = tools.filter(function(t) {
+          return t.estado === 'avariado';
+        });
+        document.getElementById('kpi-avariadas').textContent = avariadas.length;
+
+        /* 4. Danos Este Mês */
+        var agora = new Date();
+        var mesAtual = agora.getFullYear() + '-' + String(agora.getMonth() + 1).padStart(2, '0');
+        var danosMes = damages.filter(function(d) {
+          return d.created_at && d.created_at.startsWith(mesAtual);
+        });
+        var custoDanos = danosMes.reduce(function(s, d) {
+          return s + (parseFloat(d.custo_reparacao) || 0);
+        }, 0);
+        
+        document.getElementById('kpi-danos').textContent = danosMes.length;
+        document.getElementById('kpi-danos-custo').innerHTML = custoDanos > 0
+          ? 'Custo: <span style="color:var(--cor-vermelho-danmo);font-weight:600;">' + custoDanos.toLocaleString('pt-MZ', { minimumFractionDigits: 2 }) + ' MTn</span>'
+          : 'Sem custos registados';
+
+        /* 5. Total Disponível (Ativas que não estão emprestadas nem avariadas) */
+        var disponiveis = tools.filter(function(t) { 
+          return t.active === true && t.estado !== 'emprestado' && t.estado !== 'avariado' && t.estado !== 'inutilizado'; 
+        });
+        document.getElementById('kpi-total').textContent = disponiveis.length;
+
+        /* ---- Processamento dos Gráficos ---- */
+        
+        // Gráfico 1: Top 5 Ferramentas Mais Emprestadas
+        var toolLoanCount = {};
+        movements.forEach(function(m) {
+          if (m.tipo === 'emprestimo' && m.tool_id) {
+            toolLoanCount[m.tool_id] = (toolLoanCount[m.tool_id] || 0) + 1;
+          }
+        });
+        var topToolsData = Object.keys(toolLoanCount).map(function(tid) {
+          var t = toolMap[tid];
+          var label = t ? (t.code + ' - ' + t.nome) : 'Desconhecida';
+          return { label: label, count: toolLoanCount[tid] };
+        }).sort(function(a, b) { return b.count - a.count; }).slice(0, 5);
+        
+        var maxToolCount = topToolsData.length > 0 ? topToolsData[0].count : 0;
+        renderBarChart('chart-ferramentas-container', topToolsData, maxToolCount, false);
+
+        // Gráfico 2: Top 5 Colaboradores com Mais Danos
+        var colabDanoCount = {};
+        damages.forEach(function(d) {
+          var colab = d.colaborador || d.responsavel;
+          if (colab) {
+            colabDanoCount[colab] = (colabDanoCount[colab] || 0) + 1;
+          }
+        });
+        var topColabsData = Object.keys(colabDanoCount).map(function(c) {
+          return { label: c, count: colabDanoCount[c] };
+        }).sort(function(a, b) { return b.count - a.count; }).slice(0, 5);
+        
+        var maxColabCount = topColabsData.length > 0 ? topColabsData[0].count : 0;
+        renderBarChart('chart-danos-container', topColabsData, maxColabCount, true);
+
+        /* ---- Tabela 1: Ferramentas Fora ---- */
+        document.getElementById('fora-loading').style.display = 'none';
+
+        if (fora.length === 0) {
+          document.getElementById('fora-empty').style.display = 'block';
+        } else {
+          var tbody = document.getElementById('fora-tbody');
+          var tableEl = document.getElementById('tabela-fora-table');
+          tableEl.style.display = 'table';
+
+          fora.forEach(function(m) {
+            var tool = toolMap[m.tool_id] || {};
+            var dias = diasDesde(m.data_saida);
+            var atraso = m.prazo_devolucao ? isAtrasada(m.prazo_devolucao) : false;
+            var tr = document.createElement('tr');
+
+            var diasHtml = atraso
+              ? '<span class="red-bold">' + fmtDias(dias) + '</span>'
+              : fmtDias(dias);
+
+            var prazoHtml = m.prazo_devolucao ? formatarData(m.prazo_devolucao) : '—';
+
+            var estadoBadge = atraso
+              ? '<span class="badge badge-erro">ATRASADA</span>'
+              : '<span class="badge badge-info">NO PRAZO</span>';
+
+            tr.innerHTML =
+              '<td>' + (tool.code || '—') + '</td>' +
+              '<td>' + (tool.nome || '—') + '</td>' +
+              '<td>' + (m.colaborador || '—') + '</td>' +
+              '<td>' + (m.departamento || '—') + '</td>' +
+              '<td>' + diasHtml + '</td>' +
+              '<td>' + prazoHtml + '</td>' +
+              '<td>' + estadoBadge + '</td>';
+
+            tbody.appendChild(tr);
+          });
+        }
+
+        /* ---- Tabela 2: Últimas Devoluções com Problema ---- */
+        document.getElementById('problemas-loading').style.display = 'none';
+
+        var problemasEstados = ['sujo','torto','desgastado','avariado','perdido'];
+        var problemas = movements
+          .filter(function(m) {
+            /* IMPORTANTE: cada devolução grava 2 linhas em tool_movements (a linha
+               'emprestimo' original atualizada + uma nova linha 'devolucao'). Filtrar
+               só por tipo==='devolucao' evita listar cada problema 2 vezes. */
+            return m.tipo === 'devolucao' && m.estado_ao_voltar && problemasEstados.indexOf(m.estado_ao_voltar.toLowerCase()) !== -1;
+          })
+          .sort(function(a, b) { return (b.data_devolucao || '').localeCompare(a.data_devolucao || ''); })
+          .slice(0, 10); // Reduzido para as últimas 10 para o painel não ficar enorme
+
+        if (problemas.length === 0) {
+          document.getElementById('problemas-empty').style.display = 'block';
+        } else {
+          var ptbody = document.getElementById('problemas-tbody');
+          document.getElementById('tabela-problemas-table').style.display = 'table';
+
+          problemas.forEach(function(m) {
+            var tool = toolMap[m.tool_id] || {};
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+              '<td>' + (tool.code || '—') + '</td>' +
+              '<td>' + (tool.nome || '—') + '</td>' +
+              '<td>' + (m.colaborador || '—') + '</td>' +
+              '<td>' + badgeEstadoDev(m.estado_ao_voltar) + '</td>' +
+              '<td>' + (m.recebido_por || '—') + '</td>' +
+              '<td>' + formatarData(m.data_devolucao, true) + '</td>';
+            ptbody.appendChild(tr);
+          });
+        }
+
+      } catch (err) {
+        console.error('Erro ao carregar dashboard:', err);
+        mostrarToast('Erro ao carregar dados do painel central.', 'erro');
+        document.getElementById('fora-loading').style.display = 'none';
+        document.getElementById('problemas-loading').style.display = 'none';
+        document.getElementById('chart-ferramentas-container').innerHTML = '<div class="tabela-vazia">Erro ao carregar.</div>';
+        document.getElementById('chart-danos-container').innerHTML = '<div class="tabela-vazia">Erro ao carregar.</div>';
+        document.getElementById('fora-empty').style.display = 'block';
+        document.getElementById('problemas-empty').style.display = 'block';
+      }
+    })();
+  </script>
+</body>
+</html>

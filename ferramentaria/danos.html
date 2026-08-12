@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registo de Danos — Ferramentaria — Danmo Hub</title>
+  
+  <!-- CSS Global do Danmo Hub -->
+  <link rel="stylesheet" href="../shared/style.css" />
+  
+  <style>
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .filter-bar input,
+    .filter-bar select {
+      min-width: 150px;
+      flex: 1;
+    }
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .gap-8 {
+      display: flex;
+      gap: 8px;
+    }
+    .filtro-label {
+      font-size: 0.85rem;
+      color: var(--cor-texto-sec);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .link-action {
+      color: var(--cor-info);
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 12px;
+      transition: color var(--transicao);
+    }
+    .link-action:hover { opacity: .8; color: var(--cor-ambar); }
+    .link-danger {
+      color: var(--cor-vermelho-danmo);
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 12px;
+      transition: opacity var(--transicao);
+    }
+    .link-danger:hover { opacity: .8; }
+    
+    /* Grelha do Resumo Mensal */
+    .resumo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .resumo-card {
+      background: var(--cor-superficie);
+      border: 1px solid var(--cor-borda);
+      border-radius: var(--raio-md);
+      padding: 16px;
+      text-align: center;
+    }
+    .resumo-titulo {
+      font-size: var(--tamanho-sm);
+      color: var(--cor-texto-sec);
+      margin-bottom: 8px;
+    }
+    .resumo-valor {
+      font-size: var(--tamanho-2xl);
+      font-weight: 700;
+      color: var(--cor-texto);
+    }
+  </style>
+</head>
+<body>
+  <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
+  <div id="navbar"></div>
+  
+  <main class="main">
+    <h1 class="pagina-titulo">Registo de Danos</h1>
+    <p class="pagina-subtitulo">Acompanhamento e gestão de danos em ferramentas da ferramentaria</p>
+
+    <!-- Filtros de Pesquisa -->
+    <div class="card">
+      <div class="form-label" style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 8px;">
+        Filtros de Pesquisa
+      </div>
+      <div class="flex-between" style="flex-wrap:wrap;gap:16px;">
+        <div class="filter-bar">
+          <span class="filtro-label">Período de:</span>
+          <input class="form-input" type="date" id="f-data-inicio" title="Data Inicial" />
+          <span class="filtro-label">até:</span>
+          <input class="form-input" type="date" id="f-data-fim" title="Data Final" />
+          
+          <select class="form-select" id="f-severidade">
+            <option value="">Severidade (Todas)</option>
+            <option value="leve">Leve</option>
+            <option value="moderado">Moderado</option>
+            <option value="grave">Grave</option>
+          </select>
+          <select class="form-select" id="f-status">
+            <option value="">Status (Todos)</option>
+            <option value="reportado">Reportado</option>
+            <option value="em reparo">Em Reparo</option>
+            <option value="reparado">Reparado</option>
+            <option value="inutilizado">Inutilizado</option>
+          </select>
+        </div>
+        <div class="gap-8">
+          <button class="btn btn-primario" id="btn-filtrar">Filtrar</button>
+          <button class="btn btn-secundario" id="btn-limpar">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela Principal -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+        <div class="form-label" style="font-size: 1.1rem; margin: 0;">Lista de Danos Registados</div>
+        <span class="badge badge-erro" id="count-danos" style="font-size: 1rem; padding: 4px 12px;">0</span>
+      </div>
+      <div class="tabela-container">
+        <div id="danos-loading" class="spinner" style="padding:32px;text-align:center;">A carregar registo de danos...</div>
+        <div id="danos-empty" class="tabela-vazia" style="display:none;">Nenhum dano registado com os critérios selecionados.</div>
+        <table class="tabela" id="tabela-danos" style="display:none;">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Ferramenta</th>
+              <th>Responsável</th>
+              <th>Tipo de Dano</th>
+              <th>Severidade</th>
+              <th>Custo</th>
+              <th>Status</th>
+              <th>Data</th>
+              <th>Acções</th>
+            </tr>
+          </thead>
+          <tbody id="danos-tbody"></tbody>
+        </table>
+      </div>
+      
+      <!-- Resumo de Indicadores (Estatísticas Rápidas baseadas na tabela) -->
+      <div class="resumo-grid" id="resumo-painel" style="display:none;">
+        <div class="resumo-card">
+          <div class="resumo-titulo">Total de Incidentes</div>
+          <div class="resumo-valor" id="resumo-total">0</div>
+        </div>
+        <div class="resumo-card">
+          <div class="resumo-titulo">Custo Total de Reparação</div>
+          <div class="resumo-valor" id="resumo-custo" style="color: var(--cor-vermelho-danmo);">0.00</div>
+        </div>
+        <div class="resumo-card">
+          <div class="resumo-titulo">Colaborador com Mais Danos</div>
+          <div class="resumo-valor" id="resumo-colab" style="font-size: 1.2rem; margin-top: 6px;">—</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Scripts Unificados do Danmo Hub -->
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+  
+  <script>
+    /* ── Globals ── */
+    var allDamages = [];
+    var toolsMap = {};
+
+    /* ── Helpers ── */
+    function severidadeBadge(sev) {
+      var map = {
+        leve: 'badge-sucesso',
+        moderado: 'badge-aviso',
+        grave: 'badge-erro'
+      };
+      var cls = map[sev] || 'badge-secundario';
+      return '<span class="badge ' + cls + '">' + (sev || '—') + '</span>';
+    }
+
+    function statusBadge(status) {
+      var map = {
+        'reportado': 'badge-aviso',
+        'em reparo': 'badge-info',
+        'reparado': 'badge-sucesso',
+        'inutilizado': 'badge-erro'
+      };
+      var cls = map[status] || 'badge-secundario';
+      return '<span class="badge ' + cls + '">' + (status || '—') + '</span>';
+    }
+
+    function formatCusto(v) {
+      if (!v && v !== 0) return '—';
+      return parseFloat(v).toLocaleString('pt-AO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function nextStatus(current) {
+      if (current === 'reportado') return 'em reparo';
+      if (current === 'em reparo') return 'reparado';
+      return current;
+    }
+
+    /* ── Load Tools Map ── */
+    async function loadToolsMap() {
+      try {
+        var res = await db.query('tools', 'select=id,code,nome&active=eq.true&limit=500');
+        var tools = res || [];
+        toolsMap = {};
+        tools.forEach(function(t) { toolsMap[t.id] = t; });
+      } catch (err) {
+        console.error('Erro ao carregar ferramentas:', err);
+      }
+    }
+
+    /* ── Load & Render Damages ── */
+    async function loadDamages(filters) {
+      var loadingEl = document.getElementById('danos-loading');
+      var emptyEl = document.getElementById('danos-empty');
+      var tableEl = document.getElementById('tabela-danos');
+      var tbody = document.getElementById('danos-tbody');
+      var countEl = document.getElementById('count-danos');
+      var painelResumo = document.getElementById('resumo-painel');
+
+      loadingEl.style.display = 'block';
+      emptyEl.style.display = 'none';
+      tableEl.style.display = 'none';
+      painelResumo.style.display = 'none';
+      tbody.innerHTML = '';
+
+      try {
+        var queryParts = 'select=*&order=created_at.desc&limit=500';
+
+        var res = await db.query('tool_damage', queryParts);
+        allDamages = res || [];
+
+        /* Apply filters client-side */
+        if (filters) {
+          allDamages = allDamages.filter(function(d) {
+            if (filters.severidade && d.severidade !== filters.severidade) return false;
+            if (filters.status && d.status !== filters.status) return false;
+            if (filters.dataInicio && d.created_at) {
+              var dDate = new Date(d.created_at).toISOString().split('T')[0];
+              if (dDate < filters.dataInicio) return false;
+            }
+            if (filters.dataFim && d.created_at) {
+              var dDate = new Date(d.created_at).toISOString().split('T')[0];
+              if (dDate > filters.dataFim) return false;
+            }
+            return true;
+          });
+        }
+
+        countEl.textContent = allDamages.length;
+
+        if (allDamages.length === 0) {
+          loadingEl.style.display = 'none';
+          emptyEl.style.display = 'block';
+          return;
+        }
+
+        /* Collect tool_ids to fetch names */
+        var toolIds = [];
+        allDamages.forEach(function(d) {
+          if (d.tool_id && !toolsMap[d.tool_id]) toolIds.push(d.tool_id);
+        });
+        if (toolIds.length > 0) {
+          var toolFilter = toolIds.map(function(id) { return 'id=eq.' + id; }).join('&');
+          var toolRes = await db.query('tools', 'select=id,code,nome&' + toolFilter);
+          (toolRes || []).forEach(function(t) { toolsMap[t.id] = t; });
+        }
+
+        var custoTotal = 0;
+        var colabsConta = {};
+
+        allDamages.forEach(function(d) {
+          /* Lógica para atualizar a tabela */
+          var tool = toolsMap[d.tool_id] || {};
+          var tr = document.createElement('tr');
+          var canAdvance = d.status === 'reportado' || d.status === 'em reparo';
+          var canDestroy = d.status !== 'inutilizado' && d.status !== 'reparado';
+
+          var acoes = '';
+          if (canAdvance) {
+            acoes += '<span class="link-action" data-action="actualizar" data-id="' + d.id + '">Avançar Estado</span>';
+          }
+          if (canDestroy) {
+            acoes += '<span class="link-danger" data-action="inutilizar" data-id="' + d.id + '">Inutilizar</span>';
+          }
+
+          tr.innerHTML =
+            '<td>' + (tool.code || '—') + '</td>' +
+            '<td>' + (tool.nome || '—') + '</td>' +
+            '<td>' + (d.colaborador || d.responsavel || '—') + '</td>' +
+            '<td>' + (d.tipo_dano || d.estado_reportado || '—') + '</td>' +
+            '<td>' + severidadeBadge(d.severidade || 'moderado') + '</td>' +
+            '<td>' + formatCusto(d.custo_reparacao) + '</td>' +
+            '<td>' + statusBadge(d.status) + '</td>' +
+            '<td>' + formatarData(d.created_at) + '</td>' +
+            '<td>' + acoes + '</td>';
+
+          tbody.appendChild(tr);
+
+          /* Lógica para o resumo no painel (Métricas) */
+          if (d.custo_reparacao) {
+            custoTotal += parseFloat(d.custo_reparacao);
+          }
+          var colab = d.colaborador || d.responsavel;
+          if (colab) {
+            colabsConta[colab] = (colabsConta[colab] || 0) + 1;
+          }
+        });
+
+        /* Calcular colaborador mais problemático */
+        var piorColab = '—';
+        var maxIncidentes = 0;
+        for (var c in colabsConta) {
+          if (colabsConta[c] > maxIncidentes) {
+            maxIncidentes = colabsConta[c];
+            piorColab = c + ' (' + maxIncidentes + 'x)';
+          }
+        }
+
+        /* Atualizar e mostrar o Painel de Resumo */
+        document.getElementById('resumo-total').textContent = allDamages.length;
+        document.getElementById('resumo-custo').textContent = parseFloat(custoTotal).toLocaleString('pt-AO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('resumo-colab').textContent = piorColab;
+        painelResumo.style.display = 'grid';
+
+        loadingEl.style.display = 'none';
+        tableEl.style.display = 'table';
+      } catch (err) {
+        console.error('Erro ao carregar danos:', err);
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        mostrarToast('Erro ao carregar danos.', 'erro');
+      }
+    }
+
+    /* ── Event Delegation para Atualizações de Estado ── */
+    document.getElementById('danos-tbody').addEventListener('click', async function(e) {
+      var link = e.target.closest('[data-action]');
+      if (!link) return;
+
+      var action = link.dataset.action;
+      var id = link.dataset.id;
+
+      if (action === 'actualizar') {
+        var damage = allDamages.find(function(d) { return d.id === id; });
+        if (!damage) return;
+        var novo = nextStatus(damage.status);
+        
+        var msg = "O estado será atualizado para: " + novo.toUpperCase() + ".\nPretende continuar?";
+        if (!confirm(msg)) return;
+
+        var updateData = { status: novo };
+        if (novo === 'reparado') {
+          updateData.resolved_at = new Date().toISOString();
+        }
+        
+        try {
+          await db.update('tool_damage', id, updateData);
+          mostrarToast('Estado actualizado com sucesso.', 'sucesso');
+          await loadDamages(getCurrentFilters());
+        } catch (err) {
+          console.error('Erro ao actualizar:', err);
+          mostrarToast('Erro ao actualizar registo.', 'erro');
+        }
+      } else if (action === 'inutilizar') {
+        if (!confirm('ATENÇÃO: Tem a certeza que deseja dar a ferramenta como INUTILIZADA e fechar este registo de dano?')) return;
+        try {
+          await db.update('tool_damage', id, {
+            status: 'inutilizado',
+            resolved_at: new Date().toISOString()
+          });
+          mostrarToast('Registo marcado como inutilizado.', 'sucesso');
+          await loadDamages(getCurrentFilters());
+        } catch (err) {
+          console.error('Erro ao inutilizar:', err);
+          mostrarToast('Erro ao actualizar dano.', 'erro');
+        }
+      }
+    });
+
+    /* ── Filters ── */
+    function getCurrentFilters() {
+      var sev = document.getElementById('f-severidade').value;
+      var status = document.getElementById('f-status').value;
+      var di = document.getElementById('f-data-inicio').value;
+      var df = document.getElementById('f-data-fim').value;
+      if (!sev && !status && !di && !df) return null;
+      return { severidade: sev, status: status, dataInicio: di, dataFim: df };
+    }
+
+    document.getElementById('btn-filtrar').addEventListener('click', function() {
+      loadDamages(getCurrentFilters());
+    });
+
+    document.getElementById('btn-limpar').addEventListener('click', function() {
+      document.getElementById('f-severidade').value = '';
+      document.getElementById('f-status').value = '';
+      document.getElementById('f-data-inicio').value = '';
+      document.getElementById('f-data-fim').value = '';
+      loadDamages(null);
+    });
+
+    /* ── Init ── */
+    (async function init() {
+      await loadToolsMap();
+      await loadDamages(null);
+    })();
+  </script>
+</body>
+</html>

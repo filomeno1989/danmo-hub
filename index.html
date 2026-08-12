@@ -94,39 +94,26 @@
       saudacao.textContent = txt + ', ' + (utilizador.nome || '') + '. Bem-vindo ao Portal Danmo Service System, Lda';
     }
 
-    /* ═══ KPIs — tabelas reais confirmadas ═══
-       equipment              -> Total Máquinas          (coluna: active)
-       categorias_equipamento -> Total Frotas/Categorias  (coluna: ativo)
-       collaborators          -> Colaboradores / Estagiários (coluna: active, categoria)
-       clientes                -> Empresas Servidas
-
-       TODO CONFIRMAR: o valor exacto de 'categoria' usado para estagiários
-       (ex: 'Estagiário'). Ajustar o filtro abaixo se for diferente. */
-    async function carregarKPIs() {
-      try {
-        const [equip, categ, colabs, clientes] = await Promise.all([
-          db.get('equipment', { active: true }),
-          db.get('categorias_equipamento', { ativo: true }),
-          db.get('collaborators', { active: true }),
-          db.get('clientes')
-        ]);
-
-        preencherKPI('kpi-maquinas', equip.length);
-        preencherKPI('kpi-frotas', categ.length);
-        preencherKPI('kpi-colaboradores', colabs.length);
-        preencherKPI('kpi-empresas', clientes.length);
-
-        const estagiarios = colabs.filter(function (c) {
-          return (c.categoria || '').toLowerCase().indexOf('estagi') !== -1;
-        });
-        preencherKPI('kpi-estagiarios', estagiarios.length);
-
-      } catch (err) {
-        console.error('Erro ao carregar KPIs:', err);
-        if (typeof mostrarToast === 'function') {
-          mostrarToast('Erro ao carregar indicadores. Verifique a ligação.', 'erro');
+    /* ═══ KPIs — cada um carrega e falha de forma INDEPENDENTE ═══
+       Se uma tabela der erro, só essa KPI mostra "Erro" (com o motivo
+       no title, visível ao passar o rato / e sempre no console) —
+       as outras continuam a carregar normalmente. */
+    function carregarKPI(id, tabela, filtros, transformar) {
+      const promessa = db.get(tabela, filtros || {});
+      promessa.then(function (dados) {
+        const valor = transformar ? transformar(dados) : dados.length;
+        preencherKPI(id, valor);
+      }).catch(function (err) {
+        console.error('KPI "' + id + '" falhou na tabela "' + tabela + '":', err);
+        const el = document.getElementById(id);
+        if (el) {
+          el.textContent = 'Erro';
+          el.title = 'Tabela: ' + tabela + ' — ' + (err && err.message ? err.message : JSON.stringify(err));
+          el.style.color = 'var(--cor-erro)';
+          el.style.cursor = 'help';
         }
-      }
+      });
+      return promessa;
     }
 
     function preencherKPI(id, valor) {
@@ -134,7 +121,27 @@
       if (el) el.textContent = valor;
     }
 
-    carregarKPIs();
+    if (typeof db === 'undefined') {
+      console.error('ERRO CRÍTICO: "db" não está definido. shared/supabase.js não carregou (verifica o <script src> e o cache do browser).');
+      document.querySelectorAll('.kpi-valor').forEach(function (el) {
+        el.textContent = 'db indisponível';
+        el.style.color = 'var(--cor-erro)';
+      });
+    } else {
+      carregarKPI('kpi-maquinas', 'equipment', { active: true });
+      carregarKPI('kpi-frotas', 'categorias_equipamento', { ativo: true });
+      carregarKPI('kpi-empresas', 'clientes', {});
+
+      carregarKPI('kpi-colaboradores', 'collaborators', { active: true }).then(function (colabs) {
+        const estagiarios = colabs.filter(function (c) {
+          return (c.categoria || '').toLowerCase().indexOf('estagi') !== -1;
+        });
+        preencherKPI('kpi-estagiarios', estagiarios.length);
+      }).catch(function () {
+        const el = document.getElementById('kpi-estagiarios');
+        if (el) { el.textContent = 'Erro'; el.style.color = 'var(--cor-erro)'; }
+      });
+    }
   })();
   </script>
 </body>
