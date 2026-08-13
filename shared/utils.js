@@ -287,6 +287,14 @@ function formatarData(d, h) { return formataData(d, h); }
 function fmtData(d, h) { return formataData(d, h); }
 function hoje() { return dataHojeISO(); }
 
+// Atalhos usados pelas páginas antigas da Oficina (exportação do danmo-oficina),
+// que chamavam estes nomes e não os que existem acima. Sem isto, ReferenceError
+// interrompia: Iniciar Checklist, Trocar Revisão, Fechar OS, datas automáticas em
+// modais de Intervenção/Peça, Guardar Cabeçalho do checklist, e os históricos
+// (intervenções, mudanças de estado, trocas de checklist) em os_detalhe.html.
+function dataHoje() { return dataHojeISO(); }
+function formatarDataHora(d) { return formataData(d, true); }
+
 // Atalho para Notificações (Toast)
 function showToast(msg, tipo) { mostrarToast(msg, tipo); }
 

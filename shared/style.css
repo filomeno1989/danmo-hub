@@ -441,6 +441,56 @@ body.sidebar-recolhida .main {
   transition: margin-left var(--transicao);
 }
 
+/* ── RESPONSIVO (TOPBAR / SIDEBAR / MAIN) ────────────────────
+   Antes não existia nenhum breakpoint: a sidebar fixa de 260px
+   e o relógio central espremiam o conteúdo em ecrãs estreitos
+   ou janelas redimensionadas. Agora a sidebar sai do ecrã por
+   omissão em <900px e só aparece como overlay ao clicar no
+   hambúrguer; o relógio central esconde-se em <600px. ────── */
+@media (max-width: 900px) {
+  .sidebar {
+    transform: translateX(-100%);
+    width: 260px;
+    box-shadow: var(--sombra-lg);
+  }
+  body.sidebar-recolhida .sidebar {
+    transform: translateX(0);
+    width: 260px;
+  }
+  body.sidebar-recolhida .sidebar .modulo-label,
+  body.sidebar-recolhida .sidebar .modulo-seta,
+  body.sidebar-recolhida .sidebar .sidebar-dev-badge,
+  body.sidebar-recolhida .sidebar .sidebar-separador,
+  body.sidebar-recolhida .sidebar-submenu.visivel {
+    display: revert !important;
+  }
+  body.sidebar-recolhida .sidebar-modulo-btn {
+    justify-content: flex-start;
+    padding: 11px 14px;
+  }
+  body.sidebar-recolhida .sidebar-modulo-btn .modulo-icon {
+    font-size: 1.1rem;
+    width: 22px;
+  }
+  .main,
+  body.sidebar-recolhida .main {
+    margin-left: 0 !important;
+    padding: 18px;
+  }
+  .kpi-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar-centro { display: none; }
+  .topbar-perfil .perfil-info { display: none; }
+  .topbar { padding: 0 12px; }
+  .main { padding: 14px; }
+  .tabela-container, .table-wrap { font-size: var(--tamanho-xs); }
+}
+
 /* ── KPI CARDS E GRELHAS ─────────────────────────────────── */
 .kpi-grid {
   display: grid;
