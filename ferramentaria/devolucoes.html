@@ -64,17 +64,23 @@
             <option value="sujo">Sujo</option>
             <option value="desgastado">Desgastado</option>
             <option value="torto">Torto</option>
+            <option value="partido">Partido</option>
             <option value="avariado">Avariado</option>
             <option value="perdido">Perdido</option>
           </select>
-          
-          <input class="form-input" type="text" id="f-colaborador" placeholder="Nome do Colaborador..." />
+
+          <div class="tech-search-wrap" style="min-width:200px;flex:1;">
+            <input class="form-input" type="text" id="f-colaborador-search" placeholder="Pesquisar colaborador por nome ou código..." autocomplete="off" />
+            <div id="f-colaborador-dropdown" class="tech-dropdown"></div>
+          </div>
+          <input type="hidden" id="f-colaborador" />
         </div>
         <div class="gap-8">
           <button class="btn btn-primario" id="btn-filtrar">Pesquisar</button>
           <button class="btn btn-secundario" id="btn-limpar">Limpar</button>
         </div>
       </div>
+      <div id="f-colaborador-chip" class="chips-wrap"></div>
     </div>
 
     <!-- Tabela de Relatório -->
@@ -120,6 +126,7 @@
         sujo: 'badge-aviso',
         desgastado: 'badge-aviso',
         torto: 'badge-erro',
+        partido: 'badge-erro',
         avariado: 'badge-erro',
         perdido: 'badge-erro'
       };
@@ -264,12 +271,21 @@
       document.getElementById('f-data-inicio').value = '';
       document.getElementById('f-data-fim').value = '';
       document.getElementById('f-estado').value = '';
-      document.getElementById('f-colaborador').value = '';
+      if (seletorColaborador) seletorColaborador.reset();
       loadDevolucoes({});
     });
 
     /* ── Init ── */
-    loadDevolucoes({});
+    var seletorColaborador = null;
+    (async function init() {
+      seletorColaborador = await criarSeletorColaborador({
+        inputId: 'f-colaborador-search',
+        dropdownId: 'f-colaborador-dropdown',
+        hiddenId: 'f-colaborador',
+        chipId: 'f-colaborador-chip'
+      });
+      await loadDevolucoes({});
+    })();
   </script>
 </body>
 </html>

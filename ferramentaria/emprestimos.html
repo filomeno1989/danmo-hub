@@ -84,8 +84,13 @@
             <div id="ferramenta-autocomplete" class="autocomplete-list" style="display:none;"></div>
           </div>
           <div class="form-grupo">
-            <label class="form-label" for="f-colaborador">Nome do Colaborador</label>
-            <input class="form-input" type="text" id="f-colaborador" placeholder="Nome completo" required />
+            <label class="form-label" for="f-colaborador-search">Nome do Colaborador</label>
+            <div class="tech-search-wrap">
+              <input class="form-input" type="text" id="f-colaborador-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" required />
+              <div id="f-colaborador-dropdown" class="tech-dropdown"></div>
+            </div>
+            <input type="hidden" id="f-colaborador" />
+            <div id="f-colaborador-chip" class="chips-wrap"></div>
           </div>
           <div class="form-grupo">
             <label class="form-label" for="f-departamento">Departamento</label>
@@ -96,6 +101,7 @@
               <option>Serralharia</option>
               <option>Pneumática</option>
               <option>Lubrificação</option>
+              <option>Máquinas e Ferramentas</option>
               <option>Piquete</option>
               <option>Direcção</option>
               <option>Outro</option>
@@ -103,11 +109,12 @@
           </div>
           <div class="form-grupo">
             <label class="form-label" for="f-os">Nº da Obra / OS</label>
-            <input class="form-input" type="text" id="f-os" placeholder="Opcional — deixar vazio se não houver OS" />
+            <input class="form-input" type="text" id="f-os" placeholder="Opcional — se existir, o equipamento é preenchido automaticamente" />
+            <span id="f-os-status" style="font-size:var(--tamanho-xs);color:var(--cor-texto-sec);display:block;margin-top:4px;"></span>
           </div>
           <div class="form-grupo">
             <label class="form-label" for="f-equip">Equipamento</label>
-            <input class="form-input" type="text" id="f-equip" placeholder="Opcional — deixar vazio se não houver equipamento" />
+            <input class="form-input" type="text" id="f-equip" placeholder="Opcional — preenchido automaticamente se a OS for reconhecida" />
           </div>
           <div class="form-grupo">
             <label class="form-label" for="f-prazo">Prazo de Devolução</label>
@@ -177,6 +184,7 @@
             <option>sujo</option>
             <option>desgastado</option>
             <option>torto</option>
+            <option>partido</option>
             <option>avariado</option>
             <option>perdido</option>
           </select>
@@ -460,6 +468,11 @@
 
     function clearForm() {
       document.getElementById('form-emprestimo').reset();
+      if (seletorColaborador) seletorColaborador.reset();
+      var equipEl = document.getElementById('f-equip');
+      equipEl.readOnly = false;
+      equipEl.classList.remove('campo-auto-preenchido');
+      document.getElementById('f-os-status').textContent = '';
       setDefaultPrazo();
     }
 
@@ -540,14 +553,14 @@
         });
 
         var novoEstado = 'bom';
-        if (estadoVoltar === 'avariado') {
+        if (estadoVoltar === 'avariado' || estadoVoltar === 'partido') {
           novoEstado = 'avariado';
         } else if (estadoVoltar === 'perdido') {
           novoEstado = 'inutilizado';
         }
         await db.update('tools', mov.tool_id, { estado: novoEstado });
 
-        var estadosDanosos = ['avariado', 'torto', 'perdido'];
+        var estadosDanosos = ['avariado', 'torto', 'partido', 'perdido'];
         if (estadosDanosos.indexOf(estadoVoltar) !== -1) {
           await db.insert('tool_damage', {
             tool_id: mov.tool_id,
@@ -572,11 +585,62 @@
     });
 
     /* ── Init ── */
+    var seletorColaborador = null;
+
     (async function init() {
       setDefaultPrazo();
+      seletorColaborador = await criarSeletorColaborador({
+        inputId: 'f-colaborador-search',
+        dropdownId: 'f-colaborador-dropdown',
+        hiddenId: 'f-colaborador',
+        chipId: 'f-colaborador-chip'
+      });
       await Promise.all([loadStaff(), loadTools()]);
       await loadEmprestimos();
     })();
+
+    /* ── Dependência: Nº da Obra / OS -> Equipamento (automático) ── */
+    var osLookupTimeout = null;
+    document.getElementById('f-os').addEventListener('input', function () {
+      clearTimeout(osLookupTimeout);
+      var numeroObra = this.value.trim();
+      var statusEl = document.getElementById('f-os-status');
+      var equipEl = document.getElementById('f-equip');
+
+      equipEl.readOnly = false;
+      equipEl.classList.remove('campo-auto-preenchido');
+      statusEl.textContent = '';
+      statusEl.style.color = 'var(--cor-texto-sec)';
+
+      if (!numeroObra) { equipEl.value = ''; return; }
+
+      osLookupTimeout = setTimeout(async function () {
+        statusEl.textContent = 'A procurar OS...';
+        try {
+          var ordens = await db.query('ordens_servico', 'select=id,numero_obra,equipment_id&numero_obra=eq.' + encodeURIComponent(numeroObra));
+          var ordem = (ordens || [])[0];
+
+          if (!ordem || !ordem.equipment_id) {
+            statusEl.textContent = 'OS não reconhecida — preencha o equipamento manualmente.';
+            equipEl.readOnly = false;
+            return;
+          }
+
+          var equipamentos = await db.query('equipment', 'select=code,name&id=eq.' + ordem.equipment_id);
+          var equip = (equipamentos || [])[0];
+          if (equip) {
+            equipEl.value = equip.code + ' — ' + equip.name;
+            equipEl.readOnly = true;
+            equipEl.classList.add('campo-auto-preenchido');
+            statusEl.textContent = '✓ OS reconhecida — equipamento preenchido automaticamente.';
+            statusEl.style.color = 'var(--cor-sucesso)';
+          }
+        } catch (err) {
+          console.error('Erro ao procurar OS:', err);
+          statusEl.textContent = 'Erro ao procurar OS — preencha o equipamento manualmente.';
+        }
+      }, 500); // debounce — só procura 500ms depois de parar de escrever
+    });
   </script>
 </body>
 </html>

@@ -54,7 +54,6 @@
             <tr>
               <th>Nome</th>
               <th>Código</th>
-              <th>Turno</th>
               <th>Empréstimos Registados</th>
               <th>Acções</th>
             </tr>
@@ -74,23 +73,22 @@
       </div>
       <div class="modal-corpo">
         <div class="form-grupo">
-          <label class="form-label" for="m-nome">Nome Completo *</label>
-          <input class="form-input" type="text" id="m-nome" required placeholder="Ex: João Silva" />
+          <label class="form-label" for="m-nome-search">Nome Completo *</label>
+          <div class="tech-search-wrap">
+            <input class="form-input" type="text" id="m-nome-search" placeholder="Pesquisar colaborador por nome ou código..." autocomplete="off" required />
+            <div id="m-nome-dropdown" class="tech-dropdown"></div>
+          </div>
+          <input type="hidden" id="m-nome" />
+          <div id="m-nome-chip" class="chips-wrap"></div>
         </div>
         <div class="form-grupo">
           <label class="form-label" for="m-codigo">Código de Colaborador</label>
-          <input class="form-input" type="text" id="m-codigo" placeholder="Opcional" />
+          <input class="form-input" type="text" id="m-codigo" placeholder="Preenchido automaticamente ao escolher o colaborador" />
         </div>
-        <div class="form-grupo">
-          <label class="form-label" for="m-turno">Turno de Trabalho</label>
-          <select class="form-select" id="m-turno">
-            <option value="Diurno">Diurno</option>
-            <option value="Noturno">Noturno</option>
-            <option value="1o Turno">1º Turno</option>
-            <option value="2o Turno">2º Turno</option>
-            <option value="3o Turno">3º Turno</option>
-          </select>
-        </div>
+        <!-- Turno de Trabalho: desactivado por agora — a ferramentaria só opera no
+             período normal, cada grupo de turno tem a sua própria mala de ferramenta.
+             Coluna/campo escondidos, não apagados — fácil de reactivar mais tarde. -->
+        <input type="hidden" id="m-turno" value="" />
       </div>
       <div class="modal-rodape">
         <button class="btn btn-secundario" id="btn-cancelar">Cancelar</button>
@@ -152,7 +150,6 @@
           tr.innerHTML =
             '<td>' + (s.nome || '—') + '</td>' +
             '<td>' + (s.codigo || '—') + '</td>' +
-            '<td>' + (s.turno || '—') + '</td>' +
             '<td><span class="badge badge-info">' + count + ' empréstimos</span></td>' +
             '<td>' +
               '<span class="link-action" data-action="editar" data-id="' + s.id + '">Editar</span>' +
@@ -198,9 +195,8 @@
     document.getElementById('btn-novo').addEventListener('click', function() {
       editingId = null;
       document.getElementById('modal-staff-title').textContent = 'Novo Ferramenteiro';
-      document.getElementById('m-nome').value = '';
+      if (seletorNome) seletorNome.reset();
       document.getElementById('m-codigo').value = '';
-      document.getElementById('m-turno').value = 'Diurno';
       abrirModal('modal-staff');
     });
 
@@ -209,9 +205,8 @@
       if (!staff) return;
       editingId = id;
       document.getElementById('modal-staff-title').textContent = 'Editar Ferramenteiro';
-      document.getElementById('m-nome').value = staff.nome || '';
+      if (seletorNome) seletorNome.setValor(staff.nome || '');
       document.getElementById('m-codigo').value = staff.codigo || '';
-      document.getElementById('m-turno').value = staff.turno || 'Diurno';
       abrirModal('modal-staff');
     }
 
@@ -230,7 +225,6 @@
     document.getElementById('btn-guardar').addEventListener('click', async function() {
       var nome = document.getElementById('m-nome').value.trim();
       var codigo = document.getElementById('m-codigo').value.trim() || null;
-      var turno = document.getElementById('m-turno').value;
 
       if (!nome) {
         mostrarToast('Preencha o nome do ferramenteiro.', 'erro');
@@ -240,7 +234,6 @@
       var data = {
         nome: nome,
         codigo: codigo,
-        turno: turno,
         active: true
       };
 
@@ -262,7 +255,19 @@
     });
 
     /* ── Init ── */
-    loadStaff();
+    var seletorNome = null;
+    (async function init() {
+      seletorNome = await criarSeletorColaborador({
+        inputId: 'm-nome-search',
+        dropdownId: 'm-nome-dropdown',
+        hiddenId: 'm-nome',
+        chipId: 'm-nome-chip',
+        onSelect: function (colab) {
+          document.getElementById('m-codigo').value = colab ? (colab.code || '') : '';
+        }
+      });
+      await loadStaff();
+    })();
   </script>
 </body>
 </html>
