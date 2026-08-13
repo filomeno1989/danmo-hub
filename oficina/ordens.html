@@ -5,51 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ordens de Serviço — Danmo Oficina</title>
   <link rel="stylesheet" href="../shared/style.css" />
+  <!-- Se ainda usares o oficina.css para outras coisas, podes mantê-lo -->
   <link rel="stylesheet" href="../shared/oficina.css" />
   <style>
-    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:200; }
-    .modal-overlay.aberto { display:flex; }
-    .modal-box { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:520px; box-shadow:var(--shadow); max-height:90vh; overflow-y:auto; }
-    .nota { font-size:12px; color:var(--text2); margin-top:4px; font-style:italic; }
-    .tipo-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px,1fr)); gap:6px; margin-top:8px; }
-    .tipo-grid label { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:normal; text-transform:none; cursor:pointer; color:var(--text); }
-    .tipo-grid input[type=checkbox] { width:auto; }
-    .badge-sem-nr { background:rgba(156,163,175,0.15); color:#9ca3af; border-radius:20px; padding:2px 8px; font-size:11px; font-weight:700; }
-    .dias-aberta { font-size:11px; color:var(--red); font-weight:600; }
+    /* CSS Específico que não está no style.css global */
+    .nota { font-size: 12px; color: var(--cor-texto-sec); margin-top: 4px; font-style: italic; display: block; }
+    .tipo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-top: 8px; }
+    .tipo-grid label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--cor-texto); }
+    .tipo-grid input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--cor-ambar); cursor: pointer; }
+    
+    .badge-sem-nr { background: rgba(156,163,175,0.15); color: #9ca3af; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+    .dias-aberta { font-size: 12px; color: var(--cor-erro); font-weight: 700; }
 
-    .tech-search-wrap { position:relative; }
-    .tech-dropdown {
-      position:absolute; top:100%; left:0; right:0; background:var(--navy3);
-      border:1px solid var(--border); border-radius:6px; z-index:50;
-      max-height:180px; overflow-y:auto; display:none; margin-top:2px;
-    }
-    .tech-dropdown.open { display:block; }
-    .tech-option { padding:8px 12px; font-size:13px; cursor:pointer; }
-    .tech-option:hover { background:var(--navy2); }
-    .chips-wrap { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
-    .chip-tech { background:rgba(59,130,246,0.15); color:var(--blue); border-radius:20px; padding:3px 10px 3px 12px; font-size:12px; display:flex; align-items:center; gap:6px; }
-    .chip-tech button { background:none; border:none; color:var(--blue); cursor:pointer; font-size:14px; line-height:1; padding:0; }
-
-    .horimetro-linha { display:flex; gap:8px; }
-    .horimetro-linha input { flex:1; }
-    .horimetro-linha select { width:90px; flex-shrink:0; }
+    .horimetro-linha { display: flex; gap: 8px; }
+    .horimetro-linha input { flex: 1; }
+    .horimetro-linha select { width: 90px; flex-shrink: 0; }
   </style>
 </head>
 <body>
   <div id="navbar" class="navbar"></div>
+  
   <main class="main">
-    <div class="flex-between mt-16">
-      <h1 class="page-title" style="margin-bottom:0">Ordens de Serviço</h1>
-      <button class="btn btn-primary" id="btn-nova-os">+ Nova Obra</button>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+      <div>
+        <h1 class="pagina-titulo">Ordens de Serviço</h1>
+        <p class="pagina-subtitulo">Acompanhamento de obras abertas e fechadas na oficina</p>
+      </div>
+      <button class="btn btn-primario" id="btn-nova-os">+ Nova Obra</button>
     </div>
-    <p class="page-sub">Acompanhamento de obras abertas e fechadas</p>
 
+    <!-- Filtros de Pesquisa -->
     <div class="card">
       <div class="form-grid">
-        <div class="form-group">
-          <label>Estado da Obra</label>
-          <select id="filtro-status">
-            <option value="">Todos</option>
+        <div class="form-grupo">
+          <label class="form-label">Estado da Obra</label>
+          <select class="form-select" id="filtro-status">
+            <option value="">Todos os Estados</option>
             <option value="Aberta (DTEC)">Aberta (DTEC)</option>
             <option value="Supervisão">Supervisão</option>
             <option value="Chefe da Oficina">Chefe da Oficina</option>
@@ -58,13 +49,13 @@
             <option value="Fechada">Fechada</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Equipamento</label>
-          <select id="filtro-equipamento"><option value="">Todos</option></select>
+        <div class="form-grupo">
+          <label class="form-label">Equipamento</label>
+          <select class="form-select" id="filtro-equipamento"><option value="">Todos os Equipamentos</option></select>
         </div>
-        <div class="form-group">
-          <label>Estado Físico</label>
-          <select id="filtro-fisico">
+        <div class="form-grupo">
+          <label class="form-label">Estado Físico</label>
+          <select class="form-select" id="filtro-fisico">
             <option value="">Todos</option>
             <option value="Avariada">Avariada</option>
             <option value="Acidentada">Acidentada</option>
@@ -74,10 +65,10 @@
             <option value="Aguarda Acessório">Aguarda Acessório</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Sector</label>
-          <select id="filtro-sector">
-            <option value="">Todos</option>
+        <div class="form-grupo">
+          <label class="form-label">Sector</label>
+          <select class="form-select" id="filtro-sector">
+            <option value="">Todos os Sectores</option>
             <option value="Elétrica">Elétrica</option>
             <option value="Mecânica">Mecânica</option>
             <option value="Serralharia">Serralharia</option>
@@ -87,135 +78,155 @@
             <option value="Máquinas e Ferramentas">Máquinas e Ferramentas</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Nº Obra</label>
-          <select id="filtro-nr-obra">
+        <div class="form-grupo">
+          <label class="form-label">Nº Obra</label>
+          <select class="form-select" id="filtro-nr-obra">
             <option value="">Todas</option>
             <option value="sem">Sem nº de obra</option>
             <option value="com">Com nº de obra</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Buscar nº obra</label>
-          <input type="text" id="filtro-busca" placeholder="Ex: 68012" />
+        <div class="form-grupo">
+          <label class="form-label">Buscar nº obra</label>
+          <input class="form-input" type="text" id="filtro-busca" placeholder="Ex: 68012" />
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="table-wrap">
-        <table>
+    <!-- Tabela de Obras -->
+    <div class="card" style="margin-top:24px;">
+      <div class="tabela-container">
+        <table class="tabela">
           <thead>
             <tr>
-              <th>Nº Obra</th><th>Equipamento</th><th>Categoria</th>
-              <th>Sector</th><th>Avaria / Motivo</th><th>Abertura</th>
-              <th>Dias s/nº</th><th>Estado Físico</th><th>Estado Obra</th><th></th>
+              <th>Nº Obra</th>
+              <th>Equipamento</th>
+              <th>Categoria</th>
+              <th>Sector</th>
+              <th>Avaria / Motivo</th>
+              <th>Abertura</th>
+              <th>Dias s/nº</th>
+              <th>Estado Físico</th>
+              <th>Estado Obra</th>
+              <th>Acções</th>
             </tr>
           </thead>
-          <tbody id="tbody-os"><tr><td colspan="10">A carregar...</td></tr></tbody>
+          <tbody id="tbody-os">
+            <tr><td colspan="10" class="text-muted">A carregar ordens de serviço...</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
   </main>
 
   <!-- Modal Nova OS -->
-  <div class="modal-overlay" id="modal-nova-os">
-    <div class="modal-box">
-      <div class="card-title">Nova Ordem de Serviço</div>
+  <div class="modal-fundo" id="modal-nova-os">
+    <div class="modal" style="max-width: 650px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo">Nova Ordem de Serviço</span>
+        <button type="button" class="modal-fechar" id="btn-fechar-os-x" aria-label="Fechar">&times;</button>
+      </div>
+      
       <form id="form-nova-os">
+        <div class="modal-corpo">
+          <div class="form-grupo">
+            <label class="form-label">Nº Obra (fornecido pela CdM)</label>
+            <input class="form-input" type="text" id="f-numero-obra" placeholder="Deixar vazio se ainda não atribuído" />
+            <span class="nota">Opcional — pode ser preenchido depois quando a CdM atribuir.</span>
+          </div>
 
-        <div class="form-group mt-16">
-          <label>Nº Obra (fornecido pela CdM)</label>
-          <input type="text" id="f-numero-obra" placeholder="Deixar vazio se ainda não atribuído" />
-          <span class="nota">Opcional — pode ser preenchido depois quando a CdM atribuir.</span>
-        </div>
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="form-grupo">
+              <label class="form-label">Equipamento *</label>
+              <select class="form-select" id="f-equipamento" required></select>
+            </div>
 
-        <div class="form-group mt-16">
-          <label>Equipamento *</label>
-          <select id="f-equipamento" required></select>
-        </div>
+            <div class="form-grupo">
+              <label class="form-label">Sector *</label>
+              <select class="form-select" id="f-sector" required>
+                <option value="">— Selecionar —</option>
+                <option value="Elétrica">Elétrica</option>
+                <option value="Mecânica">Mecânica</option>
+                <option value="Serralharia">Serralharia</option>
+                <option value="Pneumática">Pneumática</option>
+                <option value="Lubrificação">Lubrificação</option>
+                <option value="Piquete">Piquete</option>
+                <option value="Máquinas e Ferramentas">Máquinas e Ferramentas</option>
+              </select>
+            </div>
+          </div>
 
-        <div class="form-group mt-16">
-          <label>Sector *</label>
-          <select id="f-sector" required>
-            <option value="">— Selecionar —</option>
-            <option value="Elétrica">Elétrica</option>
-            <option value="Mecânica">Mecânica</option>
-            <option value="Serralharia">Serralharia</option>
-            <option value="Pneumática">Pneumática</option>
-            <option value="Lubrificação">Lubrificação</option>
-            <option value="Piquete">Piquete</option>
-            <option value="Máquinas e Ferramentas">Máquinas e Ferramentas</option>
-          </select>
-        </div>
+          <div class="form-grupo">
+            <label class="form-label">Contador do Equipamento</label>
+            <div class="horimetro-linha">
+              <input class="form-input" type="number" id="f-horimetro" min="0" step="0.1" placeholder="Ex: 4521" />
+              <select class="form-select" id="f-unidade-medida">
+                <option value="h" selected>Horas (h)</option>
+                <option value="km">Quilómetros (km)</option>
+              </select>
+            </div>
+          </div>
 
-        <div class="form-group mt-16">
-          <label>Contador do Equipamento</label>
-          <div class="horimetro-linha">
-            <input type="number" id="f-horimetro" min="0" step="0.1" placeholder="Ex: 4521" />
-            <select id="f-unidade-medida">
-              <option value="h" selected>h</option>
-              <option value="km">km</option>
-            </select>
+          <div class="form-grupo">
+            <label class="form-label">Diagnóstico / Avaria / Motivo de Entrada *</label>
+            <textarea class="form-textarea" id="f-descricao-avaria" required placeholder="Ex: Falha no sistema de marcha, ruído no motor..."></textarea>
+          </div>
+
+          <div class="form-grupo">
+            <label class="form-label">Tipo de Intervenção</label>
+            <div class="tipo-grid">
+              <label><input type="checkbox" value="Inspeção Geral" /> Inspeção Geral</label>
+              <label><input type="checkbox" value="Reparação Pneus" /> Reparação Pneus</label>
+              <label><input type="checkbox" value="Lubrificação" /> Lubrificação</label>
+              <label><input type="checkbox" value="Rep. Sis. Mecânico" /> Rep. Sis. Mecânico</label>
+              <label><input type="checkbox" value="Rep. Sis. Hidráulico" /> Rep. Sis. Hidráulico</label>
+              <label><input type="checkbox" value="Rep. Sis. Elétrico" /> Rep. Sis. Elétrico</label>
+              <label><input type="checkbox" value="Revisão" /> Revisão</label>
+              <label><input type="checkbox" value="Rep. Estrutura" /> Rep. Estrutura</label>
+              <label><input type="checkbox" value="Outros" /> Outros</label>
+            </div>
+          </div>
+
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="form-grupo">
+              <label class="form-label">Estado Físico *</label>
+              <select class="form-select" id="f-status-fisico" required>
+                <option value="">— Selecionar —</option>
+                <option value="Avariada">Avariada</option>
+                <option value="Acidentada">Acidentada</option>
+                <option value="Pneumático">Pneumático</option>
+                <option value="Revisão/Manutenção">Revisão/Manutenção</option>
+                <option value="Inspeção">Inspeção</option>
+                <option value="Aguarda Acessório">Aguarda Acessório</option>
+              </select>
+            </div>
+
+            <div class="form-grupo">
+              <label class="form-label">Data de Abertura *</label>
+              <input class="form-input" type="date" id="f-data-abertura" required />
+            </div>
+          </div>
+
+          <!-- Componente de Colaboradores herdado do style.css -->
+          <div class="form-grupo">
+            <label class="form-label">Aberto por</label>
+            <div class="tech-search-wrap">
+              <input class="form-input" type="text" id="ab-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
+              <div class="tech-dropdown" id="ab-dropdown"></div>
+            </div>
+            <div class="chips-wrap" id="ab-chips"></div>
+            <span class="nota">Podes selecionar mais de um colaborador.</span>
+          </div>
+
+          <div class="form-grupo">
+            <label class="form-label">Observações</label>
+            <textarea class="form-textarea" id="f-observacoes" rows="2"></textarea>
           </div>
         </div>
-
-        <div class="form-group mt-16">
-          <label>Diagnóstico / Avaria / Motivo de Entrada *</label>
-          <textarea id="f-descricao-avaria" rows="3" required placeholder="Ex: Falha no sistema de marcha, ruído no motor..."></textarea>
-        </div>
-
-        <div class="form-group mt-16">
-          <label>Tipo de Intervenção</label>
-          <div class="tipo-grid">
-            <label><input type="checkbox" value="Inspeção Geral" /> Inspeção Geral</label>
-            <label><input type="checkbox" value="Reparação Pneus" /> Reparação Pneus</label>
-            <label><input type="checkbox" value="Lubrificação" /> Lubrificação</label>
-            <label><input type="checkbox" value="Rep. Sis. Mecânico" /> Rep. Sis. Mecânico</label>
-            <label><input type="checkbox" value="Rep. Sis. Hidráulico" /> Rep. Sis. Hidráulico</label>
-            <label><input type="checkbox" value="Rep. Sis. Elétrico" /> Rep. Sis. Elétrico</label>
-            <label><input type="checkbox" value="Revisão" /> Revisão</label>
-            <label><input type="checkbox" value="Rep. Estrutura" /> Rep. Estrutura</label>
-            <label><input type="checkbox" value="Outros" /> Outros</label>
-          </div>
-        </div>
-
-        <div class="form-group mt-16">
-          <label>Estado Físico *</label>
-          <select id="f-status-fisico" required>
-            <option value="">— Selecionar —</option>
-            <option value="Avariada">Avariada</option>
-            <option value="Acidentada">Acidentada</option>
-            <option value="Pneumático">Pneumático</option>
-            <option value="Revisão/Manutenção">Revisão/Manutenção</option>
-            <option value="Inspeção">Inspeção</option>
-            <option value="Aguarda Acessório">Aguarda Acessório</option>
-          </select>
-        </div>
-
-        <div class="form-group mt-16">
-          <label>Data de Abertura *</label>
-          <input type="date" id="f-data-abertura" required />
-        </div>
-
-        <div class="form-group mt-16">
-          <label>Aberto por</label>
-          <div class="tech-search-wrap">
-            <input type="text" id="ab-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
-            <div class="tech-dropdown" id="ab-dropdown"></div>
-          </div>
-          <div class="chips-wrap" id="ab-chips"></div>
-          <span class="nota">Podes selecionar mais de um colaborador.</span>
-        </div>
-
-        <div class="form-group mt-16">
-          <label>Observações</label>
-          <textarea id="f-observacoes" rows="2"></textarea>
-        </div>
-
-        <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
-          <button type="button" class="btn btn-ghost" id="btn-cancelar-os">Cancelar</button>
-          <button type="submit" class="btn btn-primary" id="btn-submit-os">Criar Obra</button>
+        
+        <div class="modal-rodape">
+          <button type="button" class="btn btn-secundario" id="btn-cancelar-os">Cancelar</button>
+          <button type="submit" class="btn btn-primario" id="btn-submit-os">Criar Obra</button>
         </div>
       </form>
     </div>
@@ -227,10 +238,14 @@
   <script src="../shared/tema.js"></script>
   <script src="../shared/nav.js"></script>
   <script>
-     const BADGE_FISICO = {
-      'Avariada':'badge-red','Acidentada':'badge-red','Pneumático':'badge-blue',
-      'Revisão/Manutenção':'badge-amber','Inspeção':'badge-amber',
-      'Aguarda Acessório':'badge-gray','Concluído':'badge-green'
+    const BADGE_FISICO = {
+      'Avariada': 'badge-erro',
+      'Acidentada': 'badge-erro',
+      'Pneumático': 'badge-info',
+      'Revisão/Manutenção': 'badge-aviso',
+      'Inspeção': 'badge-aviso',
+      'Aguarda Acessório': 'badge-secundario',
+      'Concluído': 'badge-sucesso'
     };
 
     function diasDesdeAbertura(dataAbertura) {
@@ -273,7 +288,9 @@
         : '<div class="tech-option text-muted">Nenhum resultado.</div>';
       dd.classList.add('open');
     }
+    
     document.getElementById('ab-search').addEventListener('input', e => filtrarAbertoPor(e.target.value));
+    
     document.getElementById('ab-dropdown').addEventListener('click', e => {
       const opt = e.target.closest('.tech-option');
       if (!opt || !opt.dataset.id) return;
@@ -285,19 +302,25 @@
       document.getElementById('ab-search').value = '';
       document.getElementById('ab-dropdown').classList.remove('open');
     });
+    
     function renderChipsAbertoPor() {
+      // Usamos a classe chip-colab do style.css
       document.getElementById('ab-chips').innerHTML = selecionadosAbertoPor.map(c =>
-        `<span class="chip-tech">${c.name}${c.code?' ('+c.code+')':''}<button type="button" data-id="${c.id}">✕</button></span>`
+        `<span class="chip-colab">${c.name}${c.code?' ('+c.code+')':''}<button type="button" data-id="${c.id}">&times;</button></span>`
       ).join('');
     }
+    
     document.getElementById('ab-chips').addEventListener('click', e => {
       const btn = e.target.closest('button');
       if (!btn) return;
       selecionadosAbertoPor = selecionadosAbertoPor.filter(c => String(c.id) !== btn.dataset.id);
       renderChipsAbertoPor();
     });
+    
     document.addEventListener('click', e => {
-      if (!e.target.closest('#ab-search') && !e.target.closest('#ab-dropdown')) document.getElementById('ab-dropdown').classList.remove('open');
+      if (!e.target.closest('#ab-search') && !e.target.closest('#ab-dropdown')) {
+        document.getElementById('ab-dropdown').classList.remove('open');
+      }
     });
 
     async function carregarOrdens() {
@@ -312,6 +335,7 @@
       const fsec = document.getElementById('filtro-sector').value;
       const fnr = document.getElementById('filtro-nr-obra').value;
       const fb = document.getElementById('filtro-busca').value.trim().toLowerCase();
+      
       let lista = [...todasOrdens];
       if (fs) lista = lista.filter(o => o.status_atual === fs);
       if (fe) lista = lista.filter(o => String(o.equipment_id) === fe);
@@ -323,11 +347,14 @@
       lista.sort((a,b) => new Date(b.data_abertura)-new Date(a.data_abertura));
 
       const tbody = document.getElementById('tbody-os');
-      if (!lista.length) { tbody.innerHTML='<tr><td colspan="10">Nenhuma obra encontrada.</td></tr>'; return; }
+      if (!lista.length) { 
+        tbody.innerHTML='<tr><td colspan="10" class="tabela-vazia">Nenhuma obra encontrada com os filtros selecionados.</td></tr>'; 
+        return; 
+      }
 
       tbody.innerHTML = lista.map(o => {
         const eq = mapaEquip[o.equipment_id]||{};
-        const badge = BADGE_FISICO[o.status_fisico]||'badge-gray';
+        const badge = BADGE_FISICO[o.status_fisico]||'badge-secundario';
         const avaria = o.descricao_avaria
           ? (o.descricao_avaria.length>50 ? o.descricao_avaria.slice(0,50)+'…' : o.descricao_avaria)
           : '—';
@@ -339,47 +366,57 @@
         }
 
         return `<tr>
-          <td style="cursor:pointer" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${o.numero_obra || '<span class="badge-sem-nr">s/nº</span>'}</td>
-          <td style="cursor:pointer" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${eq.code||'—'}</td>
+          <td style="cursor:pointer; font-weight: 600;" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${o.numero_obra || '<span class="badge-sem-nr">s/nº</span>'}</td>
+          <td style="cursor:pointer; color: var(--cor-info); font-weight: 600;" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${eq.code||'—'}</td>
           <td>${eq.fleet_type||'—'}</td>
           <td>${o.sector||'—'}</td>
           <td title="${o.descricao_avaria||''}">${avaria}</td>
           <td>${formatarData(o.data_abertura)}</td>
           <td>${diasSemNr||'—'}</td>
           <td><span class="badge ${badge}">${o.status_fisico||'—'}</span></td>
-          <td>${o.status_atual}</td>
-          <td><button class="btn btn-danger btn-sm" onclick="eliminarOS(${o.id},event)">Apagar</button></td>
+          <td><span class="badge badge-secundario">${o.status_atual}</span></td>
+          <td><button class="btn btn-vermelho btn-sm" onclick="eliminarOS(${o.id},event)">Apagar</button></td>
         </tr>`;
       }).join('');
     }
 
     async function eliminarOS(id, ev) {
       ev.stopPropagation();
-      if (!confirm('Apagar esta obra e todas as suas intervenções? Acção irreversível.')) return;
-      await db.delete('ordens_servico', id);
-      await carregarOrdens();
+      if (!confirm('ATENÇÃO: Deseja apagar esta obra e todas as suas intervenções? Esta acção é irreversível.')) return;
+      try {
+        await db.delete('ordens_servico', id);
+        mostrarToast('Ordem de serviço apagada com sucesso.', 'sucesso');
+        await carregarOrdens();
+      } catch (err) {
+        mostrarToast('Erro ao apagar ordem de serviço.', 'erro');
+      }
     }
 
     ['filtro-status','filtro-equipamento','filtro-fisico','filtro-sector','filtro-nr-obra'].forEach(id =>
       document.getElementById(id).addEventListener('change', renderizarTabela));
     document.getElementById('filtro-busca').addEventListener('input', renderizarTabela);
 
-    const modal = document.getElementById('modal-nova-os');
+    /* ── LÓGICA DO MODAL ── */
     document.getElementById('btn-nova-os').addEventListener('click', () => {
       document.getElementById('form-nova-os').reset();
-      document.getElementById('f-data-abertura').value = dataHoje();
+      
+      // Correção do Bug da Data: Chamando dataHojeISO() do utils.js
+      document.getElementById('f-data-abertura').value = dataHojeISO(); 
       document.getElementById('f-unidade-medida').value = 'h';
       selecionadosAbertoPor = [];
       renderChipsAbertoPor();
-      modal.classList.add('aberto');
+      abrirModal('modal-nova-os');
     });
-    document.getElementById('btn-cancelar-os').addEventListener('click', () => modal.classList.remove('aberto'));
+    
+    document.getElementById('btn-cancelar-os').addEventListener('click', () => fecharModal('modal-nova-os'));
+    document.getElementById('btn-fechar-os-x').addEventListener('click', () => fecharModal('modal-nova-os'));
 
+    /* ── SUBMETER FORMULÁRIO ── */
     document.getElementById('form-nova-os').addEventListener('submit', async ev => {
       ev.preventDefault();
 
       const btnSubmit = document.getElementById('btn-submit-os');
-      if (btnSubmit.disabled) return; // evita duplo clique
+      if (btnSubmit.disabled) return; 
       btnSubmit.disabled = true;
       const textoOriginal = btnSubmit.textContent;
       btnSubmit.textContent = 'A criar...';
@@ -421,15 +458,14 @@
           os_id: novaId, status_fisico: payload.status_fisico
         });
 
-        // Vai directamente para a página da obra para começar a trabalhar
         window.location.href = `os_detalhe.html?id=${novaId}`;
 
       } catch(err) {
         const msg = String(err.message||err);
         if (msg.includes('uq_numero_obra')||msg.includes('duplicate')) {
-          alert('Este número de obra já existe. Confirme junto da CdM.');
+          mostrarToast('Este número de obra já existe. Confirme junto da CdM.', 'aviso');
         } else {
-          alert('Erro ao criar a obra: '+msg);
+          mostrarToast('Erro ao criar a obra: '+msg, 'erro');
         }
         btnSubmit.disabled = false;
         btnSubmit.textContent = textoOriginal;
