@@ -8,24 +8,31 @@
    Última atualização: 2026-08-11
    ═══════════════════════════════════════════════════════════════ */
 
+/* Estas variáveis passam a APONTAR para os tokens globais do style.css
+   (--cor-superficie, --cor-texto, --cor-borda, etc.), que já mudam sozinhos
+   entre claro/escuro consoante o interruptor de tema. Assim, todas as
+   páginas da Oficina — incluindo os <style> inline de cada ficheiro, que
+   continuam a usar --navy2/--border/--text/--amber/etc. — passam a seguir
+   automaticamente o mesmo tema unificado do resto do Hub, sem ter de
+   reescrever cada página uma a uma. */
 :root {
-  --navy:    #0a1628;
-  --navy2:   #0f2044;
-  --navy3:   #1a3a6e;
-  --amber:   #F59E0B;
-  --amber2:  #d97706;
-  --green:   #22c55e;
-  --red:     #ef4444;
-  --blue:    #3b82f6;
-  --text:    #e2e8f0;
-  --text2:   #94a3b8;
-  --border:  #1e3a6e;
-  --radius:  10px;
-  --shadow:  0 4px 16px rgba(0,0,0,0.3);
-  --white:   #f8fafc;
-  --light:   #e2e8f0;
-  --steel:   #94a3b8;
-  --steel2:  #64748b;
+  --navy:    var(--cor-superficie, #0a1628);
+  --navy2:   var(--cor-superficie, #0f2044);
+  --navy3:   var(--cor-navy, #1a3a6e);
+  --amber:   var(--cor-ambar, #F59E0B);
+  --amber2:  var(--cor-ambar-hover, #d97706);
+  --green:   var(--cor-verde-danmo, #22c55e);
+  --red:     var(--cor-vermelho-danmo, #ef4444);
+  --blue:    var(--cor-info, #3b82f6);
+  --text:    var(--cor-texto, #e2e8f0);
+  --text2:   var(--cor-texto-sec, #94a3b8);
+  --border:  var(--cor-borda, #1e3a6e);
+  --radius:  var(--raio-md, 10px);
+  --shadow:  var(--sombra-md, 0 4px 16px rgba(0,0,0,0.3));
+  --white:   var(--cor-texto, #f8fafc);
+  --light:   var(--cor-texto, #e2e8f0);
+  --steel:   var(--cor-texto-sec, #94a3b8);
+  --steel2:  var(--cor-texto-sec, #64748b);
 }
 
 /* ── Títulos de página (a Oficina já traz .page-title/.page-sub) ── */
@@ -68,7 +75,7 @@
 .table-wrap table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .table-wrap thead th {
   background: var(--navy3);
-  color: var(--text2);
+  color: #FFFFFF;
   font-size: 11px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .5px;
   padding: 10px 14px; text-align: left;
