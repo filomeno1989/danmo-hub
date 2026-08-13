@@ -543,6 +543,9 @@ body.sidebar-recolhida .main {
   border: 1px solid var(--cor-borda);
   overflow-x: auto;
   margin-top: 16px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .tabela,
@@ -671,6 +674,7 @@ table tbody tr:hover {
   border: 1px solid var(--cor-borda);
   padding: 24px;
   margin-bottom: 24px;
+  max-width: 100%;
   transition: background var(--transicao), border-color var(--transicao);
 }
 
