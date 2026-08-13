@@ -163,7 +163,7 @@
         var movRes = await db.query('tool_movements', 'select=*&' + qf + '&order=created_at.desc&limit=500');
         var devolucoes = movRes || [];
 
-        var empRes = await db.query('tool_movements', 'select=*&tipo=eq.emprestimo&data_devolucao=not.null&order=data_devolucao.desc&limit=500');
+        var empRes = await db.query('tool_movements', 'select=*&tipo=eq.emprestimo&data_devolucao=not.is.null&order=data_devolucao.desc&limit=500');
         var empDevs = empRes || [];
 
         var allDevs = [];
