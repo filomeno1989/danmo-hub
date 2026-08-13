@@ -435,6 +435,7 @@ body.sidebar-recolhida .main {
 /* ── CONTEÚDO PRINCIPAL ──────────────────────────────────── */
 .main {
   flex: 1;
+  min-width: 0;
   margin-left: var(--sidebar-w);
   padding: 30px;
   min-height: calc(100vh - var(--topbar-h));
