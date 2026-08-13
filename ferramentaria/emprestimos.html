@@ -159,6 +159,24 @@
   </main>
 
   <!-- Modal de Devolução (Refatorado para as classes globais do Danmo Hub) -->
+  <!-- Modal: Ferramenta Indisponível (stock esgotado) -->
+  <div id="modal-indisponivel" class="modal-fundo">
+    <div class="modal" style="max-width: 480px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" style="color:var(--cor-erro);">⚠ Ferramenta Indisponível</span>
+        <button class="modal-fechar" id="btn-fechar-indisponivel-x" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <p id="indisp-titulo" style="font-weight:700;font-size:1.05rem;margin-bottom:4px;"></p>
+        <p id="indisp-resumo" style="color:var(--cor-texto-sec);font-size:var(--tamanho-sm);margin-bottom:18px;"></p>
+        <div id="indisp-lista"></div>
+      </div>
+      <div class="modal-rodape">
+        <button type="button" class="btn btn-primario" id="btn-fechar-indisponivel">Entendi</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-devolucao" class="modal-fundo">
     <div class="modal">
       <div class="modal-cabecalho">
@@ -279,14 +297,67 @@
     }
 
     /* Quantas unidades de uma ferramenta estão emprestadas AGORA (não devolvidas). */
-    async function contarEmprestadas(toolId) {
+    /* Devolve a lista de empréstimos activos (não devolvidos) de uma ferramenta,
+       com todos os detalhes precisos para mostrar "quem tem e onde está". */
+    async function getEmprestimosAtivos(toolId) {
       try {
-        var ativos = await db.query('tool_movements', 'select=id&tool_id=eq.' + toolId + '&tipo=eq.emprestimo&data_devolucao=is.null');
-        return (ativos || []).length;
+        var ativos = await db.query('tool_movements',
+          'select=*&tool_id=eq.' + toolId + '&tipo=eq.emprestimo&data_devolucao=is.null&order=data_saida.asc');
+        return ativos || [];
       } catch (err) {
         console.error('Erro ao verificar disponibilidade:', err);
-        return 0;
+        return [];
       }
+    }
+
+    async function contarEmprestadas(toolId) {
+      var ativos = await getEmprestimosAtivos(toolId);
+      return ativos.length;
+    }
+
+    /* Mostra um popup claro (não um toast que passa despercebido) explicando
+       quem tem a ferramenta agora e em que máquina/OS, para qualquer
+       ferramenteiro poder informar quem a pede. */
+    function mostrarPopupIndisponivel(tool, emprestimosAtivos) {
+      return new Promise(function (resolve) {
+        var quantidadeTotal = tool.quantidade || 1;
+
+        document.getElementById('indisp-titulo').textContent =
+          tool.code + ' — ' + tool.nome;
+        document.getElementById('indisp-resumo').textContent =
+          'Sem unidades disponíveis (' + emprestimosAtivos.length + '/' + quantidadeTotal + ' emprestadas). ' +
+          (emprestimosAtivos.length > 1 ? 'Está com:' : 'Está com:');
+
+        var listaEl = document.getElementById('indisp-lista');
+        listaEl.innerHTML = emprestimosAtivos.map(function (m) {
+          var dataSaida = m.data_saida ? formatarData(m.data_saida, true) : '—';
+          var maquinaLinha = m.equipamento_id
+            ? '<div style="margin-top:4px;"><strong>Máquina/Equipamento:</strong> ' + m.equipamento_id + '</div>'
+            : '';
+          var osLinha = m.os_id
+            ? '<div style="margin-top:4px;"><strong>Nº da Obra/OS:</strong> ' + m.os_id + '</div>'
+            : '';
+          return '' +
+            '<div style="background:var(--cor-erro-bg);border:1px solid var(--cor-erro);border-radius:var(--raio-md);padding:14px;margin-bottom:10px;">' +
+              '<div style="font-weight:700;color:var(--cor-erro);font-size:1rem;">' + (m.colaborador || 'Colaborador não identificado') + '</div>' +
+              '<div style="margin-top:4px;"><strong>Departamento:</strong> ' + (m.departamento || '—') + '</div>' +
+              maquinaLinha +
+              osLinha +
+              '<div style="margin-top:4px;color:var(--cor-texto-sec);font-size:var(--tamanho-sm);">Levantou em: ' + dataSaida + '</div>' +
+            '</div>';
+        }).join('');
+
+        abrirModal('modal-indisponivel');
+
+        function fechar() {
+          fecharModal('modal-indisponivel');
+          document.getElementById('btn-fechar-indisponivel').removeEventListener('click', fechar);
+          document.getElementById('btn-fechar-indisponivel-x').removeEventListener('click', fechar);
+          resolve();
+        }
+        document.getElementById('btn-fechar-indisponivel').addEventListener('click', fechar);
+        document.getElementById('btn-fechar-indisponivel-x').addEventListener('click', fechar);
+      });
     }
 
     /* ── Autocomplete ── */
@@ -469,13 +540,14 @@
       if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'A verificar disponibilidade...'; }
 
       var quantidadeTotal = tool.quantidade || 1;
-      var quantidadeEmprestada = await contarEmprestadas(tool.id);
+      var emprestimosAtivos = await getEmprestimosAtivos(tool.id);
+      var quantidadeEmprestada = emprestimosAtivos.length;
       var disponivel = quantidadeTotal - quantidadeEmprestada;
 
       if (disponivel <= 0) {
-        mostrarToast('Esta ferramenta já não está disponível (stock esgotado — ' + quantidadeEmprestada + '/' + quantidadeTotal + ' emprestadas).', 'erro');
         if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'Registar Empréstimo'; }
         await loadTools(); // refresca a cache local para o autocomplete já mostrar o estado correcto
+        await mostrarPopupIndisponivel(tool, emprestimosAtivos);
         return;
       }
 
