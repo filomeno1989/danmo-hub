@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configurações — Ferramentaria — Danmo Hub</title>
+
+  <!-- CSS Global do Danmo Hub -->
+  <link rel="stylesheet" href="../shared/style.css" />
+
+  <style>
+    .link-action {
+      color: var(--cor-info);
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 12px;
+      transition: color var(--transicao);
+    }
+    .link-action:hover { color: var(--cor-ambar); }
+
+    .link-danger {
+      color: var(--cor-vermelho-danmo);
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity var(--transicao);
+    }
+    .link-danger:hover { opacity: .8; }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+    @media (max-width: 900px) {
+      .config-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
+  <div id="navbar"></div>
+
+  <main class="main">
+    <h1 class="pagina-titulo">Configurações da Ferramentaria</h1>
+    <p class="pagina-subtitulo">Gerir as listas usadas nos formulários — categorias de ferramentas e departamentos</p>
+
+    <div class="config-grid">
+
+      <!-- ═══ CATEGORIAS DE FERRAMENTAS ═══ -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+          <div class="form-label" style="font-size: 1.1rem; margin: 0;">Categorias de Ferramentas</div>
+          <button class="btn btn-primario btn-sm" id="cat-btn-novo">+ Nova</button>
+        </div>
+        <p style="font-size:var(--tamanho-sm);color:var(--cor-texto-sec);margin-bottom:16px;">Usadas no Inventário (ex: Ferramentas Manuais, Elétricas...)</p>
+        <div class="tabela-container">
+          <div id="cat-loading" class="spinner" style="padding:32px;text-align:center;">A carregar...</div>
+          <div id="cat-empty" class="tabela-vazia" style="display:none;">Nenhuma categoria registada.</div>
+          <table class="tabela" id="cat-tabela" style="display:none;">
+            <thead>
+              <tr><th>Nome</th><th>Em Uso</th><th>Estado</th><th>Acções</th></tr>
+            </thead>
+            <tbody id="cat-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══ DEPARTAMENTOS ═══ -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+          <div class="form-label" style="font-size: 1.1rem; margin: 0;">Departamentos</div>
+          <button class="btn btn-primario btn-sm" id="dep-btn-novo">+ Novo</button>
+        </div>
+        <p style="font-size:var(--tamanho-sm);color:var(--cor-texto-sec);margin-bottom:16px;">Usados nos Empréstimos (lista partilhada — outros módulos podem vir a usá-la também)</p>
+        <div class="tabela-container">
+          <div id="dep-loading" class="spinner" style="padding:32px;text-align:center;">A carregar...</div>
+          <div id="dep-empty" class="tabela-vazia" style="display:none;">Nenhum departamento registado.</div>
+          <table class="tabela" id="dep-tabela" style="display:none;">
+            <thead>
+              <tr><th>Nome</th><th>Em Uso</th><th>Estado</th><th>Acções</th></tr>
+            </thead>
+            <tbody id="dep-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal Categoria -->
+  <div id="modal-cat" class="modal-fundo">
+    <div class="modal" style="max-width: 420px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="modal-cat-title">Nova Categoria</span>
+        <button class="modal-fechar" id="cat-btn-fechar-x" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="form-grupo">
+          <label class="form-label" for="cat-nome">Nome da Categoria *</label>
+          <input class="form-input" type="text" id="cat-nome" required placeholder="Ex: Ferramentas Manuais" />
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" id="cat-btn-cancelar">Cancelar</button>
+        <button class="btn btn-verde" id="cat-btn-guardar">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Departamento -->
+  <div id="modal-dep" class="modal-fundo">
+    <div class="modal" style="max-width: 420px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="modal-dep-title">Novo Departamento</span>
+        <button class="modal-fechar" id="dep-btn-fechar-x" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="form-grupo">
+          <label class="form-label" for="dep-nome">Nome do Departamento *</label>
+          <input class="form-input" type="text" id="dep-nome" required placeholder="Ex: Máquinas e Ferramentas" />
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" id="dep-btn-cancelar">Cancelar</button>
+        <button class="btn btn-verde" id="dep-btn-guardar">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts Unificados do Danmo Hub -->
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+    /**
+     * Gestor genérico de lista simples (nome + active) — usado tanto para
+     * tool_categories como para departamentos. Evita duplicar a mesma
+     * lógica de CRUD duas vezes.
+     */
+    function criarGestorLista(cfg) {
+      var itens = [];
+      var usoMap = {};
+      var editingId = null;
+
+      var loadingEl = document.getElementById(cfg.prefixo + '-loading');
+      var emptyEl = document.getElementById(cfg.prefixo + '-empty');
+      var tableEl = document.getElementById(cfg.prefixo + '-tabela');
+      var tbody = document.getElementById(cfg.prefixo + '-tbody');
+
+      async function carregar() {
+        loadingEl.style.display = 'block';
+        emptyEl.style.display = 'none';
+        tableEl.style.display = 'none';
+        tbody.innerHTML = '';
+
+        try {
+          itens = await db.query(cfg.tabela, 'select=*&order=nome.asc') || [];
+
+          usoMap = {};
+          if (cfg.tabelaUso && cfg.colunaUso) {
+            var usados = await db.query(cfg.tabelaUso, 'select=' + cfg.colunaUso) || [];
+            usados.forEach(function (u) {
+              var chave = u[cfg.colunaUso];
+              if (chave) usoMap[chave] = (usoMap[chave] || 0) + 1;
+            });
+          }
+
+          if (itens.length === 0) {
+            loadingEl.style.display = 'none';
+            emptyEl.style.display = 'block';
+            return;
+          }
+
+          itens.forEach(function (item) {
+            var tr = document.createElement('tr');
+            var usoChave = cfg.usaId ? item.id : item.nome;
+            var count = usoMap[usoChave] || 0;
+            var estadoBadge = item.active
+              ? '<span class="badge badge-sucesso">Ativo</span>'
+              : '<span class="badge badge-secundario">Inativo</span>';
+            var acaoTexto = item.active ? 'Desactivar' : 'Reactivar';
+
+            tr.innerHTML =
+              '<td>' + (item.nome || '—') + '</td>' +
+              '<td><span class="badge badge-info">' + count + '</span></td>' +
+              '<td>' + estadoBadge + '</td>' +
+              '<td>' +
+                '<span class="link-action" data-action="editar" data-id="' + item.id + '">Editar</span>' +
+                '<span class="link-danger" data-action="alternar" data-id="' + item.id + '">' + acaoTexto + '</span>' +
+              '</td>';
+            tbody.appendChild(tr);
+          });
+
+          loadingEl.style.display = 'none';
+          tableEl.style.display = 'table';
+        } catch (err) {
+          console.error('Erro ao carregar ' + cfg.tabela + ':', err);
+          loadingEl.style.display = 'none';
+          emptyEl.style.display = 'block';
+          mostrarToast('Erro ao carregar ' + cfg.nomeSingular.toLowerCase() + 's.', 'erro');
+        }
+      }
+
+      tbody.addEventListener('click', async function (e) {
+        var link = e.target.closest('[data-action]');
+        if (!link) return;
+        var id = link.dataset.id;
+        var item = itens.find(function (i) { return i.id === id; });
+        if (!item) return;
+
+        if (link.dataset.action === 'editar') {
+          editingId = id;
+          document.getElementById('modal-' + cfg.prefixo + '-title').textContent = 'Editar ' + cfg.nomeSingular;
+          document.getElementById(cfg.prefixo + '-nome').value = item.nome || '';
+          abrirModal('modal-' + cfg.prefixo);
+        } else if (link.dataset.action === 'alternar') {
+          var novoEstado = !item.active;
+          var msg = novoEstado
+            ? 'Reactivar? Volta a aparecer nos formulários.'
+            : 'Desactivar? Deixa de aparecer nos formulários (os registos já criados mantêm-se).';
+          if (!confirm(msg)) return;
+          try {
+            await db.update(cfg.tabela, id, { active: novoEstado });
+            mostrarToast((novoEstado ? 'Reactivado' : 'Desactivado') + ' com sucesso.', 'sucesso');
+            await carregar();
+          } catch (err) {
+            console.error('Erro ao alternar:', err);
+            mostrarToast('Erro ao actualizar.', 'erro');
+          }
+        }
+      });
+
+      document.getElementById(cfg.prefixo + '-btn-novo').addEventListener('click', function () {
+        editingId = null;
+        document.getElementById('modal-' + cfg.prefixo + '-title').textContent = 'Novo ' + cfg.nomeSingular;
+        document.getElementById(cfg.prefixo + '-nome').value = '';
+        abrirModal('modal-' + cfg.prefixo);
+      });
+
+      document.getElementById(cfg.prefixo + '-btn-cancelar').addEventListener('click', function () {
+        fecharModal('modal-' + cfg.prefixo);
+      });
+      document.getElementById(cfg.prefixo + '-btn-fechar-x').addEventListener('click', function () {
+        fecharModal('modal-' + cfg.prefixo);
+      });
+
+      document.getElementById(cfg.prefixo + '-btn-guardar').addEventListener('click', async function () {
+        var nome = document.getElementById(cfg.prefixo + '-nome').value.trim();
+        if (!nome) {
+          mostrarToast('Preencha o nome.', 'erro');
+          return;
+        }
+        var duplicado = itens.some(function (i) {
+          return i.nome.toLowerCase() === nome.toLowerCase() && i.id !== editingId;
+        });
+        if (duplicado) {
+          mostrarToast('Já existe um registo com este nome.', 'erro');
+          return;
+        }
+        try {
+          if (editingId) {
+            await db.update(cfg.tabela, editingId, { nome: nome });
+            mostrarToast(cfg.nomeSingular + ' actualizado com sucesso.', 'sucesso');
+          } else {
+            await db.insert(cfg.tabela, { nome: nome, active: true });
+            mostrarToast(cfg.nomeSingular + ' criado com sucesso.', 'sucesso');
+          }
+          fecharModal('modal-' + cfg.prefixo);
+          editingId = null;
+          await carregar();
+        } catch (err) {
+          console.error('Erro ao guardar:', err);
+          mostrarToast('Erro ao guardar.', 'erro');
+        }
+      });
+
+      carregar();
+      return { recarregar: carregar };
+    }
+
+    /* ── Instanciar os dois gestores ── */
+    criarGestorLista({
+      prefixo: 'cat',
+      tabela: 'tool_categories',
+      nomeSingular: 'Categoria',
+      tabelaUso: 'tools',
+      colunaUso: 'category_id',
+      usaId: true
+    });
+
+    criarGestorLista({
+      prefixo: 'dep',
+      tabela: 'departamentos',
+      nomeSingular: 'Departamento',
+      tabelaUso: 'tool_movements',
+      colunaUso: 'departamento',
+      usaId: false
+    });
+  </script>
+</body>
+</html>
