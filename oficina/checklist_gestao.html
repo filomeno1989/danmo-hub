@@ -30,6 +30,11 @@
     .modal-overlay.aberto { display:flex; }
     .modal-box { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:520px; box-shadow:var(--shadow); max-height:90vh; overflow-y:auto; }
     .col-header { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; }
+    @media (max-width: 640px) {
+      .item-row { grid-template-columns: 32px 1fr; row-gap:6px; }
+      .item-row .col-header { display:none; }
+      .item-acoes, .toggle-ativo { grid-column: 1 / -1; justify-content:flex-start; }
+    }
   </style>
 </head>
 <body>
