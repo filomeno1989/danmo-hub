@@ -96,15 +96,6 @@
             <label class="form-label" for="f-departamento">Departamento</label>
             <select class="form-select" id="f-departamento" required>
               <option value="">Seleccionar departamento...</option>
-              <option>Mecânica</option>
-              <option>Elétrica</option>
-              <option>Serralharia</option>
-              <option>Pneumática</option>
-              <option>Lubrificação</option>
-              <option>Máquinas e Ferramentas</option>
-              <option>Piquete</option>
-              <option>Direcção</option>
-              <option>Outro</option>
             </select>
           </div>
           <div class="form-grupo">
@@ -263,10 +254,38 @@
     /* ── Load Tools (for autocomplete) ── */
     async function loadTools() {
       try {
-        var res = await db.query('tools', 'select=id,code,nome,estado,active');
+        var res = await db.query('tools', 'select=id,code,nome,estado,active,quantidade');
         allTools = res || [];
       } catch (err) {
         console.error('Erro ao carregar ferramentas:', err);
+      }
+    }
+
+    /* ── Load Departamentos (lista partilhada, editável em Configurações) ── */
+    async function loadDepartamentos() {
+      var selectEl = document.getElementById('f-departamento');
+      try {
+        var deps = await db.query('departamentos', 'select=*&active=eq.true&order=nome.asc') || [];
+        deps.forEach(function (d) {
+          var opt = document.createElement('option');
+          opt.value = d.nome;
+          opt.textContent = d.nome;
+          selectEl.appendChild(opt);
+        });
+      } catch (err) {
+        console.error('Erro ao carregar departamentos:', err);
+        mostrarToast('Erro ao carregar lista de departamentos.', 'erro');
+      }
+    }
+
+    /* Quantas unidades de uma ferramenta estão emprestadas AGORA (não devolvidas). */
+    async function contarEmprestadas(toolId) {
+      try {
+        var ativos = await db.query('tool_movements', 'select=id&tool_id=eq.' + toolId + '&tipo=eq.emprestimo&data_devolucao=is.null');
+        return (ativos || []).length;
+      } catch (err) {
+        console.error('Erro ao verificar disponibilidade:', err);
+        return 0;
       }
     }
 
@@ -284,7 +303,13 @@
       if (matches.length === 0) { fAutoList.style.display = 'none'; return; }
       var html = '';
       matches.forEach(function(t, i) {
-        html += '<div class="autocomplete-item" data-code="' + t.code + '" data-index="' + i + '">' + t.code + ' <small>' + t.nome + ' (' + t.estado + ')</small></div>';
+        /* Aviso rápido (heurística): para ferramentas com 1 unidade, o campo
+           'estado' já reflecte se está emprestada. A verificação REAL e
+           definitiva (que também cobre quantidade > 1) acontece ao submeter
+           o formulário, contra a base de dados em tempo real. */
+        var esgotadaProvavel = t.estado === 'emprestado' && (t.quantidade || 1) <= 1;
+        var aviso = esgotadaProvavel ? ' <span style="color:var(--cor-erro);font-weight:700;">— provavelmente indisponível</span>' : '';
+        html += '<div class="autocomplete-item" data-code="' + t.code + '" data-index="' + i + '">' + t.code + ' <small>' + t.nome + ' (' + t.estado + ')</small>' + aviso + '</div>';
       });
       fAutoList.innerHTML = html;
       fAutoList.style.display = 'block';
@@ -437,6 +462,23 @@
         return;
       }
 
+      /* Verificação REAL de disponibilidade — contra a base de dados,
+         não contra a cache local (evita que duas pessoas "levem" a
+         mesma ferramenta ao mesmo tempo). Cobre quantidade > 1 também. */
+      var btnSubmit = this.querySelector('button[type="submit"]');
+      if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'A verificar disponibilidade...'; }
+
+      var quantidadeTotal = tool.quantidade || 1;
+      var quantidadeEmprestada = await contarEmprestadas(tool.id);
+      var disponivel = quantidadeTotal - quantidadeEmprestada;
+
+      if (disponivel <= 0) {
+        mostrarToast('Esta ferramenta já não está disponível (stock esgotado — ' + quantidadeEmprestada + '/' + quantidadeTotal + ' emprestadas).', 'erro');
+        if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'Registar Empréstimo'; }
+        await loadTools(); // refresca a cache local para o autocomplete já mostrar o estado correcto
+        return;
+      }
+
       var staffMember = staffList.find(function(s) { return s.id === entreguePor; });
       var entregueNome = staffMember ? staffMember.nome : '';
 
@@ -455,14 +497,23 @@
           observacoes_saida: obs
         });
 
-        await db.update('tools', tool.id, { estado: 'emprestado' });
+        /* Só marcamos o estado global "emprestado" quando é a última unidade
+           a sair — para ferramentas com quantidade > 1 o 'estado' não é um
+           bom indicador de disponibilidade (não representa "3 de 5 fora"),
+           por isso não o tocamos nesse caso. */
+        if (quantidadeTotal - quantidadeEmprestada <= 1) {
+          await db.update('tools', tool.id, { estado: 'emprestado' });
+        }
 
         clearForm();
+        await loadTools();
         await loadEmprestimos();
         mostrarToast('Empréstimo registado com sucesso', 'sucesso');
       } catch (err) {
         console.error('Erro ao registar empréstimo:', err);
         mostrarToast('Erro ao registar empréstimo.', 'erro');
+      } finally {
+        if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'Registar Empréstimo'; }
       }
     });
 
@@ -497,6 +548,8 @@
       document.getElementById('d-estado').value = '';
       document.getElementById('d-recebido').value = '';
       document.getElementById('d-obs').value = '';
+      document.getElementById('btn-confirmar-dev').disabled = false;
+      document.getElementById('btn-confirmar-dev').textContent = 'Confirmar Devolução';
       abrirModal('modal-devolucao');
     });
 
@@ -510,7 +563,10 @@
       currentDevId = null;
     });
 
+    var processandoDevolucao = false;
     document.getElementById('btn-confirmar-dev').addEventListener('click', async function() {
+      if (processandoDevolucao) return; // impede duplo clique / duplo registo
+
       var estadoVoltar = document.getElementById('d-estado').value;
       var recebidoPor = document.getElementById('d-recebido').value;
       var obsDev = document.getElementById('d-obs').value.trim() || null;
@@ -524,6 +580,11 @@
 
       var staffMember = staffList.find(function(s) { return s.id === recebidoPor; });
       var recebidoNome = staffMember ? staffMember.nome : '';
+
+      var btnConfirmar = document.getElementById('btn-confirmar-dev');
+      processandoDevolucao = true;
+      btnConfirmar.disabled = true;
+      btnConfirmar.textContent = 'A registar...';
 
       try {
         var movRes = await db.query('tool_movements', 'select=*&id=eq.' + currentDevId);
@@ -578,9 +639,14 @@
         await loadEmprestimos();
         mostrarToast('Devolução registada com sucesso', 'sucesso');
 
+
       } catch (err) {
         console.error('Erro ao registar devolução:', err);
         mostrarToast('Erro ao registar devolução.', 'erro');
+      } finally {
+        processandoDevolucao = false;
+        btnConfirmar.disabled = false;
+        btnConfirmar.textContent = 'Confirmar Devolução';
       }
     });
 
@@ -595,7 +661,7 @@
         hiddenId: 'f-colaborador',
         chipId: 'f-colaborador-chip'
       });
-      await Promise.all([loadStaff(), loadTools()]);
+      await Promise.all([loadStaff(), loadTools(), loadDepartamentos()]);
       await loadEmprestimos();
     })();
 
