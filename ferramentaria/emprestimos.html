@@ -459,7 +459,7 @@
         emprestimos.forEach(function(m) {
           if (m.tool_id && toolIds.indexOf(m.tool_id) === -1) toolIds.push(m.tool_id);
         });
-        var toolFilter = toolIds.map(function(id) { return 'id=eq.' + id; }).join('&');
+        var toolFilter = toolIds.length > 0 ? 'id=in.(' + toolIds.join(',') + ')' : 'id=eq.00000000-0000-0000-0000-000000000000';
         var toolRes = await db.query('tools', 'select=id,code,nome&' + toolFilter);
         var toolsData = toolRes || [];
         var toolMap = {};

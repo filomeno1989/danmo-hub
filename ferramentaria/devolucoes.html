@@ -159,27 +159,12 @@
       tbody.innerHTML = '';
 
       try {
-        var qf = 'tipo=eq.devolucao';
-        var movRes = await db.query('tool_movements', 'select=*&' + qf + '&order=created_at.desc&limit=500');
-        var devolucoes = movRes || [];
-
-        var empRes = await db.query('tool_movements', 'select=*&tipo=eq.emprestimo&data_devolucao=not.is.null&order=data_devolucao.desc&limit=500');
-        var empDevs = empRes || [];
-
-        var allDevs = [];
-        var seenIds = {};
-        devolucoes.forEach(function(m) {
-          if (!seenIds[m.id]) { seenIds[m.id] = true; allDevs.push(m); }
-        });
-        empDevs.forEach(function(m) {
-          if (!seenIds[m.id]) { seenIds[m.id] = true; allDevs.push(m); }
-        });
-
-        allDevs.sort(function(a, b) {
-          var da = a.data_devolucao || a.created_at;
-          var db2 = b.data_devolucao || b.created_at;
-          return (db2 || '').localeCompare(da || '');
-        });
+        /* Fonte única: tipo='devolucao'. Cada devolução grava sempre uma
+           linha aqui (feito no emprestimos.html), por isso não é preciso
+           ir também buscar as linhas 'emprestimo' já devolvidas — isso
+           duplicava cada devolução (aparecia duas vezes na tabela). */
+        var movRes = await db.query('tool_movements', 'select=*&tipo=eq.devolucao&order=data_devolucao.desc&limit=500');
+        var allDevs = movRes || [];
 
         var toolIds = [];
         allDevs.forEach(function(m) {
@@ -188,7 +173,11 @@
 
         var toolMap = {};
         if (toolIds.length > 0) {
-          var toolFilter = toolIds.map(function(id) { return 'id=eq.' + id; }).join('&');
+          /* IMPORTANTE: para várias ferramentas, o filtro tem de ser
+             id=in.(a,b,c) — usar id=eq.a&id=eq.b&id=eq.c pede ao Supabase
+             "id igual a A E igual a B ao mesmo tempo", que nunca dá match
+             (por isso Código/Ferramenta apareciam sempre como "—"). */
+          var toolFilter = 'id=in.(' + toolIds.join(',') + ')';
           var toolRes = await db.query('tools', 'select=id,code,nome&' + toolFilter);
           (toolRes || []).forEach(function(t) { toolMap[t.id] = t; });
         }

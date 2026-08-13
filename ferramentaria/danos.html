@@ -273,7 +273,7 @@
           if (d.tool_id && !toolsMap[d.tool_id]) toolIds.push(d.tool_id);
         });
         if (toolIds.length > 0) {
-          var toolFilter = toolIds.map(function(id) { return 'id=eq.' + id; }).join('&');
+          var toolFilter = 'id=in.(' + toolIds.join(',') + ')';
           var toolRes = await db.query('tools', 'select=id,code,nome&' + toolFilter);
           (toolRes || []).forEach(function(t) { toolsMap[t.id] = t; });
         }
