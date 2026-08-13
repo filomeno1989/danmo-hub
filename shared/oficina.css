@@ -9,6 +9,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
+  --navy:    #0a1628;
   --navy2:   #0f2044;
   --navy3:   #1a3a6e;
   --amber:   #F59E0B;
@@ -31,11 +32,20 @@
 .page-title { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
 .page-sub   { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
 
-/* ── KPI cards no estilo Oficina (border-top + variantes EN) ──
-   Só se aplica dentro de .kpi-card já existente — não redefine .kpi-grid. */
-.kpi-card.green { border-top: 3px solid var(--green); }
-.kpi-card.red   { border-top: 3px solid var(--red); }
-.kpi-card.blue  { border-top: 3px solid var(--blue); }
+/* ── KPI cards no estilo Oficina (fundo escuro + border-top + variantes EN) ──
+   Não redefine .kpi-grid (isso continua a vir do style.css / layout unificado). */
+.kpi-card {
+  background: var(--navy2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  border-top: 3px solid var(--amber);
+  border-left: none;
+}
+.kpi-card.green { border-top-color: var(--green); }
+.kpi-card.red   { border-top-color: var(--red); }
+.kpi-card.blue  { border-top-color: var(--blue); }
+.kpi-label { font-size: 11px; font-weight: 600; color: var(--text2);
+             text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
 .kpi-value { font-size: 28px; font-weight: 700; color: var(--text); }
 .kpi-sub   { font-size: 12px; color: var(--text2); margin-top: 4px; }
 
@@ -79,17 +89,21 @@
 .badge-blue   { background: rgba(59,130,246,.15); color: var(--blue); }
 .badge-gray   { background: rgba(148,163,184,.1); color: var(--text2); }
 
-/* ── Formulários (estilo escuro da Oficina, dentro de .card) ── */
+/* ── Formulários (estilo escuro da Oficina, dentro de .card OU .modal-box) ── */
 .card .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
 }
-.card .form-group { display: flex; flex-direction: column; gap: 6px; }
-.card .form-group label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; }
+.card .form-group,
+.modal-box .form-group { display: flex; flex-direction: column; gap: 6px; }
+.card .form-group label,
+.modal-box .form-group label {
+  font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase;
+}
 .card input, .card select, .card textarea,
 .modal-box input, .modal-box select, .modal-box textarea {
-  background: var(--cor-navy, #0A1628);
+  background: var(--navy, #0A1628);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
@@ -105,9 +119,52 @@
   border-color: var(--cor-ambar, #F59E0B);
 }
 .card textarea, .modal-box textarea { resize: vertical; min-height: 80px; }
+.card select option, .modal-box select option { background: var(--navy2); color: var(--text); }
 
-/* ── Botões (nomes em inglês usados na Oficina) ── */
-.btn-primary { background: var(--cor-ambar, #F59E0B); color: var(--cor-navy, #0A1628); }
+/* ── Adaptação do sistema de modal/formulário NOVO do Hub (.modal-fundo/.modal/
+   .form-grupo/.form-label/.form-input) ao tema escuro da Oficina.
+   Mantém-se a estrutura nova (cabeçalho + rodapé fixos), só se repõem as cores
+   escuras que a Oficina sempre teve — usado atualmente em ordens.html. ── */
+.modal-fundo { background: rgba(0,0,0,0.6); }
+.modal {
+  background: var(--navy2);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.modal-cabecalho { border-bottom: 1px solid var(--border); }
+.modal-titulo { color: var(--cor-ambar, #F59E0B); }
+.modal-fechar {
+  background: transparent; border: none; color: var(--text2);
+  font-size: 20px; line-height: 1; cursor: pointer; padding: 4px 8px;
+  border-radius: 6px; transition: all .2s;
+}
+.modal-fechar:hover { color: var(--cor-ambar, #F59E0B); background: rgba(255,255,255,.06); }
+.modal-rodape { border-top: 1px solid var(--border); }
+
+.form-grupo { display: flex; flex-direction: column; gap: 6px; }
+.form-label {
+  font-size: 12px; font-weight: 600; color: var(--text2);
+  text-transform: uppercase; letter-spacing: .3px;
+}
+.form-input, .form-select, .form-textarea {
+  background: var(--navy, #0A1628);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: inherit;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--cor-ambar, #F59E0B);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+}
+.form-select option { background: var(--navy2); color: var(--text); }
+.nota { color: var(--text2); }
+.tipo-grid label { color: var(--text); }
+
+/* ── Botões (nomes em inglês E em português — a Oficina foi migrada com os dois) ── */
+.btn-primary,
+.btn-primario { background: var(--amber); color: var(--navy); }
+.btn-primario:hover,
 .btn-primary:hover { background: var(--amber2); }
 .btn-success { background: var(--green); color: #fff; }
 .btn-success:hover { background: #16a34a; }
