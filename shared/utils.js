@@ -387,3 +387,99 @@ function proximoNumero(tipo, lista) {
   });
   return String(maxNum + 1).padStart(3, '0') + '/' + anoActual;
 }
+
+/**
+ * Seletor de Colaborador com pesquisa por nome ou código (autocomplete).
+ * MESMO padrão já usado em oficina/os_detalhe.html — generalizado para
+ * poder ser usado em qualquer módulo do Hub.
+ *
+ * Requer no HTML:
+ *   <div class="tech-search-wrap">
+ *     <input type="text" id="{inputId}" placeholder="Pesquisar por nome ou código..." autocomplete="off">
+ *     <div class="tech-dropdown" id="{dropdownId}"></div>
+ *   </div>
+ *   <input type="hidden" id="{hiddenId}">
+ *   <div class="chips-wrap" id="{chipId}"></div>   (opcional, mas recomendado)
+ *
+ * Uso:
+ *   const seletor = await criarSeletorColaborador({
+ *     inputId: 'f-colab-search', dropdownId: 'f-colab-dropdown',
+ *     hiddenId: 'f-colaborador', chipId: 'f-colab-chip'
+ *   });
+ *   ... mais tarde: seletor.reset();  ou  seletor.getColaboradores();
+ */
+async function criarSeletorColaborador({ inputId, dropdownId, hiddenId, chipId, onSelect }) {
+  const inputEl = document.getElementById(inputId);
+  const ddEl = document.getElementById(dropdownId);
+  const hiddenEl = document.getElementById(hiddenId);
+  const chipEl = chipId ? document.getElementById(chipId) : null;
+  if (!inputEl || !ddEl || !hiddenEl) {
+    console.warn('criarSeletorColaborador: elementos em falta para', inputId);
+    return null;
+  }
+
+  let colaboradores = [];
+  try {
+    colaboradores = await db.query('collaborators', 'select=id,name,code,setor&active=eq.true&order=name.asc');
+  } catch (err) {
+    console.error('Erro ao carregar colaboradores para o seletor:', err);
+  }
+
+  function renderChip() {
+    if (!chipEl) return;
+    const nome = hiddenEl.value;
+    chipEl.innerHTML = nome
+      ? '<span class="chip-colab">' + nome + '<button type="button" aria-label="Remover">&times;</button></span>'
+      : '';
+  }
+
+  if (chipEl) {
+    chipEl.addEventListener('click', function (e) {
+      if (e.target.closest('button')) {
+        hiddenEl.value = '';
+        inputEl.value = '';
+        renderChip();
+        if (onSelect) onSelect(null);
+      }
+    });
+  }
+
+  inputEl.addEventListener('input', function () {
+    const q = inputEl.value.toLowerCase().trim();
+    hiddenEl.value = '';
+    if (!q) { ddEl.classList.remove('open'); ddEl.innerHTML = ''; return; }
+    const matches = colaboradores.filter(function (c) {
+      return c.name.toLowerCase().indexOf(q) !== -1 || (c.code || '').toLowerCase().indexOf(q) !== -1;
+    }).slice(0, 15);
+    ddEl.innerHTML = matches.length
+      ? matches.map(function (c) {
+          const nomeAttr = c.name.replace(/"/g, '&quot;');
+          return '<div class="tech-option" data-nome="' + nomeAttr + '" data-codigo="' + (c.code || '') + '">' +
+                 c.name + (c.code ? ' (' + c.code + ')' : '') + (c.setor ? ' — ' + c.setor : '') + '</div>';
+        }).join('')
+      : '<div class="tech-option text-muted">Nenhum resultado.</div>';
+    ddEl.classList.add('open');
+  });
+
+  ddEl.addEventListener('click', function (e) {
+    const opt = e.target.closest('.tech-option');
+    if (!opt || !opt.dataset.nome) return;
+    hiddenEl.value = opt.dataset.nome;
+    inputEl.value = opt.dataset.nome;
+    ddEl.classList.remove('open');
+    renderChip();
+    if (onSelect) onSelect({ name: opt.dataset.nome, code: opt.dataset.codigo || null });
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#' + inputId) && !e.target.closest('#' + dropdownId)) {
+      ddEl.classList.remove('open');
+    }
+  });
+
+  return {
+    reset: function () { hiddenEl.value = ''; inputEl.value = ''; renderChip(); },
+    getColaboradores: function () { return colaboradores; },
+    setValor: function (nome) { hiddenEl.value = nome || ''; inputEl.value = nome || ''; renderChip(); }
+  };
+}

@@ -43,7 +43,8 @@
         { label: 'Devoluções',      href: 'ferramentaria/devolucoes.html' },
         { label: 'Danos',           href: 'ferramentaria/danos.html' },
         { label: 'Ferramenteiros',  href: 'ferramentaria/ferramenteiros.html' },
-        { label: 'Relatórios',      href: 'ferramentaria/relatorios.html' }
+        { label: 'Relatórios',      href: 'ferramentaria/relatorios.html' },
+        { label: 'Categorias',      href: 'ferramentaria/categorias.html' }
       ] },
 
     { id: 'gestao', label: 'Gestão & Registos', icon: '&#128203;', href: '#', dev: true }
