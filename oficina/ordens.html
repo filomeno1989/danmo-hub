@@ -4,22 +4,57 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ordens de Serviço — Danmo Oficina</title>
+  
   <link rel="stylesheet" href="../shared/style.css" />
-  <!-- Se ainda usares o oficina.css para outras coisas, podes mantê-lo -->
-  <link rel="stylesheet" href="../shared/oficina.css" />
+  
   <style>
-    /* CSS Específico que não está no style.css global */
-    .nota { font-size: 12px; color: var(--cor-texto-sec); margin-top: 4px; font-style: italic; display: block; }
-    .tipo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-top: 8px; }
-    .tipo-grid label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--cor-texto); }
-    .tipo-grid input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--cor-ambar); cursor: pointer; }
-    
-    .badge-sem-nr { background: rgba(156,163,175,0.15); color: #9ca3af; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
-    .dias-aberta { font-size: 12px; color: var(--cor-erro); font-weight: 700; }
+    /* Ajuste da grelha de filtros para evitar quebrar o ecrã e forçar zoom */
+    .filtros-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
 
+    /* O Look "Profissa" do teu Modal Original restaurado */
+    .modal-os-custom {
+      max-width: 520px !important;
+      border-top: 4px solid var(--cor-ambar) !important;
+    }
+    .modal-os-custom .form-label {
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+      color: var(--cor-texto-sec);
+      margin-bottom: 6px;
+    }
+    .modal-os-custom .nota {
+      font-size: 0.75rem;
+      color: var(--cor-texto-sec);
+      font-style: italic;
+      margin-top: 4px;
+      display: block;
+    }
+    
+    .tipo-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+      gap: 10px; 
+      margin-top: 8px; 
+    }
+    .tipo-grid label { 
+      display: flex; align-items: center; gap: 8px; 
+      font-size: 0.85rem; font-weight: 500; cursor: pointer; color: var(--cor-texto); 
+    }
+    .tipo-grid input[type=checkbox] { 
+      width: 16px; height: 16px; accent-color: var(--cor-ambar); cursor: pointer; 
+    }
+    
     .horimetro-linha { display: flex; gap: 8px; }
     .horimetro-linha input { flex: 1; }
-    .horimetro-linha select { width: 90px; flex-shrink: 0; }
+    .horimetro-linha select { width: 100px; flex-shrink: 0; }
+
+    .badge-sem-nr { background: rgba(156,163,175,0.15); color: #9ca3af; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+    .dias-aberta { font-size: 12px; color: var(--cor-erro); font-weight: 700; }
   </style>
 </head>
 <body>
@@ -31,12 +66,13 @@
         <h1 class="pagina-titulo">Ordens de Serviço</h1>
         <p class="pagina-subtitulo">Acompanhamento de obras abertas e fechadas na oficina</p>
       </div>
-      <button class="btn btn-primario" id="btn-nova-os">+ Nova Obra</button>
+      <!-- Botão devolvido à sua glória original (Âmbar) -->
+      <button class="btn btn-ambar" id="btn-nova-os" style="font-weight: 700;">+ Nova Obra</button>
     </div>
 
     <!-- Filtros de Pesquisa -->
     <div class="card">
-      <div class="form-grid">
+      <div class="filtros-grid">
         <div class="form-grupo">
           <label class="form-label">Estado da Obra</label>
           <select class="form-select" id="filtro-status">
@@ -119,9 +155,9 @@
     </div>
   </main>
 
-  <!-- Modal Nova OS -->
+  <!-- Modal Nova OS (Estilo Original Restaurado) -->
   <div class="modal-fundo" id="modal-nova-os">
-    <div class="modal" style="max-width: 650px;">
+    <div class="modal modal-os-custom">
       <div class="modal-cabecalho">
         <span class="modal-titulo">Nova Ordem de Serviço</span>
         <button type="button" class="modal-fechar" id="btn-fechar-os-x" aria-label="Fechar">&times;</button>
@@ -129,50 +165,49 @@
       
       <form id="form-nova-os">
         <div class="modal-corpo">
+          
           <div class="form-grupo">
             <label class="form-label">Nº Obra (fornecido pela CdM)</label>
             <input class="form-input" type="text" id="f-numero-obra" placeholder="Deixar vazio se ainda não atribuído" />
             <span class="nota">Opcional — pode ser preenchido depois quando a CdM atribuir.</span>
           </div>
 
-          <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-            <div class="form-grupo">
-              <label class="form-label">Equipamento *</label>
-              <select class="form-select" id="f-equipamento" required></select>
-            </div>
-
-            <div class="form-grupo">
-              <label class="form-label">Sector *</label>
-              <select class="form-select" id="f-sector" required>
-                <option value="">— Selecionar —</option>
-                <option value="Elétrica">Elétrica</option>
-                <option value="Mecânica">Mecânica</option>
-                <option value="Serralharia">Serralharia</option>
-                <option value="Pneumática">Pneumática</option>
-                <option value="Lubrificação">Lubrificação</option>
-                <option value="Piquete">Piquete</option>
-                <option value="Máquinas e Ferramentas">Máquinas e Ferramentas</option>
-              </select>
-            </div>
+          <div class="form-grupo" style="margin-top: 16px;">
+            <label class="form-label">Equipamento *</label>
+            <select class="form-select" id="f-equipamento" required></select>
           </div>
 
-          <div class="form-grupo">
+          <div class="form-grupo" style="margin-top: 16px;">
+            <label class="form-label">Sector *</label>
+            <select class="form-select" id="f-sector" required>
+              <option value="">— Selecionar —</option>
+              <option value="Elétrica">Elétrica</option>
+              <option value="Mecânica">Mecânica</option>
+              <option value="Serralharia">Serralharia</option>
+              <option value="Pneumática">Pneumática</option>
+              <option value="Lubrificação">Lubrificação</option>
+              <option value="Piquete">Piquete</option>
+              <option value="Máquinas e Ferramentas">Máquinas e Ferramentas</option>
+            </select>
+          </div>
+
+          <div class="form-grupo" style="margin-top: 16px;">
             <label class="form-label">Contador do Equipamento</label>
             <div class="horimetro-linha">
               <input class="form-input" type="number" id="f-horimetro" min="0" step="0.1" placeholder="Ex: 4521" />
               <select class="form-select" id="f-unidade-medida">
                 <option value="h" selected>Horas (h)</option>
-                <option value="km">Quilómetros (km)</option>
+                <option value="km">Km (km)</option>
               </select>
             </div>
           </div>
 
-          <div class="form-grupo">
+          <div class="form-grupo" style="margin-top: 16px;">
             <label class="form-label">Diagnóstico / Avaria / Motivo de Entrada *</label>
-            <textarea class="form-textarea" id="f-descricao-avaria" required placeholder="Ex: Falha no sistema de marcha, ruído no motor..."></textarea>
+            <textarea class="form-textarea" id="f-descricao-avaria" rows="3" required placeholder="Ex: Falha no sistema de marcha, ruído no motor..."></textarea>
           </div>
 
-          <div class="form-grupo">
+          <div class="form-grupo" style="margin-top: 16px;">
             <label class="form-label">Tipo de Intervenção</label>
             <div class="tipo-grid">
               <label><input type="checkbox" value="Inspeção Geral" /> Inspeção Geral</label>
@@ -187,28 +222,25 @@
             </div>
           </div>
 
-          <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-            <div class="form-grupo">
-              <label class="form-label">Estado Físico *</label>
-              <select class="form-select" id="f-status-fisico" required>
-                <option value="">— Selecionar —</option>
-                <option value="Avariada">Avariada</option>
-                <option value="Acidentada">Acidentada</option>
-                <option value="Pneumático">Pneumático</option>
-                <option value="Revisão/Manutenção">Revisão/Manutenção</option>
-                <option value="Inspeção">Inspeção</option>
-                <option value="Aguarda Acessório">Aguarda Acessório</option>
-              </select>
-            </div>
-
-            <div class="form-grupo">
-              <label class="form-label">Data de Abertura *</label>
-              <input class="form-input" type="date" id="f-data-abertura" required />
-            </div>
+          <div class="form-grupo" style="margin-top: 16px;">
+            <label class="form-label">Estado Físico *</label>
+            <select class="form-select" id="f-status-fisico" required>
+              <option value="">— Selecionar —</option>
+              <option value="Avariada">Avariada</option>
+              <option value="Acidentada">Acidentada</option>
+              <option value="Pneumático">Pneumático</option>
+              <option value="Revisão/Manutenção">Revisão/Manutenção</option>
+              <option value="Inspeção">Inspeção</option>
+              <option value="Aguarda Acessório">Aguarda Acessório</option>
+            </select>
           </div>
 
-          <!-- Componente de Colaboradores herdado do style.css -->
-          <div class="form-grupo">
+          <div class="form-grupo" style="margin-top: 16px;">
+            <label class="form-label">Data de Abertura *</label>
+            <input class="form-input" type="date" id="f-data-abertura" required />
+          </div>
+
+          <div class="form-grupo" style="margin-top: 16px;">
             <label class="form-label">Aberto por</label>
             <div class="tech-search-wrap">
               <input class="form-input" type="text" id="ab-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
@@ -218,7 +250,7 @@
             <span class="nota">Podes selecionar mais de um colaborador.</span>
           </div>
 
-          <div class="form-grupo">
+          <div class="form-grupo" style="margin-top: 16px;">
             <label class="form-label">Observações</label>
             <textarea class="form-textarea" id="f-observacoes" rows="2"></textarea>
           </div>
@@ -304,7 +336,6 @@
     });
     
     function renderChipsAbertoPor() {
-      // Usamos a classe chip-colab do style.css
       document.getElementById('ab-chips').innerHTML = selecionadosAbertoPor.map(c =>
         `<span class="chip-colab">${c.name}${c.code?' ('+c.code+')':''}<button type="button" data-id="${c.id}">&times;</button></span>`
       ).join('');
