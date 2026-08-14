@@ -33,7 +33,16 @@
 
     { id: 'stock', label: 'Gestão de Stock', icon: '&#128230;', href: 'stock/index.html', pasta: 'stock' },
 
-    { id: 'hst', label: 'Portal HST', icon: '&#9888;', href: 'hst/index.html', pasta: 'hst' },
+    { id: 'hst', label: 'Portal HST', icon: '&#9888;', pasta: 'hst',
+      sub: [
+        { label: 'Painel',            href: 'hst/dashboard.html' },
+        { label: 'Acidentes',         href: 'hst/acidentes.html' },
+        { label: 'Areas de Risco',    href: 'hst/areas_risco.html' },
+        { label: 'EPIs',              href: 'hst/epis.html' },
+        { label: 'Tensao Arterial',   href: 'hst/tensao.html' },
+        { label: 'Relatorios',        href: 'hst/relatorios.html' },
+        { label: 'Configuracao',      href: 'hst/config.html' }
+      ] },
 
     { id: 'ferramentaria', label: 'Ferramentaria', icon: '&#128295;', pasta: 'ferramentaria',
       sub: [
