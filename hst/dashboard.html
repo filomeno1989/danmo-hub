@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel HST — Danmo Hub</title>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <style>
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .kpi-card { cursor: pointer; transition: transform var(--transicao), box-shadow var(--transicao); }
+    .kpi-card:hover { transform: translateY(-4px); box-shadow: var(--sombra-md); }
+    .kpi-card.kpi-erro { border-bottom: 4px solid var(--cor-erro); }
+    .kpi-card.kpi-aviso { border-bottom: 4px solid var(--cor-aviso); }
+    .kpi-card.kpi-info { border-bottom: 4px solid var(--cor-info); }
+    .kpi-card.kpi-sucesso { border-bottom: 4px solid var(--cor-sucesso); }
+
+    .seccao-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 28px; }
+    @media (max-width: 768px) { .seccao-grid { grid-template-columns: 1fr; } }
+
+    .bar-chart-row { display: flex; align-items: center; margin-bottom: 10px; }
+    .bar-chart-label { width: 140px; font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 10px; color: var(--cor-texto-sec); }
+    .bar-chart-track { flex: 1; background: var(--cor-fundo); border-radius: 4px; height: 14px; overflow: hidden; }
+    .bar-chart-fill { height: 100%; border-radius: 4px; transition: width 1s ease-out; background: var(--cor-info); }
+    .bar-chart-fill.fill-erro { background: var(--cor-erro); }
+    .bar-chart-fill.fill-aviso { background: var(--cor-aviso); }
+    .bar-chart-fill.fill-sucesso { background: var(--cor-sucesso); }
+    .bar-chart-value { margin-left: 10px; font-size: 0.82rem; font-weight: bold; width: 32px; text-align: right; }
+
+    .alerta-linha { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: var(--raio-sm); margin-bottom: 8px; border-left: 4px solid; }
+    .alerta-erro { background: var(--cor-erro-bg); border-left-color: var(--cor-erro); }
+    .alerta-aviso { background: var(--cor-aviso-bg); border-left-color: var(--cor-aviso); }
+    .alerta-sucesso { background: var(--cor-sucesso-bg); border-left-color: var(--cor-sucesso); }
+    .alerta-texto { font-size: 0.85rem; color: var(--cor-texto); flex: 1; }
+    .alerta-badge { font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+
+    .classificacao-tensao { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+    .tensao-normal { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+    .tensao-limitrofe { background: var(--cor-aviso-bg); color: var(--cor-aviso); }
+    .tensao-alta { background: var(--cor-erro-bg); color: var(--cor-erro); }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <h1 class="pagina-titulo">Painel HST</h1>
+    <p class="pagina-subtitulo">Higiene e Seguranca do Trabalho — Visao Geral</p>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-erro" onclick="location.href='acidentes.html'">
+        <div class="kpi-icone">&#9888;</div>
+        <div class="kpi-valor" id="kpi-acidentes"><div class="spinner" style="width:20px;height:20px;"></div></div>
+        <div class="kpi-label">Acidentes Este Mes</div>
+      </div>
+      <div class="kpi-card kpi-aviso" onclick="location.href='acidentes.html'">
+        <div class="kpi-icone">&#128680;</div>
+        <div class="kpi-valor" id="kpi-pendentes"><div class="spinner" style="width:20px;height:20px;"></div></div>
+        <div class="kpi-label">Em Investigacao</div>
+      </div>
+      <div class="kpi-card kpi-info" onclick="location.href='epis.html'">
+        <div class="kpi-icone">&#128083;</div>
+        <div class="kpi-valor" id="kpi-epis"><div class="spinner" style="width:20px;height:20px;"></div></div>
+        <div class="kpi-label">Entregas de EPIs (Mes)</div>
+      </div>
+      <div class="kpi-card kpi-sucesso" onclick="location.href='tensao.html'">
+        <div class="kpi-icone">&#10084;</div>
+        <div class="kpi-valor" id="kpi-tensao"><div class="spinner" style="width:20px;height:20px;"></div></div>
+        <div class="kpi-label">Medicoes Tensao (Mes)</div>
+      </div>
+      <div class="kpi-card" onclick="location.href='areas_risco.html'">
+        <div class="kpi-icone">&#9873;</div>
+        <div class="kpi-valor" id="kpi-areas"><div class="spinner" style="width:20px;height:20px;"></div></div>
+        <div class="kpi-label">Areas de Risco</div>
+      </div>
+      <div class="kpi-card" onclick="location.href='epis.html'">
+        <div class="kpi-icone">&#127891;</div>
+        <div class="kpi-valor" id="kpi-colabs-tensao"><div class="spinner" style="width:20px;height:20px;"></div></div>
+        <div class="kpi-label">Colaboradores com Tensao Alta</div>
+      </div>
+    </div>
+
+    <!-- Alertas -->
+    <div class="card">
+      <h2 style="font-size:1rem;margin-bottom:14px;border-bottom:1px solid var(--cor-borda);padding-bottom:8px;">Alertas</h2>
+      <div id="alertas-container"><div class="spinner" style="padding:20px;text-align:center;">A verificar alertas...</div></div>
+    </div>
+
+    <!-- Graficos -->
+    <div class="seccao-grid">
+      <div class="card" style="margin-bottom:0;">
+        <h2 style="font-size:1rem;margin-bottom:14px;border-bottom:1px solid var(--cor-borda);padding-bottom:8px;">Acidentes por Tipo</h2>
+        <div id="chart-tipo-container"><div class="spinner" style="padding:20px;text-align:center;">A processar...</div></div>
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <h2 style="font-size:1rem;margin-bottom:14px;border-bottom:1px solid var(--cor-borda);padding-bottom:8px;">Areas por Nivel de Risco</h2>
+        <div id="chart-areas-container"><div class="spinner" style="padding:20px;text-align:center;">A processar...</div></div>
+      </div>
+    </div>
+
+    <!-- Ultimas Medicoes de Tensao -->
+    <div class="card" style="margin-top:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h2 style="font-size:1rem;margin:0;border-bottom:none;padding:0;">Ultimas Medicoes de Tensao</h2>
+        <a href="tensao.html" class="btn btn-secundario btn-sm">Ver Todas</a>
+      </div>
+      <div class="tabela-container">
+        <div id="tensao-loading" class="spinner" style="padding:20px;text-align:center;">A carregar...</div>
+        <div id="tensao-empty" class="tabela-vazia" style="display:none;">Sem medicoes registadas.</div>
+        <table class="tabela" id="tabela-tensao" style="display:none;">
+          <thead>
+            <tr><th>Colaborador</th><th>Data</th><th>Tensao</th><th>FC</th><th>Classificacao</th></tr>
+          </thead>
+          <tbody id="tensao-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+  /* === Classificacao de Tensao Arterial (OMS) === */
+  function classificarTensao(sys, dia) {
+    if (sys < 120 && dia < 80) return { texto: 'Otima', cls: 'tensao-normal' };
+    if (sys < 130 && dia < 80) return { texto: 'Normal', cls: 'tensao-normal' };
+    if (sys < 140 || dia < 90) return { texto: 'Limitrofe', cls: 'tensao-limitrofe' };
+    if (sys < 160 || dia < 100) return { texto: 'HTA Grau 1', cls: 'tensao-alta' };
+    if (sys < 180 || dia < 110) return { texto: 'HTA Grau 2', cls: 'tensao-alta' };
+    return { texto: 'HTA Grau 3', cls: 'tensao-alta' };
+  }
+
+  /* === Bar Chart HTML puro === */
+  function renderBar(containerId, data, colorClass) {
+    var c = document.getElementById(containerId);
+    if (!data.length) { c.innerHTML = '<div class="tabela-vazia">Sem dados.</div>'; return; }
+    var max = data[0].count;
+    var html = '';
+    data.forEach(function(item) {
+      var pct = max > 0 ? (item.count / max) * 100 : 0;
+      html += '<div class="bar-chart-row">' +
+        '<div class="bar-chart-label" title="' + escaparHTML(item.label) + '">' + escaparHTML(item.label) + '</div>' +
+        '<div class="bar-chart-track"><div class="bar-chart-fill ' + (colorClass || '') + '" style="width:' + pct + '%;"></div></div>' +
+        '<div class="bar-chart-value">' + item.count + '</div></div>';
+    });
+    c.innerHTML = html;
+  }
+
+  /* === Mes actual (YYYY-MM) === */
+  function mesAtual() {
+    var a = new Date();
+    return a.getFullYear() + '-' + String(a.getMonth() + 1).padStart(2, '0');
+  }
+
+  /* === INIT === */
+  (async function init() {
+    var mes = mesAtual();
+    var resultados = await Promise.allSettled([
+      db.query('hst_acidentes', 'select=*&order=data_hora.desc&limit=500'),
+      db.query('hst_epi_entregas', 'select=*&order=data_entrega.desc&limit=2000'),
+      db.query('hst_medicoes_tensao', 'select=*&order=data_medicao.desc&limit=2000'),
+      db.query('hst_acoes_corretivas', 'select=*&limit=500'),
+      db.query('hst_areas_risco', 'select=*&order=created_at.desc')
+    ]);
+
+    var acidentes = resultados[0].status === 'fulfilled' ? resultados[0].value : [];
+    var entregas = resultados[1].status === 'fulfilled' ? resultados[1].value : [];
+    var medicoes = resultados[2].status === 'fulfilled' ? resultados[2].value : [];
+    var acoes = resultados[3].status === 'fulfilled' ? resultados[3].value : [];
+    var areas = resultados[4].status === 'fulfilled' ? resultados[4].value : [];
+
+    /* --- KPIs --- */
+    var accMes = acidentes.filter(function(a) { return a.data_hora && a.data_hora.startsWith(mes); });
+    document.getElementById('kpi-acidentes').textContent = accMes.length;
+
+    var pendentes = acidentes.filter(function(a) { return a.status === 'Em Investigacao'; });
+    document.getElementById('kpi-pendentes').textContent = pendentes.length;
+
+    var epiMes = entregas.filter(function(e) { return e.data_entrega && e.data_entrega.startsWith(mes); });
+    document.getElementById('kpi-epis').textContent = epiMes.length;
+
+    var tensaoMes = medicoes.filter(function(m) { return m.data_medicao && m.data_medicao.startsWith(mes); });
+    document.getElementById('kpi-tensao').textContent = tensaoMes.length;
+
+    var areasAtivas = areas.filter(function(a) { return a.ativo !== false; });
+    document.getElementById('kpi-areas').textContent = areasAtivas.length;
+
+    /* Colaboradores com ultima medicao alta (HTA) */
+    var colabUltima = {};
+    medicoes.forEach(function(m) {
+      if (!colabUltima[m.colaborador_nome] || m.data_medicao > colabUltima[m.colaborador_nome].data_medicao) {
+        colabUltima[m.colaborador_nome] = m;
+      }
+    });
+    var altaCount = Object.values(colabUltima).filter(function(m) {
+      return classificarTensao(m.sistolica, m.diastolica).texto.indexOf('HTA') !== -1;
+    }).length;
+    document.getElementById('kpi-colabs-tensao').textContent = altaCount;
+
+    /* --- Alertas --- */
+    var alertasHtml = '';
+    if (altaCount > 0) {
+      alertasHtml += '<div class="alerta-linha alerta-erro"><span class="alerta-texto">' + altaCount + ' colaborador(es) com tensao alta (HTA) na ultima medicao</span><span class="alerta-badge badge-erro">URGENTE</span></div>';
+    }
+    var acoesAtrasadas = acoes.filter(function(a) { return a.status !== 'Concluida' && a.prazo && new Date(a.prazo) < new Date(); });
+    if (acoesAtrasadas.length > 0) {
+      alertasHtml += '<div class="alerta-linha alerta-aviso"><span class="alerta-texto">' + acoesAtrasadas.length + ' accao(oes) correctiva(s) com prazo ultrapassado</span><span class="alerta-badge badge-aviso">ATRASADA</span></div>';
+    }
+    var critAreas = areasAtivas.filter(function(a) { return a.nivel_risco === 'Critico'; });
+    if (critAreas.length > 0) {
+      alertasHtml += '<div class="alerta-linha alerta-aviso"><span class="alerta-texto">' + critAreas.length + ' area(s) de risco critico activa(s)</span><span class="alerta-badge badge-aviso">ATENCAO</span></div>';
+    }
+    if (!alertasHtml) {
+      alertasHtml = '<div class="alerta-linha alerta-sucesso"><span class="alerta-texto">Sem alertas activos. Tudo em ordem.</span><span class="alerta-badge badge-sucesso">OK</span></div>';
+    }
+    document.getElementById('alertas-container').innerHTML = alertasHtml;
+
+    /* --- Grafico: Acidentes por Tipo --- */
+    var tipoCount = {};
+    acidentes.forEach(function(a) { tipoCount[a.tipo_ocorrencia] = (tipoCount[a.tipo_ocorrencia] || 0) + 1; });
+    var tipoData = Object.keys(tipoCount).map(function(k) {
+      return { label: k.replace('Acidente ', 'Acc. '), count: tipoCount[k] };
+    }).sort(function(a, b) { return b.count - a.count; });
+    renderBar('chart-tipo-container', tipoData, 'fill-erro');
+
+    /* --- Grafico: Areas por Nivel --- */
+    var nivelLabels = { 'Baixo': 'Baixo', 'Medio': 'Medio', 'Alto': 'Alto', 'Critico': 'Critico' };
+    var nivelCores = { 'Baixo': 'fill-sucesso', 'Medio': 'fill-aviso', 'Alto': 'fill-aviso', 'Critico': 'fill-erro' };
+    var nivelCount = {};
+    areasAtivas.forEach(function(a) { nivelCount[a.nivel_risco] = (nivelCount[a.nivel_risco] || 0) + 1; });
+    var nivelData = Object.keys(nivelCount).map(function(k) {
+      return { label: nivelLabels[k] || k, count: nivelCount[k], cor: nivelCores[k] || '' };
+    }).sort(function(a, b) { return b.count - a.count; });
+    var c2 = document.getElementById('chart-areas-container');
+    if (!nivelData.length) { c2.innerHTML = '<div class="tabela-vazia">Sem areas registadas.</div>'; }
+    else {
+      var maxN = nivelData[0].count;
+      var h2 = '';
+      nivelData.forEach(function(item) {
+        var pct = maxN > 0 ? (item.count / maxN) * 100 : 0;
+        h2 += '<div class="bar-chart-row"><div class="bar-chart-label">' + escaparHTML(item.label) + '</div><div class="bar-chart-track"><div class="bar-chart-fill ' + item.cor + '" style="width:' + pct + '%;"></div></div><div class="bar-chart-value">' + item.count + '</div></div>';
+      });
+      c2.innerHTML = h2;
+    }
+
+    /* --- Tabela: Ultimas Medicoes Tensao --- */
+    document.getElementById('tensao-loading').style.display = 'none';
+    var ultimas = medicoes.slice(0, 10);
+    if (!ultimas.length) {
+      document.getElementById('tensao-empty').style.display = 'block';
+    } else {
+      var tbody = document.getElementById('tensao-tbody');
+      document.getElementById('tabela-tensao').style.display = 'table';
+      ultimas.forEach(function(m) {
+        var cla = classificarTensao(m.sistolica, m.diastolica);
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td><a href="tensao_colaborador.html?colab=' + encodeURIComponent(m.colaborador_nome) + '" style="font-weight:600;">' + escaparHTML(m.colaborador_nome) + '</a></td>' +
+          '<td>' + formataData(m.data_medicao, true) + '</td>' +
+          '<td style="font-weight:700;">' + m.sistolica + '/' + m.diastolica + '</td>' +
+          '<td>' + (m.frequencia_cardiaca || '—') + '</td>' +
+          '<td><span class="classificacao-tensao ' + cla.cls + '">' + cla.texto + '</span></td>';
+        tbody.appendChild(tr);
+      });
+    }
+  })();
+  </script>
+</body>
+</html>

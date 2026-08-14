@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acidentes — HST — Danmo Hub</title>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <style>
+    .filtro-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+    .filtro-bar input, .filtro-bar select { padding: 8px 12px; border: 1px solid var(--cor-borda); border-radius: var(--raio-md); background: var(--cor-superficie); color: var(--cor-texto); font-family: var(--fonte-principal); font-size: 0.85rem; }
+    .filtro-bar input:focus, .filtro-bar select:focus { outline: none; border-color: var(--cor-ambar); }
+    .filtro-bar input { flex: 1; min-width: 180px; }
+
+    .causa-box { padding: 12px; border-radius: var(--raio-sm); margin-bottom: 8px; border-left: 4px solid; }
+    .causa-humano { background: var(--cor-aviso-bg); border-left-color: var(--cor-aviso); }
+    .causa-ambiental { background: var(--cor-info-bg); border-left-color: var(--cor-info); }
+    .causa-equip { background: var(--cor-erro-bg); border-left-color: var(--cor-erro); }
+
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--cor-borda); padding-bottom: 0; }
+    .tab-btn { padding: 10px 20px; border: none; background: transparent; color: var(--cor-texto-sec); font-family: var(--fonte-principal); font-size: 0.9rem; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all var(--transicao); }
+    .tab-btn.ativo { color: var(--cor-ambar); border-bottom-color: var(--cor-ambar); }
+    .tab-btn:hover { color: var(--cor-texto); }
+    .tab-conteudo { display: none; }
+    .tab-conteudo.ativo { display: block; }
+
+    .accao-card { background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio-md); padding: 14px; margin-bottom: 10px; display: flex; gap: 14px; align-items: flex-start; }
+    .accao-status { padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; margin-top: 2px; }
+    .accao-corpo { flex: 1; }
+    .accao-corpo strong { display: block; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+      <div>
+        <h1 class="pagina-titulo" style="margin-bottom:2px;">Acidentes e Incidentes</h1>
+        <p class="pagina-subtitulo" style="margin-bottom:0;">Registo, investigacao e accoes correctivas</p>
+      </div>
+      <button class="btn btn-ambar" onclick="abrirModal('modal-novo')">+ Novo Acidente</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+      <button class="tab-btn ativo" data-tab="tab-acidentes">Acidentes</button>
+      <button class="tab-btn" data-tab="tab-acoes">Accoes Correctivas</button>
+    </div>
+
+    <!-- TAB: Acidentes -->
+    <div class="tab-conteudo ativo" id="tab-acidentes">
+      <div class="filtro-bar">
+        <input type="text" id="filtro-pesquisa" placeholder="Pesquisar por numero, colaborador..." />
+        <select id="filtro-status">
+          <option value="">Todos os Status</option>
+          <option value="Em Investigacao">Em Investigacao</option>
+          <option value="Investigado">Investigado</option>
+          <option value="Encerrado">Encerrado</option>
+        </select>
+        <select id="filtro-tipo">
+          <option value="">Todos os Tipos</option>
+          <option value="Acidente com Afastamento">Com Afastamento</option>
+          <option value="Acidente sem Afastamento">Sem Afastamento</option>
+          <option value="Incidente">Incidente</option>
+          <option value="Doenca Ocupacional">Doenca Ocupacional</option>
+        </select>
+      </div>
+      <div class="tabela-container">
+        <div id="acc-loading" class="spinner" style="padding:32px;text-align:center;">A carregar acidentes...</div>
+        <div id="acc-empty" class="tabela-vazia" style="display:none;">Nenhum acidente registado.</div>
+        <table class="tabela" id="tabela-acc" style="display:none;">
+          <thead>
+            <tr><th>Numero</th><th>Data</th><th>Colaborador</th><th>Tipo</th><th>Status</th><th>Dias Afast.</th><th>Accoes</th></tr>
+          </thead>
+          <tbody id="acc-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: Accoes Correctivas -->
+    <div class="tab-conteudo" id="tab-acoes">
+      <div class="filtro-bar">
+        <select id="filtro-acao-status">
+          <option value="">Todas</option>
+          <option value="Pendente">Pendentes</option>
+          <option value="Em Andamento">Em Andamento</option>
+          <option value="Concluida">Concluidas</option>
+        </select>
+      </div>
+      <div id="acoes-loading" class="spinner" style="padding:32px;text-align:center;">A carregar...</div>
+      <div id="acoes-container"></div>
+    </div>
+  </main>
+
+  <!-- Modal: Novo Acidente -->
+  <div class="modal-fundo" id="modal-novo">
+    <div class="modal" style="max-width:640px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo">Registar Acidente / Incidente</span>
+        <button class="modal-fechar" onclick="fecharModal('modal-novo')">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="form-grid">
+          <div class="form-grupo">
+            <label class="form-label">Colaborador *</label>
+            <input class="form-input" id="f-colab" list="lista-colabs" required placeholder="Nome do colaborador" />
+            <datalist id="lista-colabs"></datalist>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Data / Hora *</label>
+            <input class="form-input" type="datetime-local" id="f-data" required />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Tipo de Ocorrencia *</label>
+            <select class="form-select" id="f-tipo" required>
+              <option value="">Selecione...</option>
+              <option>Acidente com Afastamento</option>
+              <option>Acidente sem Afastamento</option>
+              <option>Incidente</option>
+              <option>Doenca Ocupacional</option>
+            </select>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Area de Risco</label>
+            <select class="form-select" id="f-area"><option value="">Nenhuma</option></select>
+          </div>
+          <div class="form-grupo" style="display:flex;align-items:flex-end;">
+            <a href="areas_risco.html" target="_blank" style="font-size:0.8rem;color:var(--cor-ambar);text-decoration:none;">&#9873; Gerir Areas de Risco</a>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Tipo de Lesao</label>
+            <input class="form-input" id="f-lesao" placeholder="Corte, queimadura, queda..." />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Parte do Corpo</label>
+            <input class="form-input" id="f-parte" placeholder="Mao direita, braco esquerdo..." />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Dias de Afastamento</label>
+            <input class="form-input" type="number" id="f-dias" min="0" value="0" />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Gerou Atestado?</label>
+            <select class="form-select" id="f-atestado">
+              <option value="false">Nao</option>
+              <option value="true">Sim</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grupo" id="grupo-num-atestado" style="display:none;">
+          <label class="form-label">Numero do Atestado</label>
+          <input class="form-input" id="f-num-atestado" placeholder="Numero do atestado medico" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Testemunhas</label>
+          <input class="form-input" id="f-testemunhas" placeholder="Nomes separados por virgula" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Descricao *</label>
+          <textarea class="form-textarea" id="f-desc" rows="3" required placeholder="Descreva o que aconteceu..."></textarea>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--cor-borda);margin:16px 0;">
+        <p class="form-label" style="margin-bottom:12px;">Analise de Causa Raiz (preencher apos investigacao)</p>
+        <div class="form-grupo">
+          <label class="form-label">Causa Raiz</label>
+          <textarea class="form-textarea" id="f-causa" rows="2" placeholder="Causa principal identificada..."></textarea>
+        </div>
+        <div class="form-grid">
+          <div class="form-grupo">
+            <label class="form-label">Fator Humano</label>
+            <textarea class="form-textarea" id="f-fh" rows="2" placeholder="Ex: Falta de atencao, nao usou EPI..."></textarea>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Fator Ambiental</label>
+            <textarea class="form-textarea" id="f-fa" rows="2" placeholder="Ex: Chao escorregadio, pouca iluminacao..."></textarea>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Fator Equipamento</label>
+            <textarea class="form-textarea" id="f-fe" rows="2" placeholder="Ex: Ferramenta defeituosa, sem protecao..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" onclick="fecharModal('modal-novo')">Cancelar</button>
+        <button class="btn btn-ambar" id="btn-salvar-acc" onclick="salvarAcidente()">Registar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ver Detalhes -->
+  <div class="modal-fundo" id="modal-detalhe">
+    <div class="modal" style="max-width:700px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="det-titulo">Detalhes</span>
+        <button class="modal-fechar" onclick="fecharModal('modal-detalhe')">&times;</button>
+      </div>
+      <div class="modal-corpo" id="det-corpo"></div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" onclick="fecharModal('modal-detalhe')">Fechar</button>
+        <button class="btn btn-verde" id="btn-gerar-rel" onclick="gerarRelatorio()">Gerar Relatorio</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Nova Accao Correctiva -->
+  <div class="modal-fundo" id="modal-accao">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo">Nova Accao Correctiva</span>
+        <button class="modal-fechar" onclick="fecharModal('modal-accao')">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <input type="hidden" id="ac-acidente-id" />
+        <div class="form-grupo">
+          <label class="form-label">Accao *</label>
+          <textarea class="form-textarea" id="ac-desc" rows="3" required placeholder="O que deve ser feito..."></textarea>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Responsavel *</label>
+          <input class="form-input" id="ac-resp" required placeholder="Nome do responsavel" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Prazo *</label>
+          <input class="form-input" type="date" id="ac-prazo" required />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Observacoes</label>
+          <textarea class="form-textarea" id="ac-obs" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" onclick="fecharModal('modal-accao')">Cancelar</button>
+        <button class="btn btn-ambar" onclick="salvarAccao()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+  var todosAcidentes = [], todasAcoes = [], accDetalheId = null;
+
+  /* === Tabs === */
+  document.querySelector('.tab-bar').addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('ativo'); });
+    document.querySelectorAll('.tab-conteudo').forEach(function(c) { c.classList.remove('ativo'); });
+    btn.classList.add('ativo');
+    document.getElementById(btn.dataset.tab).classList.add('ativo');
+  });
+
+  /* === Atestado toggle === */
+  document.getElementById('f-atestado').addEventListener('change', function() {
+    document.getElementById('grupo-num-atestado').style.display = this.value === 'true' ? 'block' : 'none';
+  });
+
+  /* === Gerar numero do relatorio === */
+  async function gerarNumero() {
+    var ano = new Date().getFullYear();
+    var prefixo = 'DAN-HST-' + ano + '-';
+    var existentes = await db.query('hst_acidentes', 'select=numero&numero=like.' + prefixo + '*');
+    var maxNum = 0;
+    existentes.forEach(function(a) {
+      var n = parseInt((a.numero || '').replace(prefixo, ''), 10);
+      if (n > maxNum) maxNum = n;
+    });
+    return prefixo + String(maxNum + 1).padStart(3, '0');
+  }
+
+  /* === Carregar colaboradores para datalist === */
+  async function carregarColabs() {
+    try {
+      var colabs = await db.get('collaborators', { active: true });
+      var dl = document.getElementById('lista-colabs');
+      colabs.forEach(function(c) {
+        var opt = document.createElement('option');
+        opt.value = c.name || c.nome || '';
+        dl.appendChild(opt);
+      });
+    } catch(e) { console.warn('Nao foi possivel carregar colaboradores:', e); }
+  }
+
+  /* === Carregar areas de risco para select === */
+  async function carregarAreas() {
+    try {
+      var areas = await db.get('hst_areas_risco', { ativo: true });
+      var sel = document.getElementById('f-area');
+      areas.forEach(function(a) {
+        var opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = a.nome + ' [' + a.nivel_risco + ']';
+        sel.appendChild(opt);
+      });
+    } catch(e) { console.warn('Erro areas:', e); }
+  }
+
+  /* === Badge de status === */
+  function badgeStatus(s) {
+    var m = { 'Em Investigacao': 'aviso', 'Investigado': 'info', 'Encerrado': 'sucesso' };
+    return '<span class="badge badge-' + (m[s] || 'secundario') + '">' + (s || '—') + '</span>';
+  }
+  function badgeAcaoStatus(s) {
+    var m = { 'Pendente': 'aviso', 'Em Andamento': 'info', 'Concluida': 'sucesso' };
+    return '<span class="badge badge-' + (m[s] || 'secundario') + '">' + (s || '—') + '</span>';
+  }
+  function badgeTipo(t) {
+    var m = { 'Acidente com Afastamento': 'erro', 'Acidente sem Afastamento': 'aviso', 'Incidente': 'info', 'Doenca Ocupacional': 'secundario' };
+    return '<span class="badge badge-' + (m[t] || 'secundario') + '">' + (t || '—') + '</span>';
+  }
+
+  /* === Render tabela === */
+  function renderAcidentes(lista) {
+    document.getElementById('acc-loading').style.display = 'none';
+    if (!lista.length) { document.getElementById('acc-empty').style.display = 'block'; document.getElementById('tabela-acc').style.display = 'none'; return; }
+    document.getElementById('acc-empty').style.display = 'none';
+    document.getElementById('tabela-acc').style.display = 'table';
+    var tbody = document.getElementById('acc-tbody');
+    tbody.innerHTML = '';
+    lista.forEach(function(a) {
+      var nAcoes = todasAcoes.filter(function(ac) { return ac.acidente_id === a.id; }).length;
+      var tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      tr.innerHTML =
+        '<td style="font-weight:700;">' + (a.numero || '—') + '</td>' +
+        '<td>' + formataData(a.data_hora, true) + '</td>' +
+        '<td>' + escaparHTML(a.colaborador_nome) + '</td>' +
+        '<td>' + badgeTipo(a.tipo_ocorrencia) + '</td>' +
+        '<td>' + badgeStatus(a.status) + '</td>' +
+        '<td>' + (a.dias_afastamento || 0) + '</td>' +
+        '<td><span style="color:var(--cor-info);">' + nAcoes + ' accao(oes)</span></td>';
+      tr.addEventListener('click', function() { verDetalhe(a); });
+      tbody.appendChild(tr);
+    });
+  }
+
+  /* === Filtrar === */
+  function filtrar() {
+    var pesq = (document.getElementById('filtro-pesquisa').value || '').toLowerCase();
+    var status = document.getElementById('filtro-status').value;
+    var tipo = document.getElementById('filtro-tipo').value;
+    var filtrados = todosAcidentes.filter(function(a) {
+      if (pesq && (a.numero || '').toLowerCase().indexOf(pesq) === -1 && (a.colaborador_nome || '').toLowerCase().indexOf(pesq) === -1) return false;
+      if (status && a.status !== status) return false;
+      if (tipo && a.tipo_ocorrencia !== tipo) return false;
+      return true;
+    });
+    renderAcidentes(filtrados);
+  }
+  document.getElementById('filtro-pesquisa').addEventListener('input', debounce(filtrar, 300));
+  document.getElementById('filtro-status').addEventListener('change', filtrar);
+  document.getElementById('filtro-tipo').addEventListener('change', filtrar);
+
+  /* === Ver detalhe === */
+  function verDetalhe(a) {
+    accDetalheId = a.id;
+    document.getElementById('det-titulo').textContent = a.numero + ' — ' + a.colaborador_nome;
+    var area = a.area_risco_nome || '—';
+    var html =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">' +
+        '<div><strong>Data/Hora:</strong> ' + formataData(a.data_hora, true) + '</div>' +
+        '<div><strong>Tipo:</strong> ' + badgeTipo(a.tipo_ocorrencia) + '</div>' +
+        '<div><strong>Status:</strong> ' + badgeStatus(a.status) + '</div>' +
+        '<div><strong>Area:</strong> ' + escaparHTML(area) + '</div>' +
+        '<div><strong>Lesao:</strong> ' + (a.tipo_lesao || '—') + '</div>' +
+        '<div><strong>Parte do Corpo:</strong> ' + (a.parte_corpo || '—') + '</div>' +
+        '<div><strong>Dias Afastamento:</strong> ' + (a.dias_afastamento || 0) + '</div>' +
+        '<div><strong>Atestado:</strong> ' + (a.gerou_atestado ? 'Sim — ' + (a.numero_atestado || '') : 'Nao') + '</div>' +
+      '</div>' +
+      '<p style="margin-bottom:8px;"><strong>Descricao:</strong></p><p style="margin-bottom:16px;color:var(--cor-texto-sec);">' + escaparHTML(a.descricao) + '</p>' +
+      (a.testemunhas ? '<p style="margin-bottom:16px;"><strong>Testemunhas:</strong> ' + escaparHTML(a.testemunhas) + '</p>' : '');
+
+    if (a.causa_raiz || a.fator_humano || a.fator_ambiental || a.fator_equipamento) {
+      html += '<hr style="border:none;border-top:1px solid var(--cor-borda);margin:12px 0;">';
+      html += '<p style="font-weight:700;margin-bottom:8px;">Analise de Causa Raiz</p>';
+      if (a.causa_raiz) html += '<p style="margin-bottom:8px;"><strong>Causa:</strong> ' + escaparHTML(a.causa_raiz) + '</p>';
+      if (a.fator_humano) html += '<div class="causa-box causa-humano"><strong>Fator Humano:</strong> ' + escaparHTML(a.fator_humano) + '</div>';
+      if (a.fator_ambiental) html += '<div class="causa-box causa-ambiental"><strong>Fator Ambiental:</strong> ' + escaparHTML(a.fator_ambiental) + '</div>';
+      if (a.fator_equipamento) html += '<div class="causa-box causa-equip"><strong>Fator Equipamento:</strong> ' + escaparHTML(a.fator_equipamento) + '</div>';
+    }
+
+    var acoesAcc = todasAcoes.filter(function(ac) { return ac.acidente_id === a.id; });
+    if (acoesAcc.length) {
+      html += '<hr style="border:none;border-top:1px solid var(--cor-borda);margin:16px 0;">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><strong>Accoes Correctivas (' + acoesAcc.length + ')</strong><button class="btn btn-ambar btn-sm" onclick="abrirModalAccao(' + a.id + ')">+ Adicionar</button></div>';
+      acoesAcc.forEach(function(ac) {
+        var atrasada = ac.status !== 'Concluida' && ac.prazo && new Date(ac.prazo) < new Date();
+        html += '<div class="accao-card" style="' + (atrasada ? 'border-color:var(--cor-erro);' : '') + '">' +
+          '<span class="accao-status ' + (atrasada ? 'badge-erro' : '') + '">' + badgeAcaoStatus(ac.status) + '</span>' +
+          '<div class="accao-corpo">' +
+            '<strong>' + escaparHTML(ac.descricao_acao) + '</strong>' +
+            '<div style="font-size:0.82rem;color:var(--cor-texto-sec);">Responsavel: ' + escaparHTML(ac.responsavel) + ' | Prazo: ' + formataData(ac.prazo) + (atrasada ? ' <span style="color:var(--cor-erro);font-weight:700;">ATRASADA</span>' : '') + '</div>' +
+            (ac.observacoes ? '<div style="font-size:0.82rem;margin-top:4px;">' + escaparHTML(ac.observacoes) + '</div>' : '') +
+          '</div>' +
+          '<select class="form-select" style="width:auto;min-width:130px;" onchange="mudarStatusAccao(' + ac.id + ',this.value)">' +
+            '<option value="Pendente"' + (ac.status === 'Pendente' ? ' selected' : '') + '>Pendente</option>' +
+            '<option value="Em Andamento"' + (ac.status === 'Em Andamento' ? ' selected' : '') + '>Em Andamento</option>' +
+            '<option value="Concluida"' + (ac.status === 'Concluida' ? ' selected' : '') + '>Concluida</option>' +
+          '</select>' +
+        '</div>';
+      });
+    } else {
+      html += '<div style="margin-top:12px;"><button class="btn btn-ambar btn-sm" onclick="abrirModalAccao(' + a.id + ')">+ Adicionar Accao Correctiva</button></div>';
+    }
+
+    document.getElementById('det-corpo').innerHTML = html;
+    abrirModal('modal-detalhe');
+  }
+
+  /* === Salvar acidente === */
+  async function salvarAcidente() {
+    var colab = document.getElementById('f-colab').value.trim();
+    var data = document.getElementById('f-data').value;
+    var tipo = document.getElementById('f-tipo').value;
+    var desc = document.getElementById('f-desc').value.trim();
+    if (!colab || !data || !tipo || !desc) { mostrarToast('Preencha os campos obrigatorios.', 'aviso'); return; }
+
+    var areaSel = document.getElementById('f-area');
+    var areaId = areaSel.value || null;
+    var areaNome = areaSel.selectedOptions[0] ? areaSel.selectedOptions[0].textContent.split(' [')[0] : null;
+
+    var numero = await gerarNumero();
+    var user = obterUtilizador();
+    var reg = {
+      numero: numero,
+      status: 'Em Investigacao',
+      colaborador_nome: colab,
+      colaborador_id: null,
+      area_risco_id: areaId ? parseInt(areaId) : null,
+      area_risco_nome: areaNome,
+      data_hora: data,
+      tipo_ocorrencia: tipo,
+      descricao: desc,
+      tipo_lesao: document.getElementById('f-lesao').value.trim() || null,
+      parte_corpo: document.getElementById('f-parte').value.trim() || null,
+      dias_afastamento: parseInt(document.getElementById('f-dias').value) || 0,
+      gerou_atestado: document.getElementById('f-atestado').value === 'true',
+      numero_atestado: document.getElementById('f-atestado').value === 'true' ? (document.getElementById('f-num-atestado').value.trim() || null) : null,
+      testemunhas: document.getElementById('f-testemunhas').value.trim() || null,
+      causa_raiz: document.getElementById('f-causa').value.trim() || null,
+      fator_humano: document.getElementById('f-fh').value.trim() || null,
+      fator_ambiental: document.getElementById('f-fa').value.trim() || null,
+      fator_equipamento: document.getElementById('f-fe').value.trim() || null,
+      registrado_por: user ? user.nome : null
+    };
+    try {
+      await db.insert('hst_acidentes', reg);
+ mostrarToast('Acidente ' + numero + ' registado com sucesso.', 'sucesso');
+      fecharModal('modal-novo');
+      limparFormulario();
+      carregarDados();
+    } catch(e) { mostrarToast('Erro ao registar: ' + (e.message || e), 'erro'); }
+  }
+
+  /* === Limpar formulario === */
+  function limparFormulario() {
+    ['f-colab','f-data','f-tipo','f-area','f-lesao','f-parte','f-dias','f-num-atestado','f-testemunhas','f-desc','f-causa','f-fh','f-fa','f-fe'].forEach(function(id) { setVal(id, ''); });
+    setVal('f-dias', '0');
+    document.getElementById('f-atestado').value = 'false';
+    document.getElementById('grupo-num-atestado').style.display = 'none';
+  }
+
+  /* === Accoes correctivas === */
+  function abrirModalAccao(accidenteId) {
+    document.getElementById('ac-acidente-id').value = acidenteId;
+    fecharModal('modal-detalhe');
+    setTimeout(function() { abrirModal('modal-accao'); }, 200);
+  }
+
+  async function salvarAccao() {
+    var accId = document.getElementById('ac-acidente-id').value;
+    var desc = document.getElementById('ac-desc').value.trim();
+    var resp = document.getElementById('ac-resp').value.trim();
+    var prazo = document.getElementById('ac-prazo').value;
+    if (!desc || !resp || !prazo) { mostrarToast('Preencha os campos obrigatorios.', 'aviso'); return; }
+    try {
+      await db.insert('hst_acoes_corretivas', {
+        acidente_id: parseInt(accId),
+        descricao_acao: desc,
+        responsavel: resp,
+        prazo: prazo,
+        observacoes: document.getElementById('ac-obs').value.trim() || null
+      });
+      mostrarToast('Accao correctiva adicionada.', 'sucesso');
+      fecharModal('modal-accao');
+      setVal('ac-desc', ''); setVal('ac-resp', ''); setVal('ac-prazo', ''); setVal('ac-obs', '');
+      carregarDados();
+    } catch(e) { mostrarToast('Erro: ' + (e.message || e), 'erro'); }
+  }
+
+  async function mudarStatusAccao(id, novoStatus) {
+    var dados = { status: novoStatus };
+    if (novoStatus === 'Concluida') dados.data_conclusao = new Date().toISOString();
+    try {
+      await db.update('hst_acoes_corretivas', id, dados);
+      mostrarToast('Status actualizado.', 'sucesso');
+      carregarDados();
+    } catch(e) { mostrarToast('Erro: ' + (e.message || e), 'erro'); }
+  }
+
+  /* === Render accoes (tab) === */
+  function renderAcoes(lista) {
+    document.getElementById('acoes-loading').style.display = 'none';
+    var filtro = document.getElementById('filtro-acao-status').value;
+    if (filtro) lista = lista.filter(function(a) { return a.status === filtro; });
+    var c = document.getElementById('acoes-container');
+    if (!lista.length) { c.innerHTML = '<div class="tabela-vazia">Nenhuma accao correctiva registada.</div>'; return; }
+    var html = '';
+    lista.sort(function(a, b) { return (a.prazo || '').localeCompare(b.prazo || ''); });
+    lista.forEach(function(ac) {
+      var acc = todosAcidentes.find(function(a) { return a.id === ac.acidente_id; });
+      var atrasada = ac.status !== 'Concluida' && ac.prazo && new Date(ac.prazo) < new Date();
+      html += '<div class="accao-card" style="' + (atrasada ? 'border-color:var(--cor-erro);' : '') + '">' +
+        '<span class="accao-status">' + badgeAcaoStatus(ac.status) + '</span>' +
+        '<div class="accao-corpo">' +
+          '<strong>' + escaparHTML(ac.descricao_acao) + '</strong>' +
+          '<div style="font-size:0.82rem;color:var(--cor-texto-sec);">Acidente: ' + (acc ? acc.numero : '—') + ' | Responsavel: ' + escaparHTML(ac.responsavel) + '</div>' +
+          '<div style="font-size:0.82rem;color:var(--cor-texto-sec);">Prazo: ' + formataData(ac.prazo) + (atrasada ? ' <span style="color:var(--cor-erro);font-weight:700;">ATRASADA</span>' : '') + '</div>' +
+        '</div>' +
+        '<select class="form-select" style="width:auto;min-width:130px;" onchange="mudarStatusAccao(' + ac.id + ',this.value)">' +
+          '<option value="Pendente"' + (ac.status === 'Pendente' ? ' selected' : '') + '>Pendente</option>' +
+          '<option value="Em Andamento"' + (ac.status === 'Em Andamento' ? ' selected' : '') + '>Em Andamento</option>' +
+          '<option value="Concluida"' + (ac.status === 'Concluida' ? ' selected' : '') + '>Concluida</option>' +
+        '</select>' +
+      '</div>';
+    });
+    c.innerHTML = html;
+  }
+
+  document.getElementById('filtro-acao-status').addEventListener('change', function() { renderAcoes(todasAcoes); });
+
+  /* === Gerar relatorio === */
+  function gerarRelatorio() {
+    if (!accDetalheId) return;
+    window.open('acidente_print.html?id=' + accDetalheId, '_blank');
+  }
+
+  /* === Data default === */
+  (function() { var agora = new Date(); var iso = agora.toISOString().slice(0, 16); setVal('f-data', iso); })();
+
+  /* === CARREGAR TUDO === */
+  async function carregarDados() {
+    var r = await Promise.allSettled([
+      db.query('hst_acidentes', 'select=*&order=data_hora.desc&limit=500'),
+      db.query('hst_acoes_corretivas', 'select=*&limit=500')
+    ]);
+    todosAcidentes = r[0].status === 'fulfilled' ? r[0].value : [];
+    todasAcoes = r[1].status === 'fulfilled' ? r[1].value : [];
+    renderAcidentes(todosAcidentes);
+    renderAcoes(todasAcoes);
+  }
+
+  carregarColabs();
+  carregarAreas();
+  carregarDados();
+  </script>
+</body>
+</html>

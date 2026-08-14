@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Areas de Risco — HST — Danmo Hub</title>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <style>
+    .filtro-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+    .filtro-bar input, .filtro-bar select { padding: 8px 12px; border: 1px solid var(--cor-borda); border-radius: var(--raio-md); background: var(--cor-superficie); color: var(--cor-texto); font-family: var(--fonte-principal); font-size: 0.85rem; }
+    .filtro-bar input:focus, .filtro-bar select:focus { outline: none; border-color: var(--cor-ambar); }
+    .filtro-bar input { flex: 1; min-width: 180px; }
+
+    .area-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+    @media (max-width: 500px) { .area-grid { grid-template-columns: 1fr; } }
+
+    .area-card { background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-left: 5px solid; border-radius: var(--raio-md); padding: 16px; transition: all var(--transicao); }
+    .area-card:hover { box-shadow: var(--sombra-md); }
+    .area-card.inativa { opacity: 0.55; }
+    .area-nivel-Baixo { border-left-color: var(--cor-sucesso); }
+    .area-nivel-Medio { border-left-color: var(--cor-info); }
+    .area-nivel-Alto { border-left-color: var(--cor-aviso); }
+    .area-nivel-Critico { border-left-color: var(--cor-erro); }
+
+    .area-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .area-nome { font-weight: 700; font-size: 0.98rem; }
+    .area-desc { font-size: 0.85rem; color: var(--cor-texto-sec); margin-bottom: 8px; line-height: 1.4; }
+    .area-medidas { font-size: 0.8rem; color: var(--cor-texto-sec); background: var(--cor-fundo); border-radius: var(--raio-sm); padding: 8px 10px; margin-bottom: 10px; }
+    .area-acoes { display: flex; gap: 8px; justify-content: flex-end; }
+
+    .badge-nivel-Baixo { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+    .badge-nivel-Medio { background: var(--cor-info-bg); color: var(--cor-info); }
+    .badge-nivel-Alto { background: var(--cor-aviso-bg); color: var(--cor-aviso); }
+    .badge-nivel-Critico { background: var(--cor-erro-bg); color: var(--cor-erro); }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+      <div>
+        <h1 class="pagina-titulo" style="margin-bottom:2px;">Areas de Risco</h1>
+        <p class="pagina-subtitulo" style="margin-bottom:0;">Mapeamento de areas e niveis de risco da operacao</p>
+      </div>
+      <button class="btn btn-ambar" onclick="abrirModalNova()">+ Nova Area</button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid" style="margin-bottom:24px;">
+      <div class="kpi-card"><div class="kpi-icone">&#9873;</div><div class="kpi-valor" id="kpi-total"><div class="spinner" style="width:20px;height:20px;"></div></div><div class="kpi-label">Areas Activas</div></div>
+      <div class="kpi-card kpi-erro"><div class="kpi-icone">&#128680;</div><div class="kpi-valor" id="kpi-criticas"><div class="spinner" style="width:20px;height:20px;"></div></div><div class="kpi-label">Nivel Critico</div></div>
+      <div class="kpi-card kpi-aviso"><div class="kpi-icone">&#9888;</div><div class="kpi-valor" id="kpi-altas"><div class="spinner" style="width:20px;height:20px;"></div></div><div class="kpi-label">Nivel Alto</div></div>
+    </div>
+
+    <div class="filtro-bar">
+      <input type="text" id="filtro-nome" placeholder="Pesquisar area..." />
+      <select id="filtro-nivel">
+        <option value="">Todos os Niveis</option>
+        <option value="Baixo">Baixo</option>
+        <option value="Medio">Medio</option>
+        <option value="Alto">Alto</option>
+        <option value="Critico">Critico</option>
+      </select>
+      <select id="filtro-estado">
+        <option value="ativas">Apenas Activas</option>
+        <option value="todas">Incluir Inactivas</option>
+      </select>
+    </div>
+
+    <div id="area-loading" class="spinner" style="padding:32px;text-align:center;">A carregar areas...</div>
+    <div id="area-empty" class="tabela-vazia" style="display:none;">Nenhuma area de risco registada.</div>
+    <div class="area-grid" id="area-grid"></div>
+  </main>
+
+  <!-- Modal: Nova / Editar Area -->
+  <div class="modal-fundo" id="modal-area">
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="area-modal-titulo">Nova Area de Risco</span>
+        <button class="modal-fechar" onclick="fecharModal('modal-area')">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <input type="hidden" id="a-id" />
+        <div class="form-grupo">
+          <label class="form-label">Nome da Area *</label>
+          <input class="form-input" id="a-nome" required placeholder="Ex: Cais 3, Armazem de Combustiveis, Oficina..." />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Nivel de Risco *</label>
+          <select class="form-select" id="a-nivel" required>
+            <option value="Baixo">Baixo</option>
+            <option value="Medio">Medio</option>
+            <option value="Alto" selected>Alto</option>
+            <option value="Critico">Critico</option>
+          </select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Descricao / Perigos Identificados</label>
+          <textarea class="form-textarea" id="a-desc" rows="2" placeholder="Ex: Movimentacao de contentores, trafego de empilhadoras..."></textarea>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Medidas de Controlo</label>
+          <textarea class="form-textarea" id="a-medidas" rows="2" placeholder="Ex: Uso obrigatorio de colete reflector e capacete, sinalizacao..."></textarea>
+        </div>
+        <div class="form-grupo" id="grupo-ativo-edit" style="display:none;">
+          <label class="form-label"><input type="checkbox" id="a-ativo" checked style="width:auto;margin-right:6px;" />Area Activa</label>
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" onclick="fecharModal('modal-area')">Cancelar</button>
+        <button class="btn btn-ambar" onclick="salvarArea()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+  var todasAreas = [];
+
+  /* === Abrir modal (nova) === */
+  function abrirModalNova() {
+    document.getElementById('area-modal-titulo').textContent = 'Nova Area de Risco';
+    setVal('a-id', ''); setVal('a-nome', ''); setVal('a-desc', ''); setVal('a-medidas', '');
+    document.getElementById('a-nivel').value = 'Alto';
+    document.getElementById('grupo-ativo-edit').style.display = 'none';
+    abrirModal('modal-area');
+  }
+
+  /* === Abrir modal (editar) === */
+  function abrirModalEditar(a) {
+    document.getElementById('area-modal-titulo').textContent = 'Editar Area de Risco';
+    setVal('a-id', a.id); setVal('a-nome', a.nome); setVal('a-desc', a.descricao || ''); setVal('a-medidas', a.medidas_controlo || '');
+    document.getElementById('a-nivel').value = a.nivel_risco || 'Alto';
+    document.getElementById('a-ativo').checked = a.ativo !== false;
+    document.getElementById('grupo-ativo-edit').style.display = 'block';
+    abrirModal('modal-area');
+  }
+
+  /* === Guardar (criar ou actualizar) === */
+  async function salvarArea() {
+    var id = document.getElementById('a-id').value;
+    var nome = document.getElementById('a-nome').value.trim();
+    var nivel = document.getElementById('a-nivel').value;
+    if (!nome || !nivel) { mostrarToast('Preencha nome e nivel de risco.', 'aviso'); return; }
+    var dados = {
+      nome: nome,
+      nivel_risco: nivel,
+      descricao: document.getElementById('a-desc').value.trim() || null,
+      medidas_controlo: document.getElementById('a-medidas').value.trim() || null
+    };
+    try {
+      if (id) {
+        dados.ativo = document.getElementById('a-ativo').checked;
+        await db.update('hst_areas_risco', id, dados);
+        mostrarToast('Area actualizada: ' + nome, 'sucesso');
+      } else {
+        dados.ativo = true;
+        await db.insert('hst_areas_risco', dados);
+        mostrarToast('Area registada: ' + nome, 'sucesso');
+      }
+      fecharModal('modal-area');
+      carregarDados();
+    } catch(e) { mostrarToast('Erro: ' + (e.message || e), 'erro'); }
+  }
+
+  /* === Alternar activa/inactiva rapidamente === */
+  async function alternarActiva(a) {
+    try {
+      await db.update('hst_areas_risco', a.id, { ativo: !(a.ativo !== false) });
+      mostrarToast((a.ativo !== false ? 'Area desactivada.' : 'Area reactivada.'), 'sucesso');
+      carregarDados();
+    } catch(e) { mostrarToast('Erro: ' + (e.message || e), 'erro'); }
+  }
+
+  /* === Render === */
+  function renderAreas(lista) {
+    document.getElementById('area-loading').style.display = 'none';
+    if (!lista.length) { document.getElementById('area-empty').style.display = 'block'; document.getElementById('area-grid').innerHTML = ''; return; }
+    document.getElementById('area-empty').style.display = 'none';
+    var html = '';
+    lista.forEach(function(a) {
+      var inativa = a.ativo === false;
+      html += '<div class="area-card area-nivel-' + a.nivel_risco + (inativa ? ' inativa' : '') + '">' +
+        '<div class="area-topo"><span class="area-nome">' + escaparHTML(a.nome) + '</span>' +
+          '<span class="classificacao-tensao badge-nivel-' + a.nivel_risco + '" style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;">' + a.nivel_risco + (inativa ? ' — Inactiva' : '') + '</span></div>' +
+        (a.descricao ? '<div class="area-desc">' + escaparHTML(a.descricao) + '</div>' : '') +
+        (a.medidas_controlo ? '<div class="area-medidas"><strong>Medidas de Controlo:</strong> ' + escaparHTML(a.medidas_controlo) + '</div>' : '') +
+        '<div class="area-acoes">' +
+          '<button class="btn btn-secundario btn-sm" onclick=\'abrirModalEditar(' + JSON.stringify(a).replace(/'/g, "&#39;") + ')\'>Editar</button>' +
+          '<button class="btn ' + (inativa ? 'btn-verde' : 'btn-vermelho') + ' btn-sm" onclick=\'alternarActiva(' + JSON.stringify(a).replace(/'/g, "&#39;") + ')\'>' + (inativa ? 'Reactivar' : 'Desactivar') + '</button>' +
+        '</div>' +
+      '</div>';
+    });
+    document.getElementById('area-grid').innerHTML = html;
+  }
+
+  /* === Filtrar === */
+  function filtrar() {
+    var pesq = (document.getElementById('filtro-nome').value || '').toLowerCase();
+    var nivel = document.getElementById('filtro-nivel').value;
+    var estado = document.getElementById('filtro-estado').value;
+    var lista = todasAreas.slice();
+    if (estado === 'ativas') lista = lista.filter(function(a) { return a.ativo !== false; });
+    if (pesq) lista = lista.filter(function(a) { return a.nome.toLowerCase().indexOf(pesq) !== -1; });
+    if (nivel) lista = lista.filter(function(a) { return a.nivel_risco === nivel; });
+    var ordem = { 'Critico': 0, 'Alto': 1, 'Medio': 2, 'Baixo': 3 };
+    lista.sort(function(x, y) { return (ordem[x.nivel_risco] || 4) - (ordem[y.nivel_risco] || 4); });
+    renderAreas(lista);
+  }
+  document.getElementById('filtro-nome').addEventListener('input', debounce(filtrar, 300));
+  document.getElementById('filtro-nivel').addEventListener('change', filtrar);
+  document.getElementById('filtro-estado').addEventListener('change', filtrar);
+
+  /* === Carregar === */
+  async function carregarDados() {
+    try {
+      todasAreas = await db.query('hst_areas_risco', 'select=*&order=nome.asc&limit=1000');
+      var ativas = todasAreas.filter(function(a) { return a.ativo !== false; });
+      document.getElementById('kpi-total').textContent = ativas.length;
+      document.getElementById('kpi-criticas').textContent = ativas.filter(function(a) { return a.nivel_risco === 'Critico'; }).length;
+      document.getElementById('kpi-altas').textContent = ativas.filter(function(a) { return a.nivel_risco === 'Alto'; }).length;
+      filtrar();
+    } catch(e) {
+      document.getElementById('area-loading').style.display = 'none';
+      mostrarToast('Erro ao carregar areas de risco.', 'erro');
+    }
+  }
+
+  carregarDados();
+  </script>
+</body>
+</html>

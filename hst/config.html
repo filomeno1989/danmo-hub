@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configuracao — HST — Danmo Hub</title>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <style>
+    .config-section { background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio-md); padding: 24px; margin-bottom: 20px; }
+    .config-section h2 { font-size: 1rem; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--cor-borda); }
+    .config-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 600px) { .config-row { grid-template-columns: 1fr; } }
+
+    .stat-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--cor-borda); font-size: 0.9rem; }
+    .stat-line:last-child { border-bottom: none; }
+    .stat-label { color: var(--cor-texto-sec); }
+    .stat-value { font-weight: 700; }
+
+    .danger-zone { border-color: var(--cor-erro); }
+    .danger-zone h2 { color: var(--cor-erro); border-bottom-color: var(--cor-erro-bg); }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <h1 class="pagina-titulo">Configuracao HST</h1>
+    <p class="pagina-subtitulo">Definicoes e manutencao do modulo de Higiene e Seguranca do Trabalho</p>
+
+    <!-- Info da Empresa -->
+    <div class="config-section">
+      <h2>&#128188; Dados da Empresa para Relatorios</h2>
+      <p style="font-size:0.85rem;color:var(--cor-texto-sec);margin-bottom:16px;">Estes dados aparecem nos cabecalhos dos relatorios impressos.</p>
+      <div class="config-row">
+        <div class="form-grupo">
+          <label class="form-label">Nome da Empresa</label>
+          <input class="form-input" id="cfg-empresa" value="DANMO SERVICE SYSTEM, LDA" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Localizacao</label>
+          <input class="form-input" id="cfg-local" value="Porto da Beira, Mocambique" />
+        </div>
+      </div>
+      <div class="config-row">
+        <div class="form-grupo">
+          <label class="form-label">Responsavel HST / Tecnico de Seguranca</label>
+          <input class="form-input" id="cfg-tecnico" placeholder="Nome do tecnico responsavel" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Referencia do Documento (FR)</label>
+          <input class="form-input" id="cfg-ref-doc" value="DAN_QSS_FR_018" placeholder="Ex: DAN_QSS_FR_018" />
+        </div>
+      </div>
+      <button class="btn btn-ambar" onclick="salvarConfig()">Guardar Configuracao</button>
+    </div>
+
+    <!-- Contadores -->
+    <div class="config-section">
+      <h2>&#128202; Contadores e Estatisticas</h2>
+      <div id="stats-loading" class="spinner" style="padding:12px;text-align:center;">A calcular...</div>
+      <div id="stats-container" style="display:none;"></div>
+    </div>
+
+    <!-- Numeracao -->
+    <div class="config-section">
+      <h2>&#128196; Numeracao Automatica de Relatorios</h2>
+      <p style="font-size:0.85rem;color:var(--cor-texto-sec);margin-bottom:16px;">Os relatorios de acidentes sao numerados automaticamente no formato <strong>DAN-HST-YYYY-NNN</strong>. O contador reinicia a cada ano.</p>
+      <div class="form-grupo">
+        <label class="form-label">Proximo Numero (apenas leitura)</label>
+        <input class="form-input" id="cfg-proximo-num" readonly style="max-width:250px;font-weight:700;" />
+      </div>
+      <p style="font-size:0.82rem;color:var(--cor-texto-sec);margin-top:8px;">Este valor e calculado automaticamente com base nos registos existentes. Nao necessita de ser alterado manualmente.</p>
+    </div>
+
+    <!-- Zona de Perigo -->
+    <div class="config-section danger-zone">
+      <h2>&#9888; Zona de Perigo</h2>
+      <p style="font-size:0.85rem;color:var(--cor-texto-sec);margin-bottom:16px;">Accoes irreversiveis. Tenha certeza antes de prosseguir.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-vermelho" onclick="limparDadosTeste()">Limpar Dados de Teste</button>
+        <button class="btn btn-secundario" onclick="exportarDados()">Exportar Dados (JSON)</button>
+      </div>
+      <p style="font-size:0.78rem;color:var(--cor-texto-sec);margin-top:10px;">"Limpar Dados de Teste" remove todos os registos das 6 tabelas HST. Use apenas em ambiente de teste.</p>
+    </div>
+  </main>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+  var TABELAS_HST = ['hst_areas_risco','hst_epis','hst_epi_entregas','hst_acidentes','hst_acoes_corretivas','hst_medicoes_tensao'];
+
+  /* === Carregar config salva === */
+  function carregarConfig() {
+    try {
+      var cfg = JSON.parse(localStorage.getItem('danmo_hst_config') || '{}');
+      if (cfg.empresa) setVal('cfg-empresa', cfg.empresa);
+      if (cfg.local) setVal('cfg-local', cfg.local);
+      if (cfg.tecnico) setVal('cfg-tecnico', cfg.tecnico);
+      if (cfg.ref_doc) setVal('cfg-ref-doc', cfg.ref_doc);
+    } catch(e) {}
+  }
+
+  /* === Salvar config === */
+  function salvarConfig() {
+    var cfg = {
+      empresa: document.getElementById('cfg-empresa').value.trim(),
+      local: document.getElementById('cfg-local').value.trim(),
+      tecnico: document.getElementById('cfg-tecnico').value.trim(),
+      ref_doc: document.getElementById('cfg-ref-doc').value.trim()
+    };
+    localStorage.setItem('danmo_hst_config', JSON.stringify(cfg));
+    mostrarToast('Configuracao guardada com sucesso.', 'sucesso');
+  }
+
+  /* === Contadores === */
+  async function carregarStats() {
+    var resultados = await Promise.allSettled(TABELAS_HST.map(function(t) {
+      return db.query(t, 'select=id&limit=1');
+    }));
+
+    var statsHtml = '';
+    TABELAS_HST.forEach(function(tabela, i) {
+      var r = resultados[i];
+      var count = '—';
+      if (r.status === 'fulfilled') {
+        var range = r.value; // com count=exact
+        // Try a count query
+      }
+      /* Fazer count real */
+    });
+
+    /* Melhor abordagem: contar com headers */
+    try {
+      var contagens = await Promise.allSettled(TABELAS_HST.map(function(t) {
+        return db.count(t);
+      }));
+
+      var nomes = {
+        'hst_areas_risco': 'Areas de Risco',
+        'hst_epis': 'Tipos de EPIs',
+        'hst_epi_entregas': 'Entregas de EPIs',
+        'hst_acidentes': 'Acidentes / Incidentes',
+        'hst_acoes_corretivas': 'Accoes Corretivas',
+        'hst_medicoes_tensao': 'Medicoes de Tensao'
+      };
+
+      statsHtml = '';
+      TABELAS_HST.forEach(function(tabela, i) {
+        var c = contagens[i].status === 'fulfilled' ? contagens[i].value : 0;
+        statsHtml += '<div class="stat-line"><span class="stat-label">' + (nomes[tabela] || tabela) + '</span><span class="stat-value">' + c + ' registo(s)</span></div>';
+      });
+
+      document.getElementById('stats-container').innerHTML = statsHtml;
+      document.getElementById('stats-container').style.display = 'block';
+      document.getElementById('stats-loading').style.display = 'none';
+    } catch(e) {
+      document.getElementById('stats-loading').style.display = 'none';
+      mostrarToast('Erro ao calcular estatisticas.', 'erro');
+    }
+  }
+
+  /* === Proximo numero === */
+  async function calcularProximoNumero() {
+    try {
+      var ano = new Date().getFullYear();
+      var prefixo = 'DAN-HST-' + ano + '-';
+      var existentes = await db.query('hst_acidentes', 'select=numero&numero=like.' + prefixo + '*');
+      var maxNum = 0;
+      existentes.forEach(function(a) {
+        var n = parseInt((a.numero || '').replace(prefixo, ''), 10);
+        if (n > maxNum) maxNum = n;
+      });
+      document.getElementById('cfg-proximo-num').value = prefixo + String(maxNum + 1).padStart(3, '0');
+    } catch(e) {
+      document.getElementById('cfg-proximo-num').value = 'Erro ao calcular';
+    }
+  }
+
+  /* === Limpar dados de teste === */
+  function limparDadosTeste() {
+    if (!confirmarAcao('ATENCAO: Isto vai APAGAR TODOS os dados das 6 tabelas HST (areas, EPIs, entregas, acidentes, acoes, medicoes).\n\nTem a certeza? Esta accao nao pode ser desfeita.')) return;
+    if (!confirmarAcao('Ultima chance: Tem ABSOLUTA certeza que quer apagar todos os dados HST?')) return;
+
+    mostrarToast('A limpar dados... (pode demorar alguns segundos)', 'info');
+
+    /* Apagar por ordem inversa das dependencias */
+    var ordem = ['hst_medicoes_tensao','hst_acoes_corretivas','hst_epi_entregas','hst_acidentes','hst_epis','hst_areas_risco'];
+    (async function() {
+      for (var i = 0; i < ordem.length; i++) {
+        try {
+          var todos = await db.query(ordem[i], 'select=id');
+          for (var j = 0; j < todos.length; j++) {
+            await db.delete(ordem[i], todos[j].id);
+          }
+        } catch(e) { console.warn('Erro ao limpar ' + ordem[i], e); }
+      }
+      mostrarToast('Todos os dados HST foram apagados.', 'sucesso');
+      carregarStats();
+      calcularProximoNumero();
+    })();
+  }
+
+  /* === Exportar dados === */
+  async function exportarDados() {
+    mostrarToast('A exportar dados...', 'info');
+    try {
+      var dados = {};
+      for (var i = 0; i < TABELAS_HST.length; i++) {
+        var t = TABELAS_HST[i];
+        dados[t] = await db.query(t, 'select=*&limit=5000&order=created_at.desc');
+      }
+      dados.exportado_em = new Date().toISOString();
+      dados.modulo = 'HST';
+
+      var blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'danmo_hst_backup_' + new Date().toISOString().split('T')[0] + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      mostrarToast('Dados exportados com sucesso.', 'sucesso');
+    } catch(e) { mostrarToast('Erro ao exportar: ' + (e.message || e), 'erro'); }
+  }
+
+  /* === INIT === */
+  carregarConfig();
+  carregarStats();
+  calcularProximoNumero();
+  </script>
+</body>
+</html>

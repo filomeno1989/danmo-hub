@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Medicoes de Tensao Arterial — HST — Danmo Hub</title>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <style>
+    .filtro-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+    .filtro-bar input, .filtro-bar select { padding: 8px 12px; border: 1px solid var(--cor-borda); border-radius: var(--raio-md); background: var(--cor-superficie); color: var(--cor-texto); font-family: var(--fonte-principal); font-size: 0.85rem; }
+    .filtro-bar input:focus, .filtro-bar select:focus { outline: none; border-color: var(--cor-ambar); }
+    .filtro-bar input { flex: 1; min-width: 180px; }
+
+    .colab-card { background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio-md); padding: 16px; cursor: pointer; transition: all var(--transicao); display: flex; justify-content: space-between; align-items: center; }
+    .colab-card:hover { transform: translateY(-2px); box-shadow: var(--sombra-md); border-color: var(--cor-ambar); }
+    .colab-info { flex: 1; }
+    .colab-nome { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+    .colab-ultima { font-size: 0.82rem; color: var(--cor-texto-sec); }
+    .colab-valor { font-size: 1.5rem; font-weight: 700; text-align: right; }
+
+    .classificacao-tensao { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .tensao-normal { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+    .tensao-limitrofe { background: var(--cor-aviso-bg); color: var(--cor-aviso); }
+    .tensao-alta { background: var(--cor-erro-bg); color: var(--cor-erro); }
+
+    .colab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+    @media (max-width: 500px) { .colab-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+      <div>
+        <h1 class="pagina-titulo" style="margin-bottom:2px;">Medicoes de Tensao Arterial</h1>
+        <p class="pagina-subtitulo" style="margin-bottom:0;">Controlo de tensao de cada colaborador</p>
+      </div>
+      <button class="btn btn-ambar" onclick="abrirModal('modal-nova')">+ Nova Medicao</button>
+    </div>
+
+    <div class="filtro-bar">
+      <input type="text" id="filtro-nome" placeholder="Pesquisar colaborador..." />
+      <select id="filtro-classif">
+        <option value="">Todas as Classificacoes</option>
+        <option value="normal">Normal / Otima</option>
+        <option value="limitrofe">Limitrofe</option>
+        <option value="alta">HTA (Alta)</option>
+      </select>
+    </div>
+
+    <div id="colab-loading" class="spinner" style="padding:32px;text-align:center;">A carregar medicoes...</div>
+    <div id="colab-empty" class="tabela-vazia" style="display:none;">Nenhuma medicao registada.</div>
+    <div class="colab-grid" id="colab-grid"></div>
+  </main>
+
+  <!-- Modal: Nova Medicao -->
+  <div class="modal-fundo" id="modal-nova">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo">Nova Medicao de Tensao</span>
+        <button class="modal-fechar" onclick="fecharModal('modal-nova')">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="form-grupo">
+          <label class="form-label">Colaborador *</label>
+          <input class="form-input" id="m-colab" list="lista-colabs" required placeholder="Nome do colaborador" />
+          <datalist id="lista-colabs"></datalist>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div class="form-grupo">
+            <label class="form-label">Sistolica * (mmHg)</label>
+            <input class="form-input" type="number" id="m-sis" min="60" max="260" required placeholder="120" />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Diastolica * (mmHg)</label>
+            <input class="form-input" type="number" id="m-dia" min="40" max="160" required placeholder="80" />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">FC (bpm)</label>
+            <input class="form-input" type="number" id="m-fc" min="40" max="200" placeholder="72" />
+          </div>
+        </div>
+        <div id="m-preview" style="text-align:center;padding:12px;border-radius:var(--raio-md);margin-bottom:16px;display:none;"></div>
+        <div class="form-grupo">
+          <label class="form-label">Observacoes</label>
+          <textarea class="form-textarea" id="m-obs" rows="2" placeholder="Sintomas, queixas do colaborador..."></textarea>
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" onclick="fecharModal('modal-nova')">Cancelar</button>
+        <button class="btn btn-ambar" onclick="salvarMedicao()">Registar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+  var todasMedicoes = [];
+
+  function classificarTensao(sys, dia) {
+    if (sys < 120 && dia < 80) return { texto: 'Otima', cls: 'normal', cardCls: 'tensao-normal' };
+    if (sys < 130 && dia < 80) return { texto: 'Normal', cls: 'normal', cardCls: 'tensao-normal' };
+    if (sys < 140 || dia < 90) return { texto: 'Limitrofe', cls: 'limitrofe', cardCls: 'tensao-limitrofe' };
+    if (sys < 160 || dia < 100) return { texto: 'HTA Grau 1', cls: 'alta', cardCls: 'tensao-alta' };
+    if (sys < 180 || dia < 110) return { texto: 'HTA Grau 2', cls: 'alta', cardCls: 'tensao-alta' };
+    return { texto: 'HTA Grau 3', cls: 'alta', cardCls: 'tensao-alta' };
+  }
+
+  /* Preview ao digitar */
+  function atualizarPreview() {
+    var s = parseInt(document.getElementById('m-sis').value);
+    var d = parseInt(document.getElementById('m-dia').value);
+    var pv = document.getElementById('m-preview');
+    if (!s || !d || s <= 0 || d <= 0) { pv.style.display = 'none'; return; }
+    var c = classificarTensao(s, d);
+    pv.style.display = 'block';
+    pv.innerHTML = '<span style="font-size:2rem;font-weight:700;">' + s + '/' + d + '</span>' +
+      ' <span class="classificacao-tensao ' + c.cardCls + '" style="margin-left:12px;">' + c.texto + '</span>' +
+      (parseInt(document.getElementById('m-fc').value) ? ' <span style="margin-left:12px;color:var(--cor-texto-sec);">FC: ' + parseInt(document.getElementById('m-fc').value) + ' bpm</span>' : '');
+  }
+  document.getElementById('m-sis').addEventListener('input', atualizarPreview);
+  document.getElementById('m-dia').addEventListener('input', atualizarPreview);
+  document.getElementById('m-fc').addEventListener('input', atualizarPreview);
+
+  /* Carregar colaboradores para datalist */
+  async function carregarColabs() {
+    try {
+      var colabs = await db.get('collaborators', { active: true });
+      var dl = document.getElementById('lista-colabs');
+      colabs.forEach(function(c) { var opt = document.createElement('option'); opt.value = c.name || c.nome || ''; dl.appendChild(opt); });
+    } catch(e) { console.warn('Erro colabs:', e); }
+  }
+
+  /* Salvar medicao */
+  async function salvarMedicao() {
+    var colab = document.getElementById('m-colab').value.trim();
+    var s = parseInt(document.getElementById('m-sis').value);
+    var d = parseInt(document.getElementById('m-dia').value);
+    if (!colab || !s || !d) { mostrarToast('Preencha colaborador, sistolica e diastolica.', 'aviso'); return; }
+    var fc = parseInt(document.getElementById('m-fc').value) || null;
+    var cla = classificarTensao(s, d);
+    var user = obterUtilizador();
+    try {
+      await db.insert('hst_medicoes_tensao', {
+        colaborador_nome: colab,
+        sistolica: s, diastolica: d,
+        frequencia_cardiaca: fc,
+        classificacao: cla.texto,
+        medido_por: user ? user.nome : null,
+        observacoes: document.getElementById('m-obs').value.trim() || null
+      });
+      mostrarToast('Medicao registada: ' + s + '/' + d + ' (' + cla.texto + ')', 'sucesso');
+      fecharModal('modal-nova');
+      setVal('m-colab', ''); setVal('m-sis', ''); setVal('m-dia', ''); setVal('m-fc', ''); setVal('m-obs', '');
+      document.getElementById('m-preview').style.display = 'none';
+      carregarDados();
+    } catch(e) { mostrarToast('Erro: ' + (e.message || e), 'erro'); }
+  }
+
+  /* Render cards */
+  function renderColabs(lista) {
+    document.getElementById('colab-loading').style.display = 'none';
+    if (!lista.length) { document.getElementById('colab-empty').style.display = 'block'; document.getElementById('colab-grid').innerHTML = ''; return; }
+    document.getElementById('colab-empty').style.display = 'none';
+    var html = '';
+    lista.forEach(function(c) {
+      var cla = classificarTensao(c.ultima_sis, c.ultima_dia);
+      html += '<div class="colab-card" onclick="location.href=\'tensao_colaborador.html?colab=' + encodeURIComponent(c.nome) + '\'">' +
+        '<div class="colab-info">' +
+          '<div class="colab-nome">' + escaparHTML(c.nome) + '</div>' +
+          '<div class="colab-ultima">Ultima medicao: ' + formataData(c.ultima_data, true) + ' | Total: ' + c.total + ' medicao(oes)</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<div class="colab-valor">' + c.ultima_sis + '/' + c.ultima_dia + '</div>' +
+          '<span class="classificacao-tensao ' + cla.cardCls + '">' + cla.texto + '</span>' +
+        '</div>' +
+      '</div>';
+    });
+    document.getElementById('colab-grid').innerHTML = html;
+  }
+
+  /* Filtrar */
+  function filtrar() {
+    var pesq = (document.getElementById('filtro-nome').value || '').toLowerCase();
+    var claFiltro = document.getElementById('filtro-classif').value;
+    // Agrupar por colaborador
+    var colabMap = {};
+    todasMedicoes.forEach(function(m) {
+      if (!colabMap[m.colaborador_nome] || m.data_medicao > colabMap[m.colaborador_nome].ultima_data) {
+        colabMap[m.colaborador_nome] = { nome: m.colaborador_nome, ultima_sis: m.sistolica, ultima_dia: m.diastolica, ultima_data: m.data_medicao, total: 0 };
+      }
+      colabMap[m.colaborador_nome].total++;
+    });
+    var lista = Object.values(colabMap).sort(function(a, b) { return b.ultima_data.localeCompare(a.ultima_data); });
+    if (pesq) lista = lista.filter(function(c) { return c.nome.toLowerCase().indexOf(pesq) !== -1; });
+    if (claFiltro) lista = lista.filter(function(c) { return classificarTensao(c.ultima_sis, c.ultima_dia).cls === claFiltro; });
+    renderColabs(lista);
+  }
+  document.getElementById('filtro-nome').addEventListener('input', debounce(filtrar, 300));
+  document.getElementById('filtro-classif').addEventListener('change', filtrar);
+
+  /* Carregar */
+  async function carregarDados() {
+    try {
+      var r = await db.query('hst_medicoes_tensao', 'select=*&order=data_medicao.desc&limit=5000');
+      todasMedicoes = r || [];
+      filtrar();
+    } catch(e) {
+      document.getElementById('colab-loading').style.display = 'none';
+      mostrarToast('Erro ao carregar medicoes.', 'erro');
+    }
+  }
+
+  carregarColabs();
+  carregarDados();
+  </script>
+</body>
+</html>

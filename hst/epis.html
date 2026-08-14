@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EPIs — HST — Danmo Hub</title>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <style>
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--cor-borda); }
+    .tab-btn { padding: 10px 20px; border: none; background: transparent; color: var(--cor-texto-sec); font-family: var(--fonte-principal); font-size: 0.9rem; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all var(--transicao); }
+    .tab-btn.ativo { color: var(--cor-ambar); border-bottom-color: var(--cor-ambar); }
+    .tab-btn:hover { color: var(--cor-texto); }
+    .tab-conteudo { display: none; }
+    .tab-conteudo.ativo { display: block; }
+
+    .epi-card { background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio-md); padding: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; transition: all var(--transicao); }
+    .epi-card:hover { border-color: var(--cor-ambar); }
+    .epi-nome { font-weight: 700; font-size: 0.95rem; }
+    .epi-sub { font-size: 0.82rem; color: var(--cor-texto-sec); margin-top: 2px; }
+    .stock-baixo { color: var(--cor-erro); font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+      <div>
+        <h1 class="pagina-titulo" style="margin-bottom:2px;">Equipamentos de Protecao Individual</h1>
+        <p class="pagina-subtitulo" style="margin-bottom:0;">Catalogo e registo de entregas</p>
+      </div>
+      <button class="btn btn-ambar" onclick="abrirModal('modal-epi')">+ Novo EPI</button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid" style="margin-bottom:24px;">
+      <div class="kpi-card"><div class="kpi-icone">&#128083;</div><div class="kpi-valor" id="kpi-total"><div class="spinner" style="width:20px;height:20px;"></div></div><div class="kpi-label">Tipos de EPI</div></div>
+      <div class="kpi-card"><div class="kpi-icone">&#128230;</div><div class="kpi-valor" id="kpi-stock"><div class="spinner" style="width:20px;height:20px;"></div></div><div class="kpi-label">Unidades em Stock</div></div>
+      <div class="kpi-card"><div class="kpi-icone">&#128736;</div><div class="kpi-valor" id="kpi-entregas"><div class="spinner" style="width:20px;height:20px;"></div></div><div class="kpi-label">Entregas (Mes)</div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+      <button class="tab-btn ativo" data-tab="tab-catalogo">Catalogo</button>
+      <button class="tab-btn" data-tab="tab-entregas">Entregas</button>
+    </div>
+
+    <!-- TAB: Catalogo -->
+    <div class="tab-conteudo ativo" id="tab-catalogo">
+      <div class="filtro-bar" style="display:flex;gap:12px;margin-bottom:16px;">
+        <input type="text" id="filtro-epi" placeholder="Pesquisar EPI..." style="padding:8px 12px;border:1px solid var(--cor-borda);border-radius:var(--raio-md);background:var(--cor-superficie);color:var(--cor-texto);font-family:var(--fonte-principal);font-size:0.85rem;flex:1;" />
+      </div>
+      <div id="epi-loading" class="spinner" style="padding:20px;text-align:center;">A carregar...</div>
+      <div id="epi-container"></div>
+    </div>
+
+    <!-- TAB: Entregas -->
+    <div class="tab-conteudo" id="tab-entregas">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <input type="text" id="filtro-entrega" placeholder="Pesquisar por colaborador ou EPI..." style="padding:8px 12px;border:1px solid var(--cor-borda);border-radius:var(--raio-md);background:var(--cor-superficie);color:var(--cor-texto);font-family:var(--fonte-principal);font-size:0.85rem;flex:1;" />
+        <button class="btn btn-ambar btn-sm" onclick="abrirModal('modal-entrega')" style="margin-left:12px;">+ Registar Entrega</button>
+      </div>
+      <div class="tabela-container">
+        <div id="ent-loading" class="spinner" style="padding:20px;text-align:center;">A carregar...</div>
+        <div id="ent-empty" class="tabela-vazia" style="display:none;">Nenhuma entrega registada.</div>
+        <table class="tabela" id="tabela-ent" style="display:none;">
+          <thead>
+            <tr><th>Data</th><th>Colaborador</th><th>EPI</th><th>Qtd</th><th>Observacoes</th></tr>
+          </thead>
+          <tbody id="ent-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Novo EPI -->
+  <div class="modal-fundo" id="modal-epi">
+    <div class="modal">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo">Novo EPI</span>
+        <button class="modal-fechar" onclick="fecharModal('modal-epi')">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="form-grupo">
+          <label class="form-label">Nome do EPI *</label>
+          <input class="form-input" id="epi-nome" required placeholder="Ex: Capacete, Luvas, Botas..." />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Certificado de Aprovacao (CA)</label>
+          <input class="form-input" id="epi-ca" placeholder="Numero do CA" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Stock Actual</label>
+          <input class="form-input" type="number" id="epi-stock" min="0" value="0" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Descricao</label>
+          <textarea class="form-textarea" id="epi-desc" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" onclick="fecharModal('modal-epi')">Cancelar</button>
+        <button class="btn btn-ambar" onclick="salvarEPI()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Registar Entrega -->
+  <div class="modal-fundo" id="modal-entrega">
+    <div class="modal">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo">Registar Entrega de EPI</span>
+        <button class="modal-fechar" onclick="fecharModal('modal-entrega')">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="form-grupo">
+          <label class="form-label">Colaborador *</label>
+          <input class="form-input" id="ent-colab" list="lista-colabs" required placeholder="Nome do colaborador" />
+          <datalist id="lista-colabs"></datalist>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">EPI *</label>
+          <select class="form-select" id="ent-epi" required><option value="">Selecione...</option></select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Quantidade</label>
+          <input class="form-input" type="number" id="ent-qtd" min="1" value="1" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Observacoes</label>
+          <textarea class="form-textarea" id="ent-obs" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" onclick="fecharModal('modal-entrega')">Cancelar</button>
+        <button class="btn btn-ambar" onclick="salvarEntrega()">Registar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+  var todosEPIs = [], todasEntregas = [];
+
+  /* Tabs */
+  document.querySelector('.tab-bar').addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('ativo'); });
+    document.querySelectorAll('.tab-conteudo').forEach(function(c) { c.classList.remove('ativo'); });
+    btn.classList.add('ativo');
+    document.getElementById(btn.dataset.tab).classList.add('ativo');
+  });
+
+  /* Carregar datalist colaboradores */
+  async function carregarColabs() {
+    try {
+      var colabs = await db.get('collaborators', { active: true });
+      var dl = document.getElementById('lista-colabs');
+      colabs.forEach(function(c) { var opt = document.createElement('option'); opt.value = c.name || c.nome || ''; dl.appendChild(opt); });
+    } catch(e) {}
+  }
+
+  /* Preencher select de EPIs */
+  function preencherSelectEPIs() {
+    var sel = document.getElementById('ent-epi');
+    sel.innerHTML = '<option value="">Selecione...</option>';
+    todosEPIs.filter(function(e) { return e.ativo !== false; }).forEach(function(e) {
+      var opt = document.createElement('option');
+      opt.value = e.id;
+      opt.textContent = e.nome + (e.ca ? ' (CA: ' + e.ca + ')' : '');
+      sel.appendChild(opt);
+    });
+  }
+
+  /* Salvar EPI */
+  async function salvarEPI() {
+    var nome = document.getElementById('epi-nome').value.trim();
+    if (!nome) { mostrarToast('Nome do EPI e obrigatorio.', 'aviso'); return; }
+    try {
+      await db.insert('hst_epis', {
+        nome: nome,
+        ca: document.getElementById('epi-ca').value.trim() || null,
+        stock_atual: parseInt(document.getElementById('epi-stock').value) || 0,
+        descricao: document.getElementById('epi-desc').value.trim() || null
+      });
+      mostrarToast('EPI registado: ' + nome, 'sucesso');
+      fecharModal('modal-epi');
+      setVal('epi-nome', ''); setVal('epi-ca', ''); setVal('epi-stock', '0'); setVal('epi-desc', '');
+      carregarDados();
+    } catch(e) { mostrarToast('Erro: ' + (e.message || e), 'erro'); }
+  }
+
+  /* Salvar Entrega */
+  async function salvarEntrega() {
+    var colab = document.getElementById('ent-colab').value.trim();
+    var epiId = document.getElementById('ent-epi').value;
+    if (!colab || !epiId) { mostrarToast('Selecione colaborador e EPI.', 'aviso'); return; }
+    var epiObj = todosEPIs.find(function(e) { return e.id == epiId; });
+    try {
+      await db.insert('hst_epi_entregas', {
+        colaborador_nome: colab,
+        epi_id: parseInt(epiId),
+        epi_nome: epiObj ? epiObj.nome : '',
+        quantidade: parseInt(document.getElementById('ent-qtd').value) || 1,
+        observacoes: document.getElementById('ent-obs').value.trim() || null
+      });
+      mostrarToast('Entrega registada.', 'sucesso');
+      fecharModal('modal-entrega');
+      setVal('ent-colab', ''); setVal('ent-qtd', '1'); setVal('ent-obs', '');
+      carregarDados();
+    } catch(e) { mostrarToast('Erro: ' + (e.message || e), 'erro'); }
+  }
+
+  /* Render catalogo */
+  function renderCatalogo(lista) {
+    document.getElementById('epi-loading').style.display = 'none';
+    if (!lista.length) { document.getElementById('epi-container').innerHTML = '<div class="tabela-vazia">Nenhum EPI registado.</div>'; return; }
+    var html = '';
+    lista.forEach(function(e) {
+      var stockClass = (e.stock_atual || 0) <= 5 ? 'stock-baixo' : '';
+      html += '<div class="epi-card">' +
+        '<div><div class="epi-nome">' + escaparHTML(e.nome) + '</div>' +
+        '<div class="epi-sub">' + (e.ca ? 'CA: ' + escaparHTML(e.ca) + ' | ' : '') + (e.descricao ? escaparHTML(e.descricao) : 'Sem descricao') + '</div></div>' +
+        '<div style="text-align:right;"><div style="font-size:1.3rem;font-weight:700;" class="' + stockClass + '">' + (e.stock_atual || 0) + '</div><div style="font-size:0.75rem;color:var(--cor-texto-sec);">unid.</div></div>' +
+      '</div>';
+    });
+    document.getElementById('epi-container').innerHTML = html;
+  }
+
+  document.getElementById('filtro-epi').addEventListener('input', debounce(function() {
+    var p = (document.getElementById('filtro-epi').value || '').toLowerCase();
+    var f = todosEPIs.filter(function(e) { return e.nome.toLowerCase().indexOf(p) !== -1; });
+    renderCatalogo(f);
+  }, 300));
+
+  /* Render entregas */
+  function renderEntregas(lista) {
+    document.getElementById('ent-loading').style.display = 'none';
+    if (!lista.length) { document.getElementById('ent-empty').style.display = 'block'; document.getElementById('tabela-ent').style.display = 'none'; return; }
+    document.getElementById('ent-empty').style.display = 'none';
+    document.getElementById('tabela-ent').style.display = 'table';
+    var tbody = document.getElementById('ent-tbody');
+    tbody.innerHTML = '';
+    lista.forEach(function(e) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + formataData(e.data_entrega) + '</td>' +
+        '<td>' + escaparHTML(e.colaborador_nome) + '</td>' +
+        '<td>' + escaparHTML(e.epi_nome) + '</td>' +
+        '<td>' + (e.quantidade || 1) + '</td>' +
+        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escaparHTML(e.observacoes || '') + '">' + escaparHTML(e.observacoes || '—') + '</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('filtro-entrega').addEventListener('input', debounce(function() {
+    var p = (document.getElementById('filtro-entrega').value || '').toLowerCase();
+    var f = todasEntregas.filter(function(e) { return (e.colaborador_nome || '').toLowerCase().indexOf(p) !== -1 || (e.epi_nome || '').toLowerCase().indexOf(p) !== -1; });
+    renderEntregas(f);
+  }, 300));
+
+  /* Carregar tudo */
+  async function carregarDados() {
+    var r = await Promise.allSettled([
+      db.query('hst_epis', 'select=*&order=created_at.desc'),
+      db.query('hst_epi_entregas', 'select=*&order=data_entrega.desc&limit=2000')
+    ]);
+    todosEPIs = r[0].status === 'fulfilled' ? r[0].value : [];
+    todasEntregas = r[1].status === 'fulfilled' ? r[1].value : [];
+
+    var ativos = todosEPIs.filter(function(e) { return e.ativo !== false; });
+    document.getElementById('kpi-total').textContent = ativos.length;
+    document.getElementById('kpi-stock').textContent = ativos.reduce(function(s, e) { return s + (e.stock_atual || 0); }, 0);
+    var mes = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
+    document.getElementById('kpi-entregas').textContent = todasEntregas.filter(function(e) { return e.data_entrega && e.data_entrega.startsWith(mes); }).length;
+
+    renderCatalogo(ativos);
+    renderEntregas(todasEntregas);
+    preencherSelectEPIs();
+  }
+
+  carregarColabs();
+  carregarDados();
+  </script>
+</body>
+</html>

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatorios — HST — Danmo Hub</title>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <style>
+    .relatorio-card { background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio-md); padding: 20px; margin-bottom: 16px; transition: all var(--transicao); cursor: pointer; }
+    .relatorio-card:hover { transform: translateY(-2px); box-shadow: var(--sombra-md); border-color: var(--cor-ambar); }
+    .relatorio-header { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+    .relatorio-icon { font-size: 2rem; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: var(--raio-md); }
+    .relatorio-icon.acc { background: var(--cor-erro-bg); }
+    .relatorio-icon.epi { background: var(--cor-aviso-bg); }
+    .relatorio-icon.tensao { background: var(--cor-info-bg); }
+    .relatorio-icon.resumo { background: var(--cor-sucesso-bg); }
+    .relatorio-titulo { font-size: 1.1rem; font-weight: 700; }
+    .relatorio-desc { font-size: 0.85rem; color: var(--cor-texto-sec); line-height: 1.5; }
+    .relatorio-accao { margin-top: 12px; display: flex; gap: 8px; align-items: center; }
+
+    .relatorios-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 20px; }
+    @media (max-width: 500px) { .relatorios-grid { grid-template-columns: 1fr; } }
+
+    .historico-linha { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--cor-borda); transition: background var(--transicao); }
+    .historico-linha:hover { background: var(--cor-fundo); }
+    .historico-linha:last-child { border-bottom: none; }
+    .historico-num { font-weight: 700; font-size: 0.9rem; min-width: 180px; }
+    .historico-info { flex: 1; font-size: 0.85rem; color: var(--cor-texto-sec); }
+    .historico-accao { display: flex; gap: 6px; }
+
+    .print-frame { display: none; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <h1 class="pagina-titulo">Relatorios HST</h1>
+    <p class="pagina-subtitulo">Gerar e consultar relatorios do modulo de Higiene e Seguranca do Trabalho</p>
+
+    <!-- Tipos de Relatorio -->
+    <div class="relatorios-grid" style="margin-bottom:32px;">
+      <div class="relatorio-card" onclick="gerarResumoMensal()">
+        <div class="relatorio-header">
+          <div class="relatorio-icon resumo">&#128202;</div>
+          <div>
+            <div class="relatorio-titulo">Resumo Mensal HST</div>
+            <div class="relatorio-desc">Visao geral do mes: acidentes, entregas de EPIs, medicoes de tensao, acoes corretivas pendentes.</div>
+          </div>
+        </div>
+        <div class="relatorio-accao">
+          <span class="badge badge-secundario">Impressao</span>
+          <span style="font-size:0.82rem;color:var(--cor-texto-sec);">Gera resumo do mes actual</span>
+        </div>
+      </div>
+
+      <div class="relatorio-card" onclick="gerarRelatorioAcidentes()">
+        <div class="relatorio-header">
+          <div class="relatorio-icon acc">&#9888;</div>
+          <div>
+            <div class="relatorio-titulo">Relatorio de Acidentes</div>
+            <div class="relatorio-desc">Lista completa de acidentes e incidentes num periodo, com tipo, status e dias de afastamento.</div>
+          </div>
+        </div>
+        <div class="relatorio-accao">
+          <span class="badge badge-secundario">Impressao</span>
+          <span style="font-size:0.82rem;color:var(--cor-texto-sec);">Período personalizado</span>
+        </div>
+      </div>
+
+      <div class="relatorio-card" onclick="gerarRelatorioEPIs()">
+        <div class="relatorio-header">
+          <div class="relatorio-icon epi">&#128083;</div>
+          <div>
+            <div class="relatorio-titulo">Relatorio de Entregas de EPIs</div>
+            <div class="relatorio-desc">Registo de todas as entregas de equipamentos de protecao individual por periodo e colaborador.</div>
+          </div>
+        </div>
+        <div class="relatorio-accao">
+          <span class="badge badge-secundario">Impressao</span>
+          <span style="font-size:0.82rem;color:var(--cor-texto-sec);">Por periodo</span>
+        </div>
+      </div>
+
+      <div class="relatorio-card" onclick="gerarRelatorioTensao()">
+        <div class="relatorio-header">
+          <div class="relatorio-icon tensao">&#10084;</div>
+          <div>
+            <div class="relatorio-titulo">Relatorio de Tensao Arterial</div>
+            <div class="relatorio-desc">Listagem de medicoes de tensao arterial com classificacao e colaboradores com HTA identificada.</div>
+          </div>
+        </div>
+        <div class="relatorio-accao">
+          <span class="badge badge-secundario">Impressao</span>
+          <span style="font-size:0.82rem;color:var(--cor-texto-sec);">Por periodo</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historico de Relatorios de Acidentes -->
+    <div class="card">
+      <h2 style="font-size:1rem;margin-bottom:14px;border-bottom:1px solid var(--cor-borda);padding-bottom:8px;">Relatorios de Investigacao de Acidentes</h2>
+      <p style="font-size:0.82rem;color:var(--cor-texto-sec);margin-bottom:16px;">Clique num acidente para abrir o relatorio completo de investigacao.</p>
+      <div id="hist-loading" class="spinner" style="padding:20px;text-align:center;">A carregar...</div>
+      <div id="hist-empty" class="tabela-vazia" style="display:none;">Nenhum acidente registado.</div>
+      <div id="hist-container"></div>
+    </div>
+  </main>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+  var todosAcidentes = [];
+
+  /* === Classificacao de Tensao === */
+  function classificarTensao(sys, dia) {
+    if (sys < 120 && dia < 80) return { texto: 'Otima', cls: 'tensao-normal' };
+    if (sys < 130 && dia < 80) return { texto: 'Normal', cls: 'tensao-normal' };
+    if (sys < 140 || dia < 90) return { texto: 'Limitrofe', cls: 'tensao-limitrofe' };
+    if (sys < 160 || dia < 100) return { texto: 'HTA Grau 1', cls: 'tensao-alta' };
+    if (sys < 180 || dia < 110) return { texto: 'HTA Grau 2', cls: 'tensao-alta' };
+    return { texto: 'HTA Grau 3', cls: 'tensao-alta' };
+  }
+
+  /* === ABRIR RELATORIO DE ACIDENTE (print) === */
+  function abrirRelatorioAcidente(id) {
+    window.open('acidente_print.html?id=' + id, '_blank');
+  }
+
+  /* === GERAR RESUMO MENSAL === */
+  async function gerarResumoMensal() {
+    var mes = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
+    var nomeMes = obterNomeMes(new Date().getMonth());
+    var ano = new Date().getFullYear();
+
+    try {
+      var r = await Promise.allSettled([
+        db.query('hst_acidentes', 'select=*&order=data_hora.desc&limit=500'),
+        db.query('hst_epi_entregas', 'select=*&order=data_entrega.desc&limit=2000'),
+        db.query('hst_medicoes_tensao', 'select=*&order=data_medicao.desc&limit=5000'),
+        db.query('hst_acoes_corretivas', 'select=*&limit=500'),
+        db.query('hst_areas_risco', 'select=*&limit=500')
+      ]);
+      var acidentes = r[0].status === 'fulfilled' ? r[0].value : [];
+      var entregas = r[1].status === 'fulfilled' ? r[1].value : [];
+      var medicoes = r[2].status === 'fulfilled' ? r[2].value : [];
+      var acoes = r[3].status === 'fulfilled' ? r[3].value : [];
+      var areas = r[4].status === 'fulfilled' ? r[4].value : [];
+
+      var accMes = acidentes.filter(function(a) { return a.data_hora && a.data_hora.startsWith(mes); });
+      var entMes = entregas.filter(function(e) { return e.data_entrega && e.data_entrega.startsWith(mes); });
+      var medMes = medicoes.filter(function(m) { return m.data_medicao && m.data_medicao.startsWith(mes); });
+      var acoesPend = acoes.filter(function(a) { return a.status !== 'Concluida'; });
+      var acoesAtrasadas = acoesPend.filter(function(a) { return a.prazo && new Date(a.prazo) < new Date(); });
+
+      /* Colabs com HTA na ultima medicao */
+      var colabUltima = {};
+      medicoes.forEach(function(m) {
+        if (!colabUltima[m.colaborador_nome] || m.data_medicao > colabUltima[m.colaborador_nome].data_medicao) {
+          colabUltima[m.colaborador_nome] = m;
+        }
+      });
+      var htas = Object.values(colabUltima).filter(function(m) {
+        return classificarTensao(m.sistolica, m.diastolica).texto.indexOf('HTA') !== -1;
+      });
+
+      var html = montarCabecalho('Resumo Mensal HST — ' + nomeMes + ' ' + ano);
+      html += '<div class="relatorio-numero">Periodo: ' + nomeMes + ' ' + ano + '</div>';
+
+      /* KPIs */
+      html += '<div class="seccao"><div class="seccao-titulo">Indicadores do Mes</div>' +
+        '<table class="tabela-acoes"><thead><tr><th>Indicador</th><th>Valor</th></tr></thead><tbody>' +
+        '<tr><td>Acidentes / Incidentes</td><td><strong>' + accMes.length + '</strong></td></tr>' +
+        '<tr><td>Acidentes com Afastamento</td><td><strong>' + accMes.filter(function(a) { return a.tipo_ocorrencia === 'Acidente com Afastamento'; }).length + '</strong></td></tr>' +
+        '<tr><td>Dias Totais de Afastamento</td><td><strong>' + accMes.reduce(function(s, a) { return s + (a.dias_afastamento || 0); }, 0) + '</strong></td></tr>' +
+        '<tr><td>Entregas de EPIs</td><td><strong>' + entMes.length + '</strong></td></tr>' +
+        '<tr><td>Medicoes de Tensao Arterial</td><td><strong>' + medMes.length + '</strong></td></tr>' +
+        '<tr><td>Colaboradores com HTA</td><td><strong style="color:red;">' + htas.length + '</strong></td></tr>' +
+        '<tr><td>Accoes Corretivas Pendentes</td><td><strong>' + acoesPend.length + '</strong></td></tr>' +
+        '<tr><td>Accoes Atrasadas</td><td><strong style="color:red;">' + acoesAtrasadas.length + '</strong></td></tr>' +
+        '<tr><td>Areas de Risco Activas</td><td><strong>' + areas.filter(function(a) { return a.ativo !== false; }).length + '</strong></td></tr>' +
+        '</tbody></table></div>';
+
+      /* Lista de acidentes do mes */
+      if (accMes.length) {
+        html += '<div class="seccao"><div class="seccao-titulo">Acidentes do Mes</div>' +
+          '<table class="tabela-acoes"><thead><tr><th>Numero</th><th>Data</th><th>Colaborador</th><th>Tipo</th><th>Status</th></tr></thead><tbody>';
+        accMes.forEach(function(a) {
+          html += '<tr><td>' + escaparHTML(a.numero || '') + '</td><td>' + formataData(a.data_hora, true) + '</td><td>' + escaparHTML(a.colaborador_nome) + '</td><td>' + escaparHTML(a.tipo_ocorrencia) + '</td><td>' + (a.status || '') + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+      }
+
+      /* Colabs com HTA */
+      if (htas.length) {
+        html += '<div class="seccao"><div class="seccao-titulo">Colaboradores com Hipertensao (HTA)</div>' +
+          '<table class="tabela-acoes"><thead><tr><th>Colaborador</th><th>Ultima Medicao</th><th>Tensao</th><th>Classificacao</th></tr></thead><tbody>';
+        htas.forEach(function(m) {
+          var c = classificarTensao(m.sistolica, m.diastolica);
+          html += '<tr><td>' + escaparHTML(m.colaborador_nome) + '</td><td>' + formataData(m.data_medicao) + '</td><td><strong>' + m.sistolica + '/' + m.diastolica + '</strong></td><td>' + c.texto + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+      }
+
+      html += montarRodape();
+      abrirJanelaImpressao(html, 'Resumo_Mensal_HST_' + mes);
+    } catch(e) { mostrarToast('Erro ao gerar relatorio: ' + (e.message || e), 'erro'); }
+  }
+
+  /* === GERAR RELATORIO DE ACIDENTES === */
+  async function gerarRelatorioAcidentes() {
+    try {
+      var acidentes = await db.query('hst_acidentes', 'select=*&order=data_hora.desc&limit=500');
+      if (!acidentes.length) { mostrarToast('Nenhum acidente registado.', 'aviso'); return; }
+
+      var html = montarCabecalho('Relatorio de Acidentes e Incidentes');
+      html += '<div class="relatorio-numero">Total: ' + acidentes.length + ' registo(s) | Gerado em ' + formataData(new Date().toISOString(), true) + '</div>';
+      html += '<div class="seccao"><div class="seccao-titulo">Lista Completa</div>' +
+        '<table class="tabela-acoes"><thead><tr><th>#</th><th>Numero</th><th>Data</th><th>Colaborador</th><th>Tipo</th><th>Status</th><th>Dias Afast.</th><th>Atestado</th></tr></thead><tbody>';
+      acidentes.forEach(function(a, i) {
+        html += '<tr><td>' + (i + 1) + '</td><td>' + escaparHTML(a.numero || '') + '</td><td>' + formataData(a.data_hora, true) + '</td><td>' + escaparHTML(a.colaborador_nome) + '</td><td>' + escaparHTML(a.tipo_ocorrencia) + '</td><td>' + (a.status || '') + '</td><td>' + (a.dias_afastamento || 0) + '</td><td>' + (a.gerou_atestado ? 'Sim' : 'Nao') + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+      html += montarRodape();
+      abrirJanelaImpressao(html, 'Relatorio_Acidentes_HST');
+    } catch(e) { mostrarToast('Erro: ' + (e.message || e), 'erro'); }
+  }
+
+  /* === GERAR RELATORIO DE EPIs === */
+  async function gerarRelatorioEPIs() {
+    try {
+      var entregas = await db.query('hst_epi_entregas', 'select=*&order=data_entrega.desc&limit=2000');
+      if (!entregas.length) { mostrarToast('Nenhuma entrega registada.', 'aviso'); return; }
+
+      var html = montarCabecalho('Relatorio de Entregas de EPIs');
+      html += '<div class="relatorio-numero">Total: ' + entregas.length + ' entrega(s)</div>';
+      html += '<div class="seccao"><div class="seccao-titulo">Registo de Entregas</div>' +
+        '<table class="tabela-acoes"><thead><tr><th>#</th><th>Data</th><th>Colaborador</th><th>EPI</th><th>Qtd</th><th>Observacoes</th></tr></thead><tbody>';
+      entregas.forEach(function(e, i) {
+        html += '<tr><td>' + (i + 1) + '</td><td>' + formataData(e.data_entrega) + '</td><td>' + escaparHTML(e.colaborador_nome) + '</td><td>' + escaparHTML(e.epi_nome) + '</td><td>' + (e.quantidade || 1) + '</td><td>' + escaparHTML(e.observacoes || '—') + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+      html += montarRodape();
+      abrirJanelaImpressao(html, 'Relatorio_EPIs_HST');
+    } catch(e) { mostrarToast('Erro: ' + (e.message || e), 'erro'); }
+  }
+
+  /* === GERAR RELATORIO DE TENSAO === */
+  async function gerarRelatorioTensao() {
+    try {
+      var medicoes = await db.query('hst_medicoes_tensao', 'select=*&order=data_medicao.desc&limit=5000');
+      if (!medicoes.length) { mostrarToast('Nenhuma medicao registada.', 'aviso'); return; }
+
+      /* Agrupar por colaborador, ultima medicao */
+      var colabMap = {};
+      medicoes.forEach(function(m) {
+        if (!colabMap[m.colaborador_nome] || m.data_medicao > colabMap[m.colaborador_nome].data_medicao) {
+          colabMap[m.colaborador_nome] = m;
+        }
+      });
+      var lista = Object.values(colabMap).sort(function(a, b) {
+        var ca = classificarTensao(a.sistolica, a.diastolica);
+        var cb = classificarTensao(b.sistolica, b.diastolica);
+        var ordem = { 'tensao-alta': 0, 'tensao-limitrofe': 1, 'tensao-normal': 2 };
+        return (ordem[ca.cls] || 3) - (ordem[cb.cls] || 3);
+      });
+
+      var html = montarCabecalho('Relatorio de Tensao Arterial — Colaboradores');
+      html += '<div class="relatorio-numero">Total de colaboradores monitorizados: ' + lista.length + '</div>';
+      html += '<div class="seccao"><div class="seccao-titulo">Ultima Medicao por Colaborador</div>' +
+        '<table class="tabela-acoes"><thead><tr><th>#</th><th>Colaborador</th><th>Data</th><th>Tensao</th><th>FC</th><th>Classificacao</th><th>Medido Por</th></tr></thead><tbody>';
+      lista.forEach(function(m, i) {
+        var c = classificarTensao(m.sistolica, m.diastolica);
+        var cor = c.cls === 'tensao-alta' ? 'color:red;font-weight:700;' : c.cls === 'tensao-limitrofe' ? 'color:orange;font-weight:700;' : '';
+        html += '<tr><td>' + (i + 1) + '</td><td>' + escaparHTML(m.colaborador_nome) + '</td><td>' + formataData(m.data_medicao) + '</td><td style="' + cor + '">' + m.sistolica + '/' + m.diastolica + '</td><td>' + (m.frequencia_cardiaca || '—') + '</td><td style="' + cor + '">' + c.texto + '</td><td>' + escaparHTML(m.medido_por || '—') + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+      html += montarRodape();
+      abrirJanelaImpressao(html, 'Relatorio_Tensao_Arterial_HST');
+    } catch(e) { mostrarToast('Erro: ' + (e.message || e), 'erro'); }
+  }
+
+  /* === HELPERS DE IMPRESSAO === */
+  function obterNomeMes(mes) {
+    return ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][mes];
+  }
+
+  function montarCabecalho(titulo) {
+    return '<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8"><title>' + titulo + '</title>' +
+      '<style>' +
+      '* { margin:0; padding:0; box-sizing:border-box; }' +
+      'body { font-family:Inter,Segoe UI,system-ui,sans-serif; font-size:12px; color:#2C3E50; background:#F4F6F9; }' +
+      '.no-print { padding:12px 20px; background:#1E293B; color:#fff; display:flex; justify-content:space-between; align-items:center; position:fixed; top:0; left:0; right:0; z-index:999; }' +
+      '.no-print button { padding:8px 20px; border:none; background:#F59E0B; color:#000; font-weight:700; border-radius:6px; cursor:pointer; }' +
+      '.pagina-a4 { max-width:210mm; margin:20px auto; background:#fff; padding:25mm 20mm 20mm; box-shadow:0 4px 12px rgba(0,0,0,0.12); border-radius:4px; }' +
+      '.cabecalho { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #1E293B; padding-bottom:14px; margin-bottom:20px; }' +
+      '.cabecalho img { height:45px; }' +
+      '.cabecalho-centro { text-align:center; flex:1; }' +
+      '.cabecalho-titulo { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:#7F8C8D; margin-bottom:2px; }' +
+      '.cabecalho-empresa { font-size:14px; font-weight:700; color:#1E293B; }' +
+      '.cabecalho-doc { font-size:9px; color:#94A3B8; margin-top:4px; }' +
+      '.relatorio-numero { text-align:center; font-size:14px; font-weight:700; color:#1E293B; margin-bottom:20px; padding:10px; background:#F4F6F9; border-radius:6px; border:1px solid #E2E8F0; }' +
+      '.seccao { margin-bottom:16px; }' +
+      '.seccao-titulo { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#1E293B; border-bottom:1px solid #E2E8F0; padding-bottom:4px; margin-bottom:8px; }' +
+      '.tabela-acoes { width:100%; border-collapse:collapse; font-size:11px; margin-top:8px; }' +
+      '.tabela-acoes th { background:#1E293B; color:#fff; padding:6px 10px; text-align:left; font-size:10px; }' +
+      '.tabela-acoes td { padding:5px 10px; border-bottom:1px solid #E2E8F0; }' +
+      '.tabela-acoes tbody tr:nth-child(even) { background:#F8FAFC; }' +
+      '.rodape { text-align:center; margin-top:24px; padding-top:10px; border-top:1px solid #E2E8F0; font-size:8px; color:#94A3B8; display:flex; justify-content:space-between; }' +
+      '.rodape img { height:20px; }' +
+      '@media print { .no-print { display:none!important; } body { background:#fff; } .pagina-a4 { box-shadow:none; margin:0; padding:15mm; max-width:none; } @page { size:A4; margin:10mm; } }' +
+      '</style></head><body>' +
+      '<div class="no-print"><button onclick="window.print()">Imprimir / Guardar PDF</button></div>' +
+      '<div class="pagina-a4">' +
+      '<div class="cabecalho">' +
+        '<img src="../shared/logos/DANMO.png" alt="DANMO" onerror="this.style.display=\'none\'" />' +
+        '<div class="cabecalho-centro"><div class="cabecalho-titulo">Relatorio HST</div><div class="cabecalho-empresa">DANMO SERVICE SYSTEM, LDA</div><div class="cabecalho-doc">Porto da Beira, Mocambique</div></div>' +
+        '<img src="../shared/logos/MMM.png" alt="MMM" style="height:35px;" onerror="this.style.display=\'none\'" />' +
+      '</div>';
+  }
+
+  function montarRodape() {
+    return '<div class="rodape"><span>DAN_QSS_FR_018_REV01</span><span>Documento gerado em ' + formataData(new Date().toISOString(), true) + '</span><img src="../shared/logos/MESQUITA.png" alt="MESQUITA" onerror="this.style.display=\'none\'" /></div></div></body></html>';
+  }
+
+  function abrirJanelaImpressao(html, nome) {
+    var win = window.open('', '_blank');
+    if (!win) { mostrarToast('Bloqueador de popups impediu a abertura. Permita popups para este site.', 'aviso'); return; }
+    win.document.write(html);
+    win.document.close();
+  }
+
+  /* === HISTORICO DE ACIDENTES (listagem com link para relatorio) === */
+  async function carregarHistorico() {
+    try {
+      todosAcidentes = await db.query('hst_acidentes', 'select=*&order=data_hora.desc&limit=200');
+      document.getElementById('hist-loading').style.display = 'none';
+      if (!todosAcidentes.length) { document.getElementById('hist-empty').style.display = 'block'; return; }
+      var html = '';
+      todosAcidentes.forEach(function(a) {
+        var statusBadge = { 'Em Investigacao': 'badge-aviso', 'Investigado': 'badge-info', 'Encerrado': 'badge-sucesso' };
+        var badgeCls = statusBadge[a.status] || 'badge-secundario';
+        html += '<div class="historico-linha" onclick="abrirRelatorioAcidente(' + a.id + ')" style="cursor:pointer;">' +
+          '<div class="historico-num">' + escaparHTML(a.numero || '—') + '</div>' +
+          '<div class="historico-info">' + formataData(a.data_hora, true) + ' — ' + escaparHTML(a.colaborador_nome) + '</div>' +
+          '<div style="margin-right:12px;"><span class="badge ' + badgeCls + '">' + (a.status || '') + '</span></div>' +
+          '<div class="historico-accao"><button class="btn btn-secundario btn-sm" onclick="event.stopPropagation();abrirRelatorioAcidente(' + a.id + ')">Ver</button></div>' +
+        '</div>';
+      });
+      document.getElementById('hist-container').innerHTML = html;
+    } catch(e) {
+      document.getElementById('hist-loading').style.display = 'none';
+      mostrarToast('Erro ao carregar historico.', 'erro');
+    }
+  }
+
+  carregarHistorico();
+  </script>
+</body>
+</html>

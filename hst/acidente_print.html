@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatorio de Acidente — HST — Danmo Hub</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 12px; color: #2C3E50; background: #F4F6F9; }
+    .no-print { padding: 16px; background: #1E293B; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+    .no-print button { padding: 8px 20px; border: none; background: #F59E0B; color: #000; font-weight: 700; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .no-print a { color: #94A3B8; text-decoration: none; font-size: 13px; }
+    .no-print a:hover { color: #F59E0B; }
+
+    .pagina-a4 { max-width: 210mm; margin: 20px auto; background: #fff; padding: 30mm 20mm 20mm 20mm; box-shadow: 0 4px 12px rgba(0,0,0,0.12); border-radius: 4px; }
+
+    .cabecalho { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1E293B; padding-bottom: 14px; margin-bottom: 20px; }
+    .cabecalho img { height: 45px; }
+    .cabecalho-centro { text-align: center; flex: 1; }
+    .cabecalho-titulo { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #7F8C8D; margin-bottom: 2px; }
+    .cabecalho-empresa { font-size: 14px; font-weight: 700; color: #1E293B; }
+    .cabecalho-doc { font-size: 9px; color: #94A3B8; margin-top: 4px; }
+
+    .relatorio-numero { text-align: center; font-size: 16px; font-weight: 700; color: #1E293B; margin-bottom: 20px; padding: 10px; background: #F4F6F9; border-radius: 6px; border: 1px solid #E2E8F0; }
+
+    .seccao { margin-bottom: 16px; }
+    .seccao-titulo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #1E293B; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px; margin-bottom: 8px; }
+    .campo { display: flex; margin-bottom: 5px; }
+    .campo-label { width: 160px; font-weight: 600; color: #7F8C8D; flex-shrink: 0; }
+    .campo-valor { flex: 1; }
+
+    .causa-box { padding: 8px 12px; border-radius: 4px; margin-bottom: 6px; border-left: 4px solid; }
+    .causa-humano { background: #FEF3C7; border-left-color: #F59E0B; }
+    .causa-ambiental { background: #DBEAFE; border-left-color: #3B82F6; }
+    .causa-equip { background: #FEE2E2; border-left-color: #EF4444; }
+
+    .tabela-acoes { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px; }
+    .tabela-acoes th { background: #1E293B; color: #fff; padding: 6px 10px; text-align: left; font-size: 10px; }
+    .tabela-acoes td { padding: 5px 10px; border-bottom: 1px solid #E2E8F0; }
+
+    .assinaturas { display: flex; justify-content: space-between; margin-top: 40px; }
+    .assinatura-bloco { text-align: center; width: 30%; }
+    .assinatura-linha { border-top: 1px solid #2C3E50; margin-top: 40px; padding-top: 6px; font-size: 10px; font-weight: 600; }
+
+    .rodape { text-align: center; margin-top: 24px; padding-top: 10px; border-top: 1px solid #E2E8F0; font-size: 8px; color: #94A3B8; display: flex; justify-content: space-between; align-items: center; }
+    .rodape img { height: 20px; }
+
+    .loading { text-align: center; padding: 60px; font-size: 16px; color: #7F8C8D; }
+
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff; }
+      .pagina-a4 { box-shadow: none; margin: 0; padding: 20mm; max-width: none; }
+      @page { size: A4; margin: 10mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">A carregar relatorio...</div>
+  <div id="relatorio" style="display:none;">
+    <div class="no-print">
+      <a href="acidentes.html">&#8592; Voltar aos Acidentes</a>
+      <button onclick="window.print()">Imprimir / Guardar PDF</button>
+    </div>
+    <div class="pagina-a4" id="conteudo-relatorio"></div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/utils.js"></script>
+
+  <script>
+  function formataData(d, h) { if (!d) return '—'; var dt = new Date(d); if (isNaN(dt)) return d; var dia = String(dt.getDate()).padStart(2,'0'); var mes = String(dt.getMonth()+1).padStart(2,'0'); var ano = dt.getFullYear(); if (h) return dia+'/'+mes+'/'+ano+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0'); return dia+'/'+mes+'/'+ano; }
+  function escaparHTML(s) { if (!s) return ''; var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+
+  (async function() {
+    var params = new URLSearchParams(window.location.search);
+    var id = params.get('id');
+    if (!id) { document.getElementById('loading').textContent = 'ID do acidente nao especificado.'; return; }
+
+    try {
+      var acc = (await db.query('hst_acidentes', 'select=*&id=eq.' + id))[0];
+      if (!acc) { document.getElementById('loading').textContent = 'Acidente nao encontrado.'; return; }
+      var acoes = await db.query('hst_acoes_corretivas', 'select=*&acidente_id=eq.' + id);
+
+      var acoesHtml = '';
+      if (acoes.length) {
+        acoesHtml = '<div class="seccao"><div class="seccao-titulo">Accoes Correctivas</div>' +
+          '<table class="tabela-acoes"><thead><tr><th>#</th><th>Accao</th><th>Responsavel</th><th>Prazo</th><th>Status</th></tr></thead><tbody>';
+        acoes.forEach(function(ac, i) {
+          var atrasada = ac.status !== 'Concluida' && ac.prazo && new Date(ac.prazo) < new Date();
+          acoesHtml += '<tr><td>' + (i+1) + '</td><td>' + escaparHTML(ac.descricao_acao) + '</td><td>' + escaparHTML(ac.responsavel) + '</td><td>' + formataData(ac.prazo) + (atrasada ? ' <strong style="color:red;">ATRASADA</strong>' : '') + '</td><td>' + (ac.status || '—') + '</td></tr>';
+        });
+        acoesHtml += '</tbody></table></div>';
+      }
+
+      var causaHtml = '';
+      if (acc.causa_raiz || acc.fator_humano || acc.fator_ambiental || acc.fator_equipamento) {
+        causaHtml = '<div class="seccao"><div class="seccao-titulo">Analise de Causa Raiz</div>';
+        if (acc.causa_raiz) causaHtml += '<div style="margin-bottom:8px;"><strong>Causa Raiz:</strong> ' + escaparHTML(acc.causa_raiz) + '</div>';
+        if (acc.fator_humano) causaHtml += '<div class="causa-box causa-humano"><strong>Fator Humano:</strong> ' + escaparHTML(acc.fator_humano) + '</div>';
+        if (acc.fator_ambiental) causaHtml += '<div class="causa-box causa-ambiental"><strong>Fator Ambiental:</strong> ' + escaparHTML(acc.fator_ambiental) + '</div>';
+        if (acc.fator_equipamento) causaHtml += '<div class="causa-box causa-equip"><strong>Fator Equipamento:</strong> ' + escaparHTML(acc.fator_equipamento) + '</div>';
+        causaHtml += '</div>';
+      }
+
+      var html =
+        '<div class="cabecalho">' +
+          '<img src="../shared/logos/DANMO.png" alt="DANMO" onerror="this.style.display=\'none\'" />' +
+          '<div class="cabecalho-centro"><div class="cabecalho-titulo">Relatorio de Investigacao</div><div class="cabecalho-empresa">DANMO SERVICE SYSTEM, LDA</div><div class="cabecalho-doc">Porto da Beira, Mocambique</div></div>' +
+          '<img src="../shared/logos/MMM.png" alt="MMM" style="height:35px;" onerror="this.style.display=\'none\'" />' +
+        '</div>' +
+        '<div class="relatorio-numero">' + escaparHTML(acc.numero || '—') + '</div>' +
+        '<div class="seccao"><div class="seccao-titulo">1. Dados do Colaborador</div>' +
+          '<div class="campo"><div class="campo-label">Nome:</div><div class="campo-valor">' + escaparHTML(acc.colaborador_nome) + '</div></div>' +
+        '</div>' +
+        '<div class="seccao"><div class="seccao-titulo">2. Dados do Evento</div>' +
+          '<div class="campo"><div class="campo-label">Data / Hora:</div><div class="campo-valor">' + formataData(acc.data_hora, true) + '</div></div>' +
+          '<div class="campo"><div class="campo-label">Tipo:</div><div class="campo-valor">' + escaparHTML(acc.tipo_ocorrencia) + '</div></div>' +
+          '<div class="campo"><div class="campo-label">Local / Area:</div><div class="campo-valor">' + escaparHTML(acc.area_risco_nome || '—') + '</div></div>' +
+          '<div class="campo"><div class="campo-label">Tipo de Lesao:</div><div class="campo-valor">' + escaparHTML(acc.tipo_lesao || '—') + '</div></div>' +
+          '<div class="campo"><div class="campo-label">Parte do Corpo:</div><div class="campo-valor">' + escaparHTML(acc.parte_corpo || '—') + '</div></div>' +
+          '<div class="campo"><div class="campo-label">Dias Afastamento:</div><div class="campo-valor">' + (acc.dias_afastamento || 0) + '</div></div>' +
+          '<div class="campo"><div class="campo-label">Atestado Medico:</div><div class="campo-valor">' + (acc.gerou_atestado ? 'Sim' + (acc.numero_atestado ? ' — ' + escaparHTML(acc.numero_atestado) : '') : 'Nao') + '</div></div>' +
+          '<div class="campo"><div class="campo-label">Testemunhas:</div><div class="campo-valor">' + escaparHTML(acc.testemunhas || 'Nao indicadas') + '</div></div>' +
+        '</div>' +
+        '<div class="seccao"><div class="seccao-titulo">3. Descricao do Evento</div>' +
+          '<p style="line-height:1.6;">' + escaparHTML(acc.descricao).replace(/\n/g, '<br>') + '</p>' +
+        '</div>' +
+        causaHtml +
+        acoesHtml +
+        '<div class="assinaturas">' +
+          '<div class="assinatura-bloco"><div class="assinatura-linha">Tecnico HST</div></div>' +
+          '<div class="assinatura-bloco"><div class="assinatura-linha">Colaborador Acidentado</div></div>' +
+          '<div class="assinatura-bloco"><div class="assinatura-linha">Responsavel da Area</div></div>' +
+        '</div>' +
+        '<div class="rodape">' +
+          '<span>DAN_QSS_FR_018_REV01</span>' +
+          '<span>Documento gerado em ' + formataData(new Date().toISOString(), true) + '</span>' +
+          '<img src="../shared/logos/MESQUITA.png" alt="MESQUITA" onerror="this.style.display=\'none\'" />' +
+        '</div>';
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('relatorio').style.display = 'block';
+      document.getElementById('conteudo-relatorio').innerHTML = html;
+      document.title = 'Relatorio ' + (acc.numero || '') + ' — HST';
+
+    } catch(e) {
+      document.getElementById('loading').textContent = 'Erro ao carregar: ' + (e.message || e);
+    }
+  })();
+  </script>
+</body>
+</html>
