@@ -28,6 +28,7 @@
     { id: 'admin', label: 'Admin. Oficinal', icon: '&#128188;', pasta: 'rh|financeiro',
       sub: [
         { label: 'RH & Quadro de Pessoal',   href: 'rh/index.html' },
+        { label: 'Avaliação de Desempenho',  href: 'avaliacao-desempenho/avaliacoes.html' },
         { label: 'Finanças & Faturas',       href: 'financeiro/index.html' }
       ] },
 
