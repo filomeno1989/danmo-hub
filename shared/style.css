@@ -857,3 +857,72 @@ table tbody tr:hover {
   color: var(--cor-sucesso) !important;
   font-weight: 600;
 }
+
+/* ── TOAST (notificações) ─────────────────────────────────
+   Antes não existia CSS nenhum para isto — por isso aparecia
+   sem estilo, sem posição fixa, lá em baixo na página. */
+#toast-container {
+  position: fixed;
+  top: calc(var(--topbar-h) + 20px);
+  right: 20px;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 380px;
+  width: calc(100% - 40px);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-left: 4px solid var(--cor-info);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-lg);
+  padding: 14px 16px;
+  font-size: var(--tamanho-base);
+  font-weight: 600;
+  color: var(--cor-texto);
+  transform: translateX(130%);
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  pointer-events: auto;
+}
+.toast.toast-visivel { transform: translateX(0); opacity: 1; }
+.toast.toast-saindo { transform: translateX(130%); opacity: 0; }
+
+.toast-sucesso { border-left-color: var(--cor-sucesso); background: var(--cor-sucesso-bg); }
+.toast-erro    { border-left-color: var(--cor-erro);    background: var(--cor-erro-bg); }
+.toast-aviso   { border-left-color: var(--cor-aviso);   background: var(--cor-aviso-bg); }
+.toast-info    { border-left-color: var(--cor-info);    background: var(--cor-info-bg); }
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+.toast-sucesso .toast-icon { background: var(--cor-sucesso); }
+.toast-erro    .toast-icon { background: var(--cor-erro); }
+.toast-aviso   .toast-icon { background: var(--cor-aviso); }
+.toast-info    .toast-icon { background: var(--cor-info); }
+
+.toast-msg { flex: 1; line-height: 1.35; font-size: var(--tamanho-sm); }
+
+.toast-fechar {
+  background: none; border: none;
+  font-size: 1.2rem; line-height: 1; padding: 0;
+  color: var(--cor-texto-sec); cursor: pointer; flex-shrink: 0;
+}
+.toast-fechar:hover { color: var(--cor-texto); }
+
+@media (max-width: 600px) {
+  #toast-container { left: 12px; right: 12px; top: calc(var(--topbar-h) + 12px); max-width: none; width: auto; }
+}
