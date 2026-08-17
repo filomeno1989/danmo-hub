@@ -465,8 +465,8 @@
   }
 
   /* === Accoes correctivas === */
-  function abrirModalAccao(accidenteId) {
-    document.getElementById('ac-acidente-id').value = acidenteId;
+  function abrirModalAccao(acidenteId) {
+  document.getElementById('ac-acidente-id').value = acidenteId;
     fecharModal('modal-detalhe');
     setTimeout(function() { abrirModal('modal-accao'); }, 200);
   }
