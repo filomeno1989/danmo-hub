@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt" data-tema="claro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Avaliação de Desempenho — Admin. Oficinal — Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script>
+    if (!verificarSessao()) {
+      localStorage.setItem('dss_user', JSON.stringify({
+        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
+        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
+      }));
+    }
+  </script>
+  <style>
+    .kpi-grid-aval { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .kpi-mini { background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio-md); padding: 14px 16px; text-align: center; }
+    .kpi-mini .num { font-size: 1.6rem; font-weight: 800; color: var(--cor-texto); }
+    .kpi-mini .lbl { font-size: var(--tamanho-xs); color: var(--cor-texto-sec); margin-top: 2px; }
+    .kpi-mini.pendente .num { color: var(--cor-texto-sec); }
+    .kpi-mini.auto .num { color: var(--cor-info); }
+    .kpi-mini.supervisor .num { color: var(--cor-aviso); }
+    .kpi-mini.completo .num { color: var(--cor-sucesso); }
+
+    .campanha-selector { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .campanha-selector select { max-width: 260px; }
+    .campanha-tag { font-size: var(--tamanho-xs); font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+    .campanha-tag.aberta { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+    .campanha-tag.fechada { background: var(--cor-borda); color: var(--cor-texto-sec); }
+
+    .aviso-schema { background: var(--cor-aviso-bg); border: 1px solid var(--cor-aviso); color: var(--cor-aviso); border-radius: var(--raio-md); padding: 12px 16px; margin-bottom: 16px; font-size: var(--tamanho-sm); display: none; }
+
+    .filtros-tabela { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .filtros-tabela select, .filtros-tabela input { max-width: 220px; }
+
+    .estado-badge { font-size: 0.7rem; }
+    .link-detalhe { color: var(--cor-info); cursor: pointer; font-weight: 600; }
+    .link-detalhe:hover { color: var(--cor-ambar); }
+
+    .ref-tabela-detalhe { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .ref-tabela-detalhe th, .ref-tabela-detalhe td { padding: 6px 8px; font-size: var(--tamanho-sm); border-bottom: 1px solid var(--cor-borda); text-align: center; }
+    .ref-tabela-detalhe th:first-child, .ref-tabela-detalhe td:first-child { text-align: left; }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="main">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+      <div>
+        <h1 class="pagina-titulo">Avaliação de Desempenho</h1>
+        <p class="pagina-subtitulo">Admin. Oficinal — Gestão de Campanhas Mensais</p>
+      </div>
+      <button class="btn btn-primario" id="btn-nova-campanha">+ Nova Campanha</button>
+    </div>
+
+    <div class="aviso-schema" id="aviso-schema"></div>
+
+    <div class="campanha-selector">
+      <label class="form-label" style="margin:0;">Campanha:</label>
+      <select class="form-select" id="sel-campanha"></select>
+      <span class="campanha-tag" id="campanha-estado-tag"></span>
+      <button class="btn btn-secundario btn-sm" id="btn-fechar-campanha" style="display:none;">Fechar Campanha</button>
+    </div>
+
+    <div class="kpi-grid-aval" id="kpi-grid">
+      <div class="kpi-mini"><div class="num" id="kpi-total">—</div><div class="lbl">Total</div></div>
+      <div class="kpi-mini pendente"><div class="num" id="kpi-pendente">—</div><div class="lbl">Sem Auto-Avaliação</div></div>
+      <div class="kpi-mini auto"><div class="num" id="kpi-auto">—</div><div class="lbl">À espera do Supervisor</div></div>
+      <div class="kpi-mini supervisor"><div class="num" id="kpi-supervisor">—</div><div class="lbl">À espera do Director</div></div>
+      <div class="kpi-mini completo"><div class="num" id="kpi-completo">—</div><div class="lbl">Completas</div></div>
+    </div>
+
+    <div class="painel">
+      <div class="filtros-tabela">
+        <select class="form-select" id="f-departamento"><option value="">Todos os Departamentos</option></select>
+        <select class="form-select" id="f-estado">
+          <option value="">Todos os Estados</option>
+          <option value="pendente">Pendente (sem auto)</option>
+          <option value="auto_preenchida">À espera do Supervisor</option>
+          <option value="supervisor_preenchida">À espera do Director</option>
+          <option value="director_preenchida">Completa</option>
+        </select>
+        <input class="form-input" type="text" id="f-nome" placeholder="Pesquisar nome..." style="max-width:220px;" />
+      </div>
+
+      <div class="tabela-container">
+        <div id="tabela-loading" class="spinner" style="padding:32px;text-align:center;">A carregar...</div>
+        <div id="tabela-vazia-msg" class="tabela-vazia" style="display:none;">Nenhuma avaliação encontrada.</div>
+        <table class="tabela" id="tabela-aval" style="display:none;">
+          <thead>
+            <tr>
+              <th>Colaborador</th>
+              <th>Departamento</th>
+              <th>Supervisor</th>
+              <th>Estado</th>
+              <th>Auto</th>
+              <th>Supervisor</th>
+              <th>Final</th>
+              <th>Classificação</th>
+              <th>Acção</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Nova Campanha -->
+  <div id="modal-nova-campanha" class="modal-fundo">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo">Nova Campanha de Avaliação</span>
+        <button class="modal-fechar" id="btn-fechar-nova-x">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="form-grupo">
+          <label class="form-label" for="nc-mes">Mês (referência)</label>
+          <input class="form-input" type="month" id="nc-mes" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="nc-inicio">Início do Prazo</label>
+          <input class="form-input" type="date" id="nc-inicio" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="nc-fim">Fim do Prazo</label>
+          <input class="form-input" type="date" id="nc-fim" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="nc-obs">Observações (opcional)</label>
+          <textarea class="form-textarea" id="nc-obs" rows="2"></textarea>
+        </div>
+        <p style="font-size:var(--tamanho-xs);color:var(--cor-texto-sec);">Ao criar, o sistema gera automaticamente uma avaliação para cada colaborador activo — não precisas de copiar nada manualmente.</p>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" id="btn-cancelar-nova">Cancelar</button>
+        <button class="btn btn-verde" id="btn-criar-campanha">Criar Campanha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalhe -->
+  <div id="modal-detalhe" class="modal-fundo">
+    <div class="modal" style="max-width:640px;max-height:85vh;overflow-y:auto;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="detalhe-titulo">Detalhe</span>
+        <button class="modal-fechar" id="btn-fechar-detalhe-x">&times;</button>
+      </div>
+      <div class="modal-corpo" id="detalhe-corpo"></div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" id="btn-fechar-detalhe">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script src="criterios.js"></script>
+
+  <script>
+  var campanhas = [];
+  var campanhaActual = null;
+  var avaliacoesAtuais = [];
+
+  (async function init() {
+    await carregarCampanhas();
+    document.getElementById('btn-nova-campanha').addEventListener('click', abrirModalNovaCampanha);
+    document.getElementById('btn-cancelar-nova').addEventListener('click', function() { fecharModal('modal-nova-campanha'); });
+    document.getElementById('btn-fechar-nova-x').addEventListener('click', function() { fecharModal('modal-nova-campanha'); });
+    document.getElementById('btn-criar-campanha').addEventListener('click', criarCampanha);
+    document.getElementById('btn-fechar-campanha').addEventListener('click', fecharCampanhaAtual);
+    document.getElementById('sel-campanha').addEventListener('change', function() {
+      campanhaActual = campanhas.find(function(c) { return String(c.id) === this.value; }, this);
+      carregarAvaliacoes();
+    });
+    document.getElementById('f-departamento').addEventListener('change', renderTabela);
+    document.getElementById('f-estado').addEventListener('change', renderTabela);
+    document.getElementById('f-nome').addEventListener('input', renderTabela);
+    document.getElementById('btn-fechar-detalhe').addEventListener('click', function() { fecharModal('modal-detalhe'); });
+    document.getElementById('btn-fechar-detalhe-x').addEventListener('click', function() { fecharModal('modal-detalhe'); });
+  })();
+
+  async function carregarCampanhas() {
+    try {
+      campanhas = await db.query('rh_campanhas_avaliacao', 'order=mes.desc') || [];
+      var sel = document.getElementById('sel-campanha');
+      if (!campanhas.length) {
+        sel.innerHTML = '<option value="">Nenhuma campanha criada ainda</option>';
+        document.getElementById('tabela-loading').style.display = 'none';
+        document.getElementById('tabela-vazia-msg').style.display = 'block';
+        document.getElementById('tabela-vazia-msg').textContent = 'Cria a primeira campanha para começar.';
+        return;
+      }
+      sel.innerHTML = campanhas.map(function(c) {
+        return '<option value="' + c.id + '">' + nomeMes(c.mes) + '</option>';
+      }).join('');
+      campanhaActual = campanhas[0];
+      sel.value = campanhaActual.id;
+      await carregarAvaliacoes();
+    } catch (e) {
+      console.error(e);
+      mostrarToast('Erro ao carregar campanhas.', 'erro');
+    }
+  }
+
+  var MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  function nomeMes(mesStr) {
+    var p = mesStr.split('-');
+    return MESES_PT[parseInt(p[1], 10) - 1] + ' ' + p[0];
+  }
+
+  async function carregarAvaliacoes() {
+    document.getElementById('tabela-loading').style.display = 'block';
+    document.getElementById('tabela-aval').style.display = 'none';
+    document.getElementById('tabela-vazia-msg').style.display = 'none';
+
+    document.getElementById('campanha-estado-tag').textContent = campanhaActual.estado === 'aberta' ? 'Aberta' : 'Fechada';
+    document.getElementById('campanha-estado-tag').className = 'campanha-tag ' + campanhaActual.estado;
+    document.getElementById('btn-fechar-campanha').style.display = campanhaActual.estado === 'aberta' ? 'inline-flex' : 'none';
+
+    try {
+      avaliacoesAtuais = await db.query('rh_avaliacoes', 'campanha_id=eq.' + campanhaActual.id + '&order=colaborador_nome.asc') || [];
+
+      /* Alertar se cargo/departamento/supervisor vieram vazios em massa
+         (sinal de que essas colunas podem não existir em collaborators) */
+      if (avaliacoesAtuais.length > 0) {
+        var semCargo = avaliacoesAtuais.filter(function(a) { return !a.colaborador_cargo; }).length;
+        var semDep = avaliacoesAtuais.filter(function(a) { return !a.colaborador_departamento; }).length;
+        var semSup = avaliacoesAtuais.filter(function(a) { return !a.supervisor_codigo; }).length;
+        var avisoEl = document.getElementById('aviso-schema');
+        if (semCargo === avaliacoesAtuais.length || semDep === avaliacoesAtuais.length || semSup === avaliacoesAtuais.length) {
+          var partes = [];
+          if (semCargo === avaliacoesAtuais.length) partes.push('Cargo');
+          if (semDep === avaliacoesAtuais.length) partes.push('Departamento');
+          if (semSup === avaliacoesAtuais.length) partes.push('Supervisor');
+          avisoEl.textContent = '⚠ ' + partes.join(', ') + ' vieram vazios para todos os colaboradores — a tabela "collaborators" pode não ter essas colunas com esses nomes exactos. As avaliações continuam a funcionar, só falta esta informação de contexto.';
+          avisoEl.style.display = 'block';
+        } else {
+          avisoEl.style.display = 'none';
+        }
+      }
+
+      /* Preencher filtro de departamentos */
+      var deps = [];
+      avaliacoesAtuais.forEach(function(a) {
+        if (a.colaborador_departamento && deps.indexOf(a.colaborador_departamento) === -1) deps.push(a.colaborador_departamento);
+      });
+      deps.sort();
+      var selDep = document.getElementById('f-departamento');
+      var valorAtual = selDep.value;
+      selDep.innerHTML = '<option value="">Todos os Departamentos</option>' + deps.map(function(d) { return '<option value="' + d + '">' + d + '</option>'; }).join('');
+      selDep.value = valorAtual;
+
+      atualizarKPIs();
+      renderTabela();
+    } catch (e) {
+      console.error(e);
+      mostrarToast('Erro ao carregar avaliações desta campanha.', 'erro');
+    }
+  }
+
+  function atualizarKPIs() {
+    var total = avaliacoesAtuais.length;
+    var semAuto = avaliacoesAtuais.filter(function(a) { return !a.auto_avaliacao; }).length;
+    var esperaSupervisor = avaliacoesAtuais.filter(function(a) { return a.auto_avaliacao && !a.avaliacao_supervisor; }).length;
+    var esperaDirector = avaliacoesAtuais.filter(function(a) { return a.avaliacao_supervisor && !a.avaliacao_director; }).length;
+    var completas = avaliacoesAtuais.filter(function(a) { return a.avaliacao_director; }).length;
+
+    document.getElementById('kpi-total').textContent = total;
+    document.getElementById('kpi-pendente').textContent = semAuto;
+    document.getElementById('kpi-auto').textContent = esperaSupervisor;
+    document.getElementById('kpi-supervisor').textContent = esperaDirector;
+    document.getElementById('kpi-completo').textContent = completas;
+  }
+
+  function estadoLabel(a) {
+    if (a.avaliacao_director) return { texto: 'Completa', cls: 'badge-sucesso' };
+    if (a.avaliacao_supervisor) return { texto: 'À espera do Director', cls: 'badge-aviso' };
+    if (a.auto_avaliacao) return { texto: 'À espera do Supervisor', cls: 'badge-info' };
+    return { texto: 'Sem Auto-Avaliação', cls: 'badge-secundario' };
+  }
+
+  function renderTabela() {
+    var depFiltro = document.getElementById('f-departamento').value;
+    var estadoFiltro = document.getElementById('f-estado').value;
+    var nomeFiltro = document.getElementById('f-nome').value.trim().toLowerCase();
+
+    var filtradas = avaliacoesAtuais.filter(function(a) {
+      if (depFiltro && a.colaborador_departamento !== depFiltro) return false;
+      if (nomeFiltro && a.colaborador_nome.toLowerCase().indexOf(nomeFiltro) === -1) return false;
+      if (estadoFiltro) {
+        if (estadoFiltro === 'pendente' && a.auto_avaliacao) return false;
+        if (estadoFiltro === 'auto_preenchida' && !(a.auto_avaliacao && !a.avaliacao_supervisor)) return false;
+        if (estadoFiltro === 'supervisor_preenchida' && !(a.avaliacao_supervisor && !a.avaliacao_director)) return false;
+        if (estadoFiltro === 'director_preenchida' && !a.avaliacao_director) return false;
+      }
+      return true;
+    });
+
+    document.getElementById('tabela-loading').style.display = 'none';
+
+    if (!filtradas.length) {
+      document.getElementById('tabela-aval').style.display = 'none';
+      document.getElementById('tabela-vazia-msg').style.display = 'block';
+      document.getElementById('tabela-vazia-msg').textContent = 'Nenhuma avaliação corresponde aos filtros.';
+      return;
+    }
+
+    document.getElementById('tabela-vazia-msg').style.display = 'none';
+    document.getElementById('tabela-aval').style.display = 'table';
+
+    document.getElementById('tabela-tbody').innerHTML = filtradas.map(function(a) {
+      var e = estadoLabel(a);
+      return '<tr>' +
+        '<td>' + escapar(a.colaborador_nome) + '</td>' +
+        '<td>' + escapar(a.colaborador_departamento || '—') + '</td>' +
+        '<td>' + escapar(a.supervisor_nome || '—') + '</td>' +
+        '<td><span class="badge ' + e.cls + ' estado-badge">' + e.texto + '</span></td>' +
+        '<td>' + (a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos.toFixed(1) : '—') + '</td>' +
+        '<td>' + (a.avaliacao_supervisor_pontos != null ? a.avaliacao_supervisor_pontos.toFixed(1) : '—') + '</td>' +
+        '<td>' + (a.pontuacao_final != null ? '<strong>' + a.pontuacao_final.toFixed(1) + '</strong>' : '—') + '</td>' +
+        '<td>' + (a.classificacao || '—') + '</td>' +
+        '<td><span class="link-detalhe" onclick="verDetalhe(' + a.id + ')">Ver</span></td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function escapar(str) {
+    if (!str) return '';
+    var div = document.createElement('div'); div.appendChild(document.createTextNode(str)); return div.innerHTML;
+  }
+
+  function verDetalhe(id) {
+    var a = avaliacoesAtuais.find(function(x) { return x.id === id; });
+    if (!a) return;
+
+    document.getElementById('detalhe-titulo').textContent = a.colaborador_nome;
+
+    var html = '<p style="font-size:var(--tamanho-sm);color:var(--cor-texto-sec);margin-bottom:12px;">' +
+      (a.colaborador_cargo || '—') + ' · ' + (a.colaborador_departamento || '—') + ' · Supervisor: ' + (a.supervisor_nome || '—') + '</p>';
+
+    html += '<table class="ref-tabela-detalhe"><thead><tr><th>Critério</th><th>Auto</th><th>Supervisor</th><th>Director</th></tr></thead><tbody>';
+    CRITERIOS.forEach(function(cr) {
+      var va = a.auto_avaliacao ? a.auto_avaliacao[cr.id] : null;
+      var vs = a.avaliacao_supervisor ? a.avaliacao_supervisor[cr.id] : null;
+      var vd = a.avaliacao_director ? a.avaliacao_director[cr.id] : null;
+      html += '<tr><td>' + cr.nome + '</td><td>' + (va != null ? va : '—') + '</td><td>' + (vs != null ? vs : '—') + '</td><td>' + (vd != null ? vd : '—') + '</td></tr>';
+    });
+    html += '<tr style="font-weight:700;"><td>Média</td><td>' + (a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos.toFixed(1) : '—') +
+      '</td><td>' + (a.avaliacao_supervisor_pontos != null ? a.avaliacao_supervisor_pontos.toFixed(1) : '—') +
+      '</td><td>' + (a.avaliacao_director_pontos != null ? a.avaliacao_director_pontos.toFixed(1) : '—') + '</td></tr>';
+    html += '</tbody></table>';
+
+    if (a.pontuacao_final != null) {
+      html += '<div class="painel" style="margin-top:14px;text-align:center;background:var(--cor-ambar-claro);">' +
+        '<div style="font-size:var(--tamanho-xs);color:var(--cor-texto-sec);">Pontuação Final</div>' +
+        '<div style="font-size:1.8rem;font-weight:800;">' + a.pontuacao_final.toFixed(2) + ' / 100</div>' +
+        '<div style="font-weight:700;">' + a.classificacao + '</div></div>';
+    }
+
+    var obs = '';
+    if (a.auto_observacoes) obs += '<p style="margin-top:10px;"><strong>Colaborador:</strong> ' + escapar(a.auto_observacoes) + '</p>';
+    if (a.supervisor_observacoes) obs += '<p style="margin-top:6px;"><strong>Supervisor:</strong> ' + escapar(a.supervisor_observacoes) + '</p>';
+    if (a.director_observacoes) obs += '<p style="margin-top:6px;"><strong>Director:</strong> ' + escapar(a.director_observacoes) + '</p>';
+    if (obs) html += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--cor-borda);font-size:var(--tamanho-sm);">' + obs + '</div>';
+
+    document.getElementById('detalhe-corpo').innerHTML = html;
+    abrirModal('modal-detalhe');
+  }
+
+  /* ═══ Nova Campanha ═══ */
+  function abrirModalNovaCampanha() {
+    var hoje = new Date();
+    var mesRef = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+    document.getElementById('nc-mes').value = mesRef;
+
+    /* Prazo padrão: 25 deste mês até 05 do mês seguinte */
+    var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 25);
+    var fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 5);
+    document.getElementById('nc-inicio').value = inicio.toISOString().slice(0, 10);
+    document.getElementById('nc-fim').value = fim.toISOString().slice(0, 10);
+    document.getElementById('nc-obs').value = '';
+
+    abrirModal('modal-nova-campanha');
+  }
+
+  async function criarCampanha() {
+    var mes = document.getElementById('nc-mes').value;
+    var inicio = document.getElementById('nc-inicio').value;
+    var fim = document.getElementById('nc-fim').value;
+    var obs = document.getElementById('nc-obs').value.trim() || null;
+
+    if (!mes || !inicio || !fim) {
+      mostrarToast('Preencha o mês e o prazo.', 'erro');
+      return;
+    }
+
+    var btn = document.getElementById('btn-criar-campanha');
+    btn.disabled = true;
+    btn.textContent = 'A criar...';
+
+    try {
+      /* 1. Criar a campanha */
+      var novaCampanha = await db.insert('rh_campanhas_avaliacao', {
+        mes: mes,
+        estado: 'aberta',
+        data_inicio: inicio,
+        data_fim: fim,
+        observacoes: obs,
+        criado_por: (typeof obterUtilizador === 'function' && obterUtilizador()) ? obterUtilizador().nome : null
+      });
+      var campanhaId = novaCampanha[0].id;
+
+      /* 2. Buscar todos os colaboradores activos */
+      var colaboradores = await db.query('collaborators', 'active=eq.true&order=name.asc') || [];
+
+      if (!colaboradores.length) {
+        mostrarToast('Campanha criada, mas não encontrei colaboradores activos para gerar as avaliações.', 'erro');
+        fecharModal('modal-nova-campanha');
+        await carregarCampanhas();
+        return;
+      }
+
+      /* 3. Gerar uma avaliação por colaborador (código = campo 'code') */
+      var linhas = colaboradores.map(function(c) {
+        return {
+          campanha_id: campanhaId,
+          colaborador_codigo: c.code,
+          colaborador_nome: c.name || c.nome || c.code,
+          colaborador_cargo: c.cargo || c.categoria || null,
+          colaborador_departamento: c.departamento || c.setor || null,
+          supervisor_codigo: c.supervisor_codigo || c.supervisor_id || null,
+          supervisor_nome: c.supervisor_nome || null,
+          estado: 'pendente'
+        };
+      });
+
+      await db.insert('rh_avaliacoes', linhas);
+
+      mostrarToast('Campanha criada com ' + linhas.length + ' avaliações geradas.', 'sucesso');
+      fecharModal('modal-nova-campanha');
+      await carregarCampanhas();
+
+    } catch (e) {
+      console.error(e);
+      mostrarToast('Erro ao criar campanha: ' + (e.message || JSON.stringify(e)), 'erro');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Criar Campanha';
+    }
+  }
+
+  async function fecharCampanhaAtual() {
+    if (!confirm('Fechar esta campanha? Ninguém mais vai conseguir preencher avaliações nela (mesmo que faltem pessoas).')) return;
+    try {
+      await db.update('rh_campanhas_avaliacao', campanhaActual.id, { estado: 'fechada' });
+      mostrarToast('Campanha fechada.', 'sucesso');
+      await carregarCampanhas();
+    } catch (e) {
+      console.error(e);
+      mostrarToast('Erro ao fechar campanha.', 'erro');
+    }
+  }
+  </script>
+</body>
+</html>
