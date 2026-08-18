@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal de Avaliação — Danmo Service System</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; background: #F4F6F9; color: #2C3E50; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+
+    .logo-bar { text-align: center; margin: 24px 0; }
+    .logo-bar h1 { font-size: 1.15rem; color: #1E293B; margin-bottom: 2px; }
+    .logo-bar p { font-size: 0.85rem; color: #7F8C8D; }
+
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 32px; width: 100%; max-width: 440px; }
+    .card label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
+    .card input { width: 100%; padding: 14px; border: 2px solid #E2E8F0; border-radius: 8px; font-size: 1.1rem; text-align: center; letter-spacing: 1px; font-weight: 700; text-transform: uppercase; }
+    .card input:focus { outline: none; border-color: #F59E0B; }
+    .card .ajuda { font-size: 0.78rem; color: #7F8C8D; margin-top: 8px; text-align: center; }
+
+    .btn-entrar { display: block; width: 100%; padding: 14px; border: none; border-radius: 8px; background: #1E293B; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 18px; }
+    .btn-entrar:hover { background: #0F172A; }
+    .btn-entrar:disabled { background: #94A3B8; cursor: not-allowed; }
+
+    .msg-erro { background: #FEE2E2; color: #EF4444; padding: 12px 16px; border-radius: 8px; margin-top: 16px; font-size: 0.88rem; text-align: center; }
+
+    .saudacao { text-align: center; margin-bottom: 20px; }
+    .saudacao h2 { font-size: 1.15rem; color: #1E293B; }
+    .saudacao p { font-size: 0.85rem; color: #7F8C8D; margin-top: 2px; }
+
+    .opcao { display: block; width: 100%; text-align: left; background: #F4F6F9; border: 2px solid #E2E8F0; border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+    .opcao:hover { border-color: #F59E0B; background: #FEF3C7; }
+    .opcao .titulo { font-weight: 700; font-size: 0.95rem; color: #1E293B; display: flex; align-items: center; gap: 8px; }
+    .opcao .sub { font-size: 0.8rem; color: #7F8C8D; margin-top: 4px; }
+    .opcao .contagem { display: inline-block; background: #F59E0B; color: #fff; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-left: auto; }
+
+    .btn-sair { display: block; text-align: center; margin-top: 16px; font-size: 0.82rem; color: #7F8C8D; cursor: pointer; text-decoration: underline; background: none; border: none; width: 100%; }
+
+    .spinner { width: 32px; height: 32px; border: 3px solid #E2E8F0; border-top-color: #F59E0B; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 30px auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="logo-bar">
+    <h1>DANMO SERVICE SYSTEM, LDA</h1>
+    <p>Portal de Avaliação de Desempenho</p>
+  </div>
+
+  <div class="card" id="card-login">
+    <label for="input-codigo">O seu código de colaborador</label>
+    <input type="text" id="input-codigo" placeholder="Ex: DM0013" autocomplete="off" autofocus />
+    <div class="ajuda">É o mesmo código usado na sua ficha (Nº de Trabalhador)</div>
+    <button class="btn-entrar" id="btn-entrar">Entrar</button>
+    <div class="msg-erro" id="msg-erro" style="display:none;"></div>
+  </div>
+
+  <div class="card" id="card-menu" style="display:none;">
+    <div class="saudacao">
+      <h2 id="menu-saudacao"></h2>
+      <p id="menu-periodo"></p>
+    </div>
+    <div id="menu-opcoes"></div>
+    <button class="btn-sair" id="btn-sair">Sair / trocar de código</button>
+  </div>
+
+  <div class="card" id="card-loading" style="display:none;">
+    <div class="spinner"></div>
+    <p style="text-align:center;color:#7F8C8D;font-size:0.85rem;">A verificar...</p>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="criterios.js"></script>
+
+  <script>
+  var MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  function mostrarErro(msg) {
+    var el = document.getElementById('msg-erro');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  function esconderErro() {
+    document.getElementById('msg-erro').style.display = 'none';
+  }
+  function irPara(tela) {
+    document.getElementById('card-login').style.display = tela === 'login' ? 'block' : 'none';
+    document.getElementById('card-menu').style.display = tela === 'menu' ? 'block' : 'none';
+    document.getElementById('card-loading').style.display = tela === 'loading' ? 'block' : 'none';
+  }
+
+  document.getElementById('input-codigo').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') verificarCodigo();
+  });
+  document.getElementById('btn-entrar').addEventListener('click', verificarCodigo);
+  document.getElementById('btn-sair').addEventListener('click', function() {
+    sessionStorage.removeItem('rh_portal_codigo');
+    sessionStorage.removeItem('rh_portal_nome');
+    document.getElementById('input-codigo').value = '';
+    irPara('login');
+  });
+
+  async function verificarCodigo() {
+    var codigo = document.getElementById('input-codigo').value.trim().toUpperCase();
+    esconderErro();
+    if (!codigo) { mostrarErro('Escreva o seu código.'); return; }
+
+    irPara('loading');
+
+    try {
+      /* 1. Confirmar que o código existe e está activo */
+      var colabs = await db.query('collaborators', 'code=eq.' + encodeURIComponent(codigo) + '&active=eq.true&limit=1');
+      if (!colabs.length) {
+        irPara('login');
+        mostrarErro('Código não encontrado ou inactivo. Verifique e tente novamente.');
+        return;
+      }
+      var colaborador = colabs[0];
+
+      /* 2. Campanha aberta */
+      var campanhas = await db.query('rh_campanhas_avaliacao', 'estado=eq.aberta&order=created_at.desc&limit=1');
+      if (!campanhas.length) {
+        irPara('login');
+        mostrarErro('Não há nenhuma campanha de avaliação aberta neste momento.');
+        return;
+      }
+      var campanha = campanhas[0];
+      var mesPartes = campanha.mes.split('-');
+      var nomeMes = MESES_NOME[parseInt(mesPartes[1], 10) - 1] + ' ' + mesPartes[0];
+
+      sessionStorage.setItem('rh_portal_codigo', codigo);
+      sessionStorage.setItem('rh_portal_nome', colaborador.name || colaborador.nome || codigo);
+      sessionStorage.setItem('rh_portal_campanha_id', campanha.id);
+
+      /* 3. Descobrir papéis */
+      var opcoes = [];
+
+      /* 3a. Auto-avaliação própria */
+      var proprias = await db.query('rh_avaliacoes', 'campanha_id=eq.' + campanha.id + '&colaborador_codigo=eq.' + encodeURIComponent(codigo) + '&limit=1');
+      if (proprias.length && !proprias[0].auto_avaliacao) {
+        opcoes.push({
+          tipo: 'auto',
+          titulo: '📝 A Minha Auto-Avaliação',
+          sub: 'Ainda não preenchida — ' + nomeMes,
+          href: 'preencher_auto.html?id=' + proprias[0].id,
+          contagem: null
+        });
+      }
+
+      /* 3b. Avaliações da equipa (como Supervisor) */
+      var daEquipa = await db.query('rh_avaliacoes', 'campanha_id=eq.' + campanha.id + '&supervisor_codigo=eq.' + encodeURIComponent(codigo));
+      var pendentesSupervisor = (daEquipa || []).filter(function(a) { return a.auto_avaliacao && !a.avaliacao_supervisor; });
+      if (pendentesSupervisor.length) {
+        opcoes.push({
+          tipo: 'supervisor',
+          titulo: '👥 Avaliações da Minha Equipa',
+          sub: pendentesSupervisor.length + ' colaborador(es) à espera da sua avaliação',
+          href: 'preencher_supervisor.html',
+          contagem: pendentesSupervisor.length
+        });
+      }
+
+      /* 3c. Avaliação final (só se estiver na lista de Directores) */
+      var diretores = await db.query('rh_avaliadores_diretores', 'codigo=eq.' + encodeURIComponent(codigo) + '&active=eq.true&limit=1');
+      if (diretores.length) {
+        var todasCampanha = await db.query('rh_avaliacoes', 'campanha_id=eq.' + campanha.id);
+        var pendentesDirector = (todasCampanha || []).filter(function(a) { return a.avaliacao_supervisor && !a.avaliacao_director; });
+        if (pendentesDirector.length) {
+          opcoes.push({
+            tipo: 'director',
+            titulo: '✅ Avaliação Final (Director)',
+            sub: pendentesDirector.length + ' colaborador(es) prontos para avaliação final',
+            href: 'preencher_director.html',
+            contagem: pendentesDirector.length
+          });
+        }
+      }
+
+      if (!opcoes.length) {
+        irPara('login');
+        mostrarErro('Não há nada pendente para si nesta campanha (' + nomeMes + '). Se já preencheu tudo, obrigado!');
+        return;
+      }
+
+      document.getElementById('menu-saudacao').textContent = 'Olá, ' + (colaborador.name || colaborador.nome || '');
+      document.getElementById('menu-periodo').textContent = 'Campanha: ' + nomeMes;
+
+      var html = '';
+      opcoes.forEach(function(o) {
+        html += '<div class="opcao" onclick="window.location.href=\'' + o.href + '\'">';
+        html += '<div class="titulo">' + o.titulo + (o.contagem ? '<span class="contagem">' + o.contagem + '</span>' : '') + '</div>';
+        html += '<div class="sub">' + o.sub + '</div>';
+        html += '</div>';
+      });
+      document.getElementById('menu-opcoes').innerHTML = html;
+      irPara('menu');
+
+    } catch (e) {
+      console.error(e);
+      irPara('login');
+      mostrarErro('Erro de ligação. Tente novamente.');
+    }
+  }
+
+  /* Se já havia sessão activa nesta aba, oferecer continuar directamente */
+  (function initSessaoExistente() {
+    var codigo = sessionStorage.getItem('rh_portal_codigo');
+    if (codigo) {
+      document.getElementById('input-codigo').value = codigo;
+    }
+  })();
+  </script>
+</body>
+</html>

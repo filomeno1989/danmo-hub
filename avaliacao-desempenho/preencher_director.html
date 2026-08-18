@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Avaliação Final (Director) — Danmo Service System</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; background: #F4F6F9; color: #2C3E50; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+
+    .logo-bar { text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #1E293B; width: 100%; max-width: 700px; }
+    .logo-bar h1 { font-size: 1.1rem; color: #1E293B; margin-bottom: 2px; }
+    .logo-bar p { font-size: 0.82rem; color: #7F8C8D; }
+
+    .btn-voltar { align-self: flex-start; margin: 0 auto 12px; width: 100%; max-width: 700px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 1px solid #E2E8F0; border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #2C3E50; }
+    .btn-voltar:hover { background: #F4F6F9; }
+
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 28px; width: 100%; max-width: 700px; margin-bottom: 20px; }
+    .card h2 { font-size: 1.1rem; margin-bottom: 4px; color: #1E293B; }
+    .card .sub { font-size: 0.85rem; color: #7F8C8D; margin-bottom: 20px; }
+
+    .item-lista { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border: 2px solid #E2E8F0; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
+    .item-lista:hover { border-color: #F59E0B; background: #FEF3C7; }
+    .item-lista .nome { font-weight: 700; font-size: 0.95rem; color: #1E293B; }
+    .item-lista .cargo { font-size: 0.8rem; color: #7F8C8D; margin-top: 2px; }
+    .item-lista .badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .item-lista .badge-auto { background: #DBEAFE; color: #1E40AF; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
+    .item-lista .badge-sup { background: #FEF3C7; color: #B45309; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
+    .lista-vazia { text-align: center; padding: 30px; color: #7F8C8D; }
+
+    .ref-box { background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 8px; padding: 14px; margin-bottom: 20px; font-size: 0.82rem; }
+    .ref-box .ref-titulo { font-weight: 700; color: #6D28D9; margin-bottom: 8px; }
+    .ref-tabela { width: 100%; border-collapse: collapse; }
+    .ref-tabela th { text-align: left; font-size: 0.72rem; color: #7F8C8D; padding: 4px 2px; border-bottom: 1px solid #DDD6FE; }
+    .ref-tabela th:not(:first-child), .ref-tabela td:not(:first-child) { text-align: center; }
+    .ref-tabela td { padding: 5px 2px; font-size: 0.78rem; border-bottom: 1px dashed #DDD6FE; }
+    .ref-tabela td:first-child { font-weight: 600; }
+
+    .criterio { padding: 16px 0; border-bottom: 1px solid #E2E8F0; }
+    .criterio:last-child { border-bottom: none; }
+    .criterio-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .criterio-nome { font-weight: 700; font-size: 0.92rem; }
+    .criterio-refs { font-size: 0.74rem; color: #6D28D9; font-weight: 700; white-space: nowrap; }
+    .criterio-desc-toggle { background: none; border: none; color: #3B82F6; cursor: pointer; font-size: 0.76rem; font-weight: 600; padding: 2px 6px; }
+
+    .faixas { display: none; margin: 8px 0 12px; border-radius: 8px; overflow: hidden; border: 1px solid #E2E8F0; }
+    .faixas.visivel { display: block; }
+    .faixa-item { padding: 7px 10px; font-size: 0.76rem; line-height: 1.4; border-bottom: 1px solid #E2E8F0; }
+    .faixa-item:last-child { border-bottom: none; }
+    .faixa-item strong { display: block; margin-bottom: 2px; font-size: 0.74rem; }
+    .faixa-nao_aceitavel { background: #FEE2E2; } .faixa-nao_aceitavel strong { color: #B91C1C; }
+    .faixa-insuficiente  { background: #FFEDD5; } .faixa-insuficiente strong  { color: #C2410C; }
+    .faixa-satisfatorio  { background: #FEF3C7; } .faixa-satisfatorio strong  { color: #B45309; }
+    .faixa-bom           { background: #DBEAFE; } .faixa-bom strong           { color: #1E40AF; }
+    .faixa-excelente     { background: #D1FAE5; } .faixa-excelente strong     { color: #047857; }
+
+    .nota-input-row { display: flex; align-items: center; gap: 14px; }
+    .nota-input-row input[type="range"] { flex: 1; }
+    .nota-valor { width: 64px; text-align: center; font-size: 1.2rem; font-weight: 800; padding: 6px 4px; border: 2px solid #E2E8F0; border-radius: 8px; }
+    .nota-valor.n-nao_aceitavel { border-color: #EF4444; color: #B91C1C; }
+    .nota-valor.n-insuficiente  { border-color: #F97316; color: #C2410C; }
+    .nota-valor.n-satisfatorio  { border-color: #F59E0B; color: #B45309; }
+    .nota-valor.n-bom           { border-color: #3B82F6; color: #1E40AF; }
+    .nota-valor.n-excelente     { border-color: #10B981; color: #047857; }
+    .nota-label { font-size: 0.76rem; font-weight: 700; min-width: 92px; text-align: right; }
+
+    .observacoes { margin-top: 20px; }
+    .observacoes label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; }
+    .observacoes textarea { width: 100%; padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; font-family: inherit; font-size: 0.88rem; resize: vertical; min-height: 80px; }
+
+    .resumo-final { background: #EDE9FE; border: 2px solid #7C3AED; border-radius: 8px; padding: 14px; margin-top: 20px; text-align: center; }
+    .resumo-final .media { font-size: 2rem; font-weight: 700; color: #6D28D9; }
+    .resumo-final .comparativo { display: flex; justify-content: center; gap: 18px; margin-top: 10px; font-size: 0.78rem; color: #7F8C8D; }
+
+    .btn-submit { display: block; width: 100%; padding: 14px; border: none; border-radius: 8px; background: #1E293B; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 24px; }
+    .btn-submit:hover { background: #0F172A; }
+    .btn-submit:disabled { background: #94A3B8; cursor: not-allowed; }
+    .btn-cancelar-form { display: block; width: 100%; padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #fff; color: #2C3E50; font-size: 0.9rem; font-weight: 600; cursor: pointer; margin-top: 10px; }
+
+    .msg-erro { background: #FEE2E2; color: #EF4444; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem; }
+    .msg-sucesso { background: #D1FAE5; color: #10B981; padding: 16px; border-radius: 8px; text-align: center; }
+
+    @media (max-width: 500px) {
+      .nota-input-row { flex-wrap: wrap; }
+      .nota-label { width: 100%; text-align: left; }
+      .resumo-final .comparativo { flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="logo-bar">
+    <h1>DANMO SERVICE SYSTEM, LDA</h1>
+    <p>Avaliação Final — Director</p>
+  </div>
+
+  <button class="btn-voltar" onclick="window.location.href='portal.html'">&#8592; Voltar ao Portal</button>
+
+  <div id="app" style="width:100%;max-width:700px;">
+    <div class="card" id="card-loading" style="text-align:center;padding:40px;">A carregar...</div>
+    <div class="card" id="card-erro" style="display:none;"><div class="msg-erro" id="msg-erro"></div></div>
+
+    <div class="card" id="card-lista" style="display:none;">
+      <h2>Avaliações Finais Pendentes</h2>
+      <p class="sub" id="lista-sub"></p>
+      <div id="lista-container"></div>
+    </div>
+
+    <div class="card" id="card-formulario" style="display:none;">
+      <h2 id="colab-nome"></h2>
+      <p class="sub" id="colab-info-sub"></p>
+
+      <div class="ref-box" id="ref-box"></div>
+
+      <div id="criterios-container"></div>
+
+      <div class="observacoes">
+        <label for="obs-text">Observações / Comentários (opcional)</label>
+        <textarea id="obs-text" placeholder="Escreva aqui qualquer comentário relevante..." rows="3"></textarea>
+      </div>
+
+      <div class="resumo-final" id="resumo-final" style="display:none;">
+        <div style="font-size:0.82rem;color:#7F8C8D;">Pontuação Final (média das 3 avaliações)</div>
+        <div class="media" id="resumo-media">—</div>
+        <div style="font-size:0.9rem;font-weight:700;" id="resumo-classificacao"></div>
+        <div class="comparativo" id="resumo-comparativo"></div>
+      </div>
+
+      <button class="btn-submit" id="btn-submeter" onclick="submeterAvaliacao()">Submeter Avaliação Final</button>
+      <button class="btn-cancelar-form" onclick="voltarLista()">Cancelar e voltar à lista</button>
+    </div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="criterios.js"></script>
+
+  <script>
+  var NOTAS_FAIXA_ID = ['nao_aceitavel', 'insuficiente', 'satisfatorio', 'bom', 'excelente'];
+  var NOTAS_FAIXA_LABEL = { nao_aceitavel: 'Não Aceitável', insuficiente: 'Insuficiente', satisfatorio: 'Satisfatório', bom: 'Bom', excelente: 'Excelente' };
+
+  function faixaDaNota(n) {
+    if (n <= 20) return 'nao_aceitavel';
+    if (n <= 40) return 'insuficiente';
+    if (n <= 70) return 'satisfatorio';
+    if (n <= 90) return 'bom';
+    return 'excelente';
+  }
+
+  var codigo = null, campanhaId = null;
+  var pendentes = [];
+  var avaliacaoActual = null;
+  var respostas = {};
+
+  (async function init() {
+    codigo = sessionStorage.getItem('rh_portal_codigo');
+    campanhaId = sessionStorage.getItem('rh_portal_campanha_id');
+    if (!codigo || !campanhaId) { mostrarErro('Sessão expirada. Volte ao portal e entre novamente com o seu código.'); return; }
+
+    /* Confirmação extra de segurança: mesmo vindo do portal, esta
+       página confirma outra vez que o código está na lista de
+       Directores antes de mostrar seja o que for. */
+    try {
+      var diretores = await db.query('rh_avaliadores_diretores', 'codigo=eq.' + encodeURIComponent(codigo) + '&active=eq.true&limit=1');
+      if (!diretores.length) {
+        mostrarErro('O seu código não tem acesso à avaliação final. Contacte o administrador se isto for um engano.');
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+      mostrarErro('Erro ao verificar permissões. Tente novamente.');
+      return;
+    }
+
+    await carregarLista();
+  })();
+
+  function mostrarErro(msg) {
+    document.getElementById('card-loading').style.display = 'none';
+    document.getElementById('card-erro').style.display = 'block';
+    document.getElementById('msg-erro').textContent = msg;
+  }
+
+  function escaparHTML(str) {
+    if (!str) return '';
+    var div = document.createElement('div'); div.appendChild(document.createTextNode(str)); return div.innerHTML;
+  }
+
+  async function carregarLista() {
+    document.getElementById('card-formulario').style.display = 'none';
+    document.getElementById('card-lista').style.display = 'none';
+    document.getElementById('card-loading').style.display = 'block';
+
+    try {
+      var todos = await db.query('rh_avaliacoes', 'campanha_id=eq.' + campanhaId);
+      pendentes = (todos || []).filter(function(a) { return a.avaliacao_supervisor && !a.avaliacao_director; });
+
+      document.getElementById('card-loading').style.display = 'none';
+
+      if (!pendentes.length) {
+        document.getElementById('card-lista').style.display = 'block';
+        document.getElementById('lista-sub').textContent = 'Não há avaliações prontas para a etapa final neste momento.';
+        document.getElementById('lista-container').innerHTML = '<div class="lista-vazia">🎉 Tudo em dia! Pode voltar ao portal.</div>';
+        return;
+      }
+
+      document.getElementById('card-lista').style.display = 'block';
+      document.getElementById('lista-sub').textContent = pendentes.length + ' colaborador(es) já passaram pelo supervisor e aguardam a avaliação final.';
+
+      var html = '';
+      pendentes.forEach(function(a) {
+        html += '<div class="item-lista" onclick="abrirFormulario(' + a.id + ')">';
+        html += '<div><div class="nome">' + escaparHTML(a.colaborador_nome) + '</div><div class="cargo">' + escaparHTML(a.colaborador_cargo || '—') + ' · ' + escaparHTML(a.colaborador_departamento || '—') + '</div></div>';
+        html += '<div class="badges">';
+        html += '<span class="badge-auto">Auto: ' + (a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos.toFixed(1) : '—') + '</span>';
+        html += '<span class="badge-sup">Sup: ' + (a.avaliacao_supervisor_pontos != null ? a.avaliacao_supervisor_pontos.toFixed(1) : '—') + '</span>';
+        html += '</div></div>';
+      });
+      document.getElementById('lista-container').innerHTML = html;
+
+    } catch (e) {
+      console.error(e);
+      mostrarErro('Erro ao carregar a lista. Tente novamente.');
+    }
+  }
+
+  function voltarLista() {
+    avaliacaoActual = null;
+    respostas = {};
+    carregarLista();
+  }
+
+  function abrirFormulario(id) {
+    avaliacaoActual = pendentes.find(function(a) { return a.id === id; });
+    if (!avaliacaoActual) return;
+    respostas = {};
+
+    document.getElementById('card-lista').style.display = 'none';
+    document.getElementById('card-formulario').style.display = 'block';
+    document.getElementById('colab-nome').textContent = avaliacaoActual.colaborador_nome;
+    document.getElementById('colab-info-sub').textContent = (avaliacaoActual.colaborador_cargo || '—') + ' · ' + (avaliacaoActual.colaborador_departamento || '—') + ' · Supervisor: ' + (avaliacaoActual.supervisor_nome || '—');
+
+    var refHtml = '<div class="ref-titulo">📋 Avaliações Anteriores (referência)</div><table class="ref-tabela"><tr><th>Critério</th><th>Auto</th><th>Supervisor</th></tr>';
+    CRITERIOS.forEach(function(cr) {
+      var va = avaliacaoActual.auto_avaliacao ? avaliacaoActual.auto_avaliacao[cr.id] : null;
+      var vs = avaliacaoActual.avaliacao_supervisor ? avaliacaoActual.avaliacao_supervisor[cr.id] : null;
+      refHtml += '<tr><td>' + cr.nome + '</td><td>' + (va != null ? va : '—') + '</td><td>' + (vs != null ? vs : '—') + '</td></tr>';
+    });
+    refHtml += '</table>';
+    var obsAnteriores = '';
+    if (avaliacaoActual.auto_observacoes) obsAnteriores += '<div style="margin-top:8px;"><strong>Colaborador:</strong> ' + escaparHTML(avaliacaoActual.auto_observacoes) + '</div>';
+    if (avaliacaoActual.supervisor_observacoes) obsAnteriores += '<div style="margin-top:4px;"><strong>Supervisor:</strong> ' + escaparHTML(avaliacaoActual.supervisor_observacoes) + '</div>';
+    if (obsAnteriores) refHtml += '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #DDD6FE;">' + obsAnteriores + '</div>';
+    document.getElementById('ref-box').innerHTML = refHtml;
+
+    renderCriterios();
+    window.scrollTo(0, 0);
+  }
+
+  function renderCriterios() {
+    var c = document.getElementById('criterios-container');
+    var html = '';
+    CRITERIOS.forEach(function(cr) {
+      var va = avaliacaoActual.auto_avaliacao ? avaliacaoActual.auto_avaliacao[cr.id] : null;
+      var vs = avaliacaoActual.avaliacao_supervisor ? avaliacaoActual.avaliacao_supervisor[cr.id] : null;
+      html += '<div class="criterio">';
+      html += '<div class="criterio-header">';
+      html += '<div class="criterio-nome">' + cr.nome + '</div>';
+      html += '<div style="display:flex;align-items:center;gap:10px;">';
+      html += '<span class="criterio-refs">' + (va != null ? 'Auto:' + va : '') + (vs != null ? ' Sup:' + vs : '') + '</span>';
+      html += '<button class="criterio-desc-toggle" onclick="toggleFaixas(this, \'' + cr.id + '\')">Ver critérios</button>';
+      html += '</div></div>';
+
+      html += '<div class="faixas" id="faixas-' + cr.id + '">';
+      NOTAS_FAIXA_ID.forEach(function(fid) {
+        html += '<div class="faixa-item faixa-' + fid + '"><strong>' + NOTAS_FAIXA_LABEL[fid] + '</strong>' + cr.faixas[fid] + '</div>';
+      });
+      html += '</div>';
+
+      html += '<div class="nota-input-row">';
+      html += '<input type="range" min="0" max="100" value="50" step="1" data-criterio="' + cr.id + '" oninput="atualizarNota(this)" />';
+      html += '<input type="number" min="0" max="100" class="nota-valor" id="valor-' + cr.id + '" data-criterio="' + cr.id + '" onchange="atualizarNotaManual(this)" placeholder="0-100" />';
+      html += '<span class="nota-label" id="label-' + cr.id + '"></span>';
+      html += '</div></div>';
+    });
+    c.innerHTML = html;
+    document.getElementById('resumo-final').style.display = 'none';
+  }
+
+  function toggleFaixas(btn, id) {
+    var el = document.getElementById('faixas-' + id);
+    el.classList.toggle('visivel');
+    btn.textContent = el.classList.contains('visivel') ? 'Esconder critérios' : 'Ver critérios';
+  }
+
+  function atualizarNota(range) {
+    var id = range.getAttribute('data-criterio');
+    var valor = parseInt(range.value, 10);
+    document.getElementById('valor-' + id).value = valor;
+    aplicarNota(id, valor);
+  }
+
+  function atualizarNotaManual(input) {
+    var id = input.getAttribute('data-criterio');
+    var valor = parseInt(input.value, 10);
+    if (isNaN(valor)) return;
+    valor = Math.max(0, Math.min(100, valor));
+    input.value = valor;
+    var range = document.querySelector('input[type="range"][data-criterio="' + id + '"]');
+    if (range) range.value = valor;
+    aplicarNota(id, valor);
+  }
+
+  function aplicarNota(id, valor) {
+    respostas[id] = valor;
+    var faixa = faixaDaNota(valor);
+    var valorEl = document.getElementById('valor-' + id);
+    var labelEl = document.getElementById('label-' + id);
+    valorEl.className = 'nota-valor n-' + faixa;
+    labelEl.textContent = NOTAS_FAIXA_LABEL[faixa];
+    atualizarResumo();
+  }
+
+  function atualizarResumo() {
+    var mediaDirector = calcularPontuacao(respostas);
+    var resumo = document.getElementById('resumo-final');
+    if (mediaDirector !== null && Object.keys(respostas).length === CRITERIOS.length) {
+      var auto = avaliacaoActual.auto_avaliacao_pontos;
+      var sup = avaliacaoActual.avaliacao_supervisor_pontos;
+      var valores = [auto, sup, mediaDirector].filter(function(v) { return v !== null && v !== undefined; });
+      var pontuacaoFinal = valores.reduce(function(a, b) { return a + b; }, 0) / valores.length;
+      pontuacaoFinal = Math.round(pontuacaoFinal * 100) / 100;
+
+      document.getElementById('resumo-media').textContent = pontuacaoFinal.toFixed(2) + ' / 100';
+      document.getElementById('resumo-classificacao').textContent = classificar(pontuacaoFinal);
+      document.getElementById('resumo-comparativo').innerHTML =
+        '<span>Auto: <strong>' + (auto != null ? auto.toFixed(1) : '—') + '</strong></span>' +
+        '<span>Supervisor: <strong>' + (sup != null ? sup.toFixed(1) : '—') + '</strong></span>' +
+        '<span>Director: <strong>' + mediaDirector.toFixed(1) + '</strong></span>';
+      resumo.style.display = 'block';
+    } else {
+      resumo.style.display = 'none';
+    }
+  }
+
+  /* === SUBMETER (esta é a etapa que grava pontuacao_final/classificacao) === */
+  async function submeterAvaliacao() {
+    if (Object.keys(respostas).length < CRITERIOS.length) {
+      alert('Por favor, avalie todos os critérios antes de submeter.');
+      return;
+    }
+
+    var btn = document.getElementById('btn-submeter');
+    btn.disabled = true;
+    btn.textContent = 'A submeter...';
+
+    var pontosDirector = calcularPontuacao(respostas);
+    var auto = avaliacaoActual.auto_avaliacao_pontos;
+    var sup = avaliacaoActual.avaliacao_supervisor_pontos;
+    var valores = [auto, sup, pontosDirector].filter(function(v) { return v !== null && v !== undefined; });
+    var pontuacaoFinal = valores.reduce(function(a, b) { return a + b; }, 0) / valores.length;
+    pontuacaoFinal = Math.round(pontuacaoFinal * 100) / 100;
+    var classif = classificar(pontuacaoFinal);
+
+    try {
+      await db.update('rh_avaliacoes', avaliacaoActual.id, {
+        avaliacao_director: respostas,
+        avaliacao_director_submetida_em: new Date().toISOString(),
+        director_observacoes: document.getElementById('obs-text').value.trim() || null,
+        avaliacao_director_pontos: pontosDirector,
+        pontuacao_final: pontuacaoFinal,
+        classificacao: classif,
+        estado: 'director_preenchida',
+        updated_at: new Date().toISOString()
+      });
+
+      document.getElementById('card-formulario').innerHTML = '<div class="msg-sucesso"><h3>Avaliação final submetida!</h3><p>' + escaparHTML(avaliacaoActual.colaborador_nome) + ' — Classificação: <strong>' + classif + '</strong> (' + pontuacaoFinal.toFixed(2) + '/100)</p></div>';
+      setTimeout(function() { carregarLista(); }, 2500);
+    } catch(e) {
+      console.error(e);
+      btn.disabled = false;
+      btn.textContent = 'Submeter Avaliação Final';
+      alert('Erro ao submeter: ' + (e.message || e) + '. Tente novamente.');
+    }
+  }
+  </script>
+</body>
+</html>

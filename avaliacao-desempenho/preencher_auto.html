@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auto-Avaliação de Desempenho — Danmo Service System</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; background: #F4F6F9; color: #2C3E50; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+
+    .logo-bar { text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #1E293B; width: 100%; max-width: 650px; }
+    .logo-bar h1 { font-size: 1.1rem; color: #1E293B; margin-bottom: 2px; }
+    .logo-bar p { font-size: 0.82rem; color: #7F8C8D; }
+
+    .btn-voltar { align-self: flex-start; margin: 0 auto 12px; width: 100%; max-width: 650px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 1px solid #E2E8F0; border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #2C3E50; }
+    .btn-voltar:hover { background: #F4F6F9; }
+
+    .form-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 28px; width: 100%; max-width: 650px; margin-bottom: 20px; }
+    .form-card h2 { font-size: 1.1rem; margin-bottom: 4px; color: #1E293B; }
+    .form-card .sub { font-size: 0.85rem; color: #7F8C8D; margin-bottom: 20px; }
+
+    .criterio { padding: 18px 0; border-bottom: 1px solid #E2E8F0; }
+    .criterio:last-child { border-bottom: none; }
+    .criterio-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .criterio-nome { font-weight: 700; font-size: 0.95rem; }
+    .criterio-desc-sub { font-size: 0.78rem; color: #7F8C8D; margin-top: 2px; }
+    .criterio-desc-toggle { background: none; border: none; color: #3B82F6; cursor: pointer; font-size: 0.78rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+    .criterio-desc-toggle:hover { background: #DBEAFE; }
+
+    .faixas { display: none; margin-top: 10px; margin-bottom: 12px; border-radius: 8px; overflow: hidden; border: 1px solid #E2E8F0; }
+    .faixas.visivel { display: block; }
+    .faixa-item { padding: 8px 12px; font-size: 0.78rem; line-height: 1.4; border-bottom: 1px solid #E2E8F0; }
+    .faixa-item:last-child { border-bottom: none; }
+    .faixa-item strong { display: block; margin-bottom: 2px; font-size: 0.76rem; }
+    .faixa-nao_aceitavel { background: #FEE2E2; } .faixa-nao_aceitavel strong { color: #B91C1C; }
+    .faixa-insuficiente  { background: #FFEDD5; } .faixa-insuficiente strong  { color: #C2410C; }
+    .faixa-satisfatorio  { background: #FEF3C7; } .faixa-satisfatorio strong  { color: #B45309; }
+    .faixa-bom           { background: #DBEAFE; } .faixa-bom strong           { color: #1E40AF; }
+    .faixa-excelente     { background: #D1FAE5; } .faixa-excelente strong     { color: #047857; }
+
+    .nota-input-row { display: flex; align-items: center; gap: 14px; }
+    .nota-input-row input[type="range"] { flex: 1; }
+    .nota-valor { width: 64px; text-align: center; font-size: 1.3rem; font-weight: 800; padding: 6px 4px; border: 2px solid #E2E8F0; border-radius: 8px; }
+    .nota-valor.n-nao_aceitavel { border-color: #EF4444; color: #B91C1C; }
+    .nota-valor.n-insuficiente  { border-color: #F97316; color: #C2410C; }
+    .nota-valor.n-satisfatorio  { border-color: #F59E0B; color: #B45309; }
+    .nota-valor.n-bom           { border-color: #3B82F6; color: #1E40AF; }
+    .nota-valor.n-excelente     { border-color: #10B981; color: #047857; }
+    .nota-label { font-size: 0.78rem; font-weight: 700; min-width: 92px; text-align: right; }
+
+    .observacoes { margin-top: 20px; }
+    .observacoes label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; }
+    .observacoes textarea { width: 100%; padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; font-family: inherit; font-size: 0.88rem; resize: vertical; min-height: 80px; }
+    .observacoes textarea:focus { outline: none; border-color: #F59E0B; }
+
+    .btn-submit { display: block; width: 100%; padding: 14px; border: none; border-radius: 8px; background: #1E293B; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 24px; }
+    .btn-submit:hover { background: #0F172A; }
+    .btn-submit:disabled { background: #94A3B8; cursor: not-allowed; }
+
+    .msg-erro { background: #FEE2E2; color: #EF4444; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem; }
+    .msg-sucesso { background: #D1FAE5; color: #10B981; padding: 16px; border-radius: 8px; text-align: center; }
+    .msg-sucesso h3 { margin-bottom: 6px; }
+
+    .info-colab { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; background: #F4F6F9; border-radius: 8px; margin-bottom: 16px; }
+    .info-colab div { font-size: 0.85rem; } .info-colab strong { color: #7F8C8D; font-size: 0.78rem; display: block; }
+
+    .resumo-final { background: #FEF3C7; border: 2px solid #F59E0B; border-radius: 8px; padding: 14px; margin-top: 20px; text-align: center; }
+    .resumo-final .media { font-size: 2rem; font-weight: 700; color: #D97706; }
+
+    @media (max-width: 500px) {
+      .info-colab { grid-template-columns: 1fr; }
+      .nota-input-row { flex-wrap: wrap; }
+      .nota-label { width: 100%; text-align: left; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="logo-bar">
+    <h1>DANMO SERVICE SYSTEM, LDA</h1>
+    <p>Auto-Avaliação de Desempenho</p>
+  </div>
+
+  <button class="btn-voltar" onclick="window.location.href='portal.html'">&#8592; Voltar ao Portal</button>
+
+  <div id="app" style="width:100%;max-width:650px;">
+    <div class="form-card" id="card-loading" style="text-align:center;padding:40px;">A carregar...</div>
+    <div class="form-card" id="card-erro" style="display:none;"><div class="msg-erro" id="msg-erro"></div></div>
+    <div class="form-card" id="card-formulario" style="display:none;">
+      <h2 id="colab-nome"></h2>
+      <p class="sub" id="colab-periodo"></p>
+
+      <div class="info-colab" id="colab-info"></div>
+
+      <div id="criterios-container"></div>
+
+      <div class="observacoes">
+        <label for="obs-text">Observações / Comentários (opcional)</label>
+        <textarea id="obs-text" placeholder="Escreva aqui qualquer comentário que considere relevante..." rows="3"></textarea>
+      </div>
+
+      <div class="resumo-final" id="resumo-final" style="display:none;">
+        <div style="font-size:0.82rem;color:#7F8C8D;">Média da sua Auto-Avaliação</div>
+        <div class="media" id="resumo-media">—</div>
+        <div style="font-size:0.85rem;" id="resumo-classificacao"></div>
+      </div>
+
+      <button class="btn-submit" id="btn-submeter" onclick="submeterAvaliacao()">Submeter Auto-Avaliação</button>
+    </div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="criterios.js"></script>
+
+  <script>
+  var NOTAS_FAIXA_ID = ['nao_aceitavel', 'insuficiente', 'satisfatorio', 'bom', 'excelente'];
+  var NOTAS_FAIXA_LABEL = { nao_aceitavel: 'Não Aceitável', insuficiente: 'Insuficiente', satisfatorio: 'Satisfatório', bom: 'Bom', excelente: 'Excelente' };
+
+  function faixaDaNota(n) {
+    if (n <= 20) return 'nao_aceitavel';
+    if (n <= 40) return 'insuficiente';
+    if (n <= 70) return 'satisfatorio';
+    if (n <= 90) return 'bom';
+    return 'excelente';
+  }
+
+  var avaliacao = null;
+  var respostas = {};
+
+  /* === INIT === */
+  (async function init() {
+    var params = new URLSearchParams(window.location.search);
+    var avId = params.get('id');
+    var codigo = sessionStorage.getItem('rh_portal_codigo');
+
+    if (!codigo) { mostrarErro('Sessão expirada. Volte ao portal e entre novamente com o seu código.'); return; }
+    if (!avId) { mostrarErro('Avaliação não especificada. Volte ao portal.'); return; }
+
+    try {
+      var lista = await db.query('rh_avaliacoes', 'id=eq.' + avId + '&limit=1');
+      if (!lista.length) { mostrarErro('Avaliação não encontrada.'); return; }
+      avaliacao = lista[0];
+
+      /* Confirmar que o código da sessão é mesmo o dono desta avaliação */
+      if (avaliacao.colaborador_codigo !== codigo) {
+        mostrarErro('Este formulário não pertence ao código com que entrou. Volte ao portal.');
+        return;
+      }
+
+      var campanhas = await db.query('rh_campanhas_avaliacao', 'id=eq.' + avaliacao.campanha_id + '&limit=1');
+      if (!campanhas.length || campanhas[0].estado !== 'aberta') { mostrarErro('Esta campanha de avaliação já está fechada.'); return; }
+      var campanha = campanhas[0];
+      var mesPartes = campanha.mes.split('-');
+      var nomeMes = MESES_NOME_PT[parseInt(mesPartes[1], 10) - 1] + ' ' + mesPartes[0];
+
+      if (avaliacao.auto_avaliacao) {
+        mostrarErro('A sua auto-avaliação deste mês já foi submetida. Obrigado.');
+        return;
+      }
+
+      document.getElementById('card-loading').style.display = 'none';
+      document.getElementById('card-formulario').style.display = 'block';
+      document.getElementById('colab-nome').textContent = avaliacao.colaborador_nome;
+      document.getElementById('colab-periodo').textContent = 'Período: ' + nomeMes;
+
+      document.getElementById('colab-info').innerHTML =
+        '<div><strong>Cargo</strong>' + escaparHTML(avaliacao.colaborador_cargo || '—') + '</div>' +
+        '<div><strong>Departamento</strong>' + escaparHTML(avaliacao.colaborador_departamento || '—') + '</div>' +
+        '<div><strong>Supervisor</strong>' + escaparHTML(avaliacao.supervisor_nome || '—') + '</div>' +
+        '<div><strong>Prazo</strong>' + formataData(campanha.data_inicio) + ' a ' + formataData(campanha.data_fim) + '</div>';
+
+      renderCriterios();
+    } catch(e) {
+      console.error(e);
+      mostrarErro('Erro ao carregar a avaliação. Tente novamente ou contacte o administrador.');
+    }
+  })();
+
+  var MESES_NOME_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  function mostrarErro(msg) {
+    document.getElementById('card-loading').style.display = 'none';
+    document.getElementById('card-erro').style.display = 'block';
+    document.getElementById('msg-erro').textContent = msg;
+  }
+
+  function escaparHTML(str) {
+    if (!str) return '';
+    var div = document.createElement('div'); div.appendChild(document.createTextNode(str)); return div.innerHTML;
+  }
+
+  function formataData(dataISO, comHora) {
+    if (!dataISO) return '—';
+    var d = new Date(dataISO); if (isNaN(d.getTime())) return dataISO;
+    var dia = String(d.getDate()).padStart(2, '0');
+    var mes = String(d.getMonth() + 1).padStart(2, '0');
+    var ano = d.getFullYear();
+    if (comHora) { var h = String(d.getHours()).padStart(2, '0'); var m = String(d.getMinutes()).padStart(2, '0'); return dia + '/' + mes + '/' + ano + ' ' + h + ':' + m; }
+    return dia + '/' + mes + '/' + ano;
+  }
+
+  /* === RENDER CRITÉRIOS === */
+  function renderCriterios() {
+    var c = document.getElementById('criterios-container');
+    var html = '';
+    CRITERIOS.forEach(function(cr) {
+      html += '<div class="criterio">';
+      html += '<div class="criterio-header">';
+      html += '<div><div class="criterio-nome">' + cr.nome + '</div><div class="criterio-desc-sub">' + cr.descricao + '</div></div>';
+      html += '<button class="criterio-desc-toggle" onclick="toggleFaixas(this, \'' + cr.id + '\')">Ver critérios</button>';
+      html += '</div>';
+
+      html += '<div class="faixas" id="faixas-' + cr.id + '">';
+      NOTAS_FAIXA_ID.forEach(function(fid) {
+        html += '<div class="faixa-item faixa-' + fid + '"><strong>' + NOTAS_FAIXA_LABEL[fid] + '</strong>' + cr.faixas[fid] + '</div>';
+      });
+      html += '</div>';
+
+      html += '<div class="nota-input-row">';
+      html += '<input type="range" min="0" max="100" value="50" step="1" data-criterio="' + cr.id + '" oninput="atualizarNota(this)" />';
+      html += '<input type="number" min="0" max="100" class="nota-valor" id="valor-' + cr.id + '" data-criterio="' + cr.id + '" onchange="atualizarNotaManual(this)" placeholder="0-100" />';
+      html += '<span class="nota-label" id="label-' + cr.id + '"></span>';
+      html += '</div></div>';
+    });
+    c.innerHTML = html;
+  }
+
+  function toggleFaixas(btn, id) {
+    var el = document.getElementById('faixas-' + id);
+    el.classList.toggle('visivel');
+    btn.textContent = el.classList.contains('visivel') ? 'Esconder critérios' : 'Ver critérios';
+  }
+
+  function atualizarNota(range) {
+    var id = range.getAttribute('data-criterio');
+    var valor = parseInt(range.value, 10);
+    document.getElementById('valor-' + id).value = valor;
+    aplicarNota(id, valor);
+  }
+
+  function atualizarNotaManual(input) {
+    var id = input.getAttribute('data-criterio');
+    var valor = parseInt(input.value, 10);
+    if (isNaN(valor)) return;
+    valor = Math.max(0, Math.min(100, valor));
+    input.value = valor;
+    var range = document.querySelector('input[type="range"][data-criterio="' + id + '"]');
+    if (range) range.value = valor;
+    aplicarNota(id, valor);
+  }
+
+  function aplicarNota(id, valor) {
+    respostas[id] = valor;
+    var faixa = faixaDaNota(valor);
+    var valorEl = document.getElementById('valor-' + id);
+    var labelEl = document.getElementById('label-' + id);
+    valorEl.className = 'nota-valor n-' + faixa;
+    labelEl.textContent = NOTAS_FAIXA_LABEL[faixa];
+    atualizarResumo();
+  }
+
+  function atualizarResumo() {
+    var media = calcularPontuacao(respostas);
+    var resumo = document.getElementById('resumo-final');
+    if (media !== null && Object.keys(respostas).length === CRITERIOS.length) {
+      document.getElementById('resumo-media').textContent = media.toFixed(2) + ' / 100';
+      document.getElementById('resumo-classificacao').textContent = classificar(media);
+      resumo.style.display = 'block';
+    } else {
+      resumo.style.display = 'none';
+    }
+  }
+
+  /* === SUBMETER === */
+  async function submeterAvaliacao() {
+    if (Object.keys(respostas).length < CRITERIOS.length) {
+      alert('Por favor, avalie todos os critérios antes de submeter (arraste o cursor ou escreva um número de 0 a 100 em cada um).');
+      return;
+    }
+
+    var btn = document.getElementById('btn-submeter');
+    btn.disabled = true;
+    btn.textContent = 'A submeter...';
+
+    var pontos = calcularPontuacao(respostas);
+
+    try {
+      await db.update('rh_avaliacoes', avaliacao.id, {
+        auto_avaliacao: respostas,
+        auto_avaliacao_submetida_em: new Date().toISOString(),
+        auto_observacoes: document.getElementById('obs-text').value.trim() || null,
+        auto_avaliacao_pontos: pontos,
+        estado: 'auto_preenchida',
+        updated_at: new Date().toISOString()
+      });
+
+      document.getElementById('card-formulario').innerHTML = '<div class="msg-sucesso"><h3>Auto-Avaliação submetida com sucesso!</h3><p>Obrigado, ' + escaparHTML(avaliacao.colaborador_nome) + '. A sua avaliação foi registada.</p></div>';
+      setTimeout(function() { window.location.href = 'portal.html'; }, 2500);
+    } catch(e) {
+      console.error(e);
+      btn.disabled = false;
+      btn.textContent = 'Submeter Auto-Avaliação';
+      alert('Erro ao submeter: ' + (e.message || e) + '. Tente novamente.');
+    }
+  }
+  </script>
+</body>
+</html>
