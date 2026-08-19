@@ -147,7 +147,7 @@
         });
       }
 
-      /* 3b. Avaliações da equipa (como Supervisor) */
+      /* 3b. Avaliações da equipa (como Responsável) */
       var daEquipa = await db.query('rh_avaliacoes', 'campanha_id=eq.' + campanha.id + '&supervisor_codigo=eq.' + encodeURIComponent(codigo));
       var pendentesSupervisor = (daEquipa || []).filter(function(a) { return a.auto_avaliacao && !a.avaliacao_supervisor; });
       if (pendentesSupervisor.length) {
@@ -155,7 +155,7 @@
           tipo: 'supervisor',
           titulo: '👥 Avaliações da Minha Equipa',
           sub: pendentesSupervisor.length + ' colaborador(es) à espera da sua avaliação',
-          href: 'preencher_supervisor.html',
+          href: 'preencher_responsavel.html',
           contagem: pendentesSupervisor.length
         });
       }

@@ -57,7 +57,10 @@
         <h1 class="pagina-titulo">Avaliação de Desempenho</h1>
         <p class="pagina-subtitulo">Admin. Oficinal — Gestão de Campanhas Mensais</p>
       </div>
-      <button class="btn btn-primario" id="btn-nova-campanha">+ Nova Campanha</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-secundario" onclick="window.location.href='gerir_responsaveis.html'">Responsáveis por Área</button>
+        <button class="btn btn-primario" id="btn-nova-campanha">+ Nova Campanha</button>
+      </div>
     </div>
 
     <div class="aviso-schema" id="aviso-schema"></div>
@@ -72,7 +75,7 @@
     <div class="kpi-grid-aval" id="kpi-grid">
       <div class="kpi-mini"><div class="num" id="kpi-total">—</div><div class="lbl">Total</div></div>
       <div class="kpi-mini pendente"><div class="num" id="kpi-pendente">—</div><div class="lbl">Sem Auto-Avaliação</div></div>
-      <div class="kpi-mini auto"><div class="num" id="kpi-auto">—</div><div class="lbl">À espera do Supervisor</div></div>
+      <div class="kpi-mini auto"><div class="num" id="kpi-auto">—</div><div class="lbl">À espera do Responsável</div></div>
       <div class="kpi-mini supervisor"><div class="num" id="kpi-supervisor">—</div><div class="lbl">À espera do Director</div></div>
       <div class="kpi-mini completo"><div class="num" id="kpi-completo">—</div><div class="lbl">Completas</div></div>
     </div>
@@ -83,7 +86,7 @@
         <select class="form-select" id="f-estado">
           <option value="">Todos os Estados</option>
           <option value="pendente">Pendente (sem auto)</option>
-          <option value="auto_preenchida">À espera do Supervisor</option>
+          <option value="auto_preenchida">À espera do Responsável</option>
           <option value="supervisor_preenchida">À espera do Director</option>
           <option value="director_preenchida">Completa</option>
         </select>
@@ -98,10 +101,10 @@
             <tr>
               <th>Colaborador</th>
               <th>Departamento</th>
-              <th>Supervisor</th>
+              <th>Responsável</th>
               <th>Estado</th>
               <th>Auto</th>
-              <th>Supervisor</th>
+              <th>Responsável</th>
               <th>Final</th>
               <th>Classificação</th>
               <th>Acção</th>
@@ -239,8 +242,8 @@
           var partes = [];
           if (semCargo === avaliacoesAtuais.length) partes.push('Cargo');
           if (semDep === avaliacoesAtuais.length) partes.push('Departamento');
-          if (semSup === avaliacoesAtuais.length) partes.push('Supervisor');
-          avisoEl.textContent = '⚠ ' + partes.join(', ') + ' vieram vazios para todos os colaboradores — a tabela "collaborators" pode não ter essas colunas com esses nomes exactos. As avaliações continuam a funcionar, só falta esta informação de contexto.';
+          if (semSup === avaliacoesAtuais.length) partes.push('Responsável');
+          avisoEl.textContent = '⚠ ' + partes.join(', ') + ' vieram vazios para todos os colaboradores. Se for "Responsável", confirma que definiste as áreas em "Responsáveis por Área" com os mesmos nomes usados em collaborators.setor. Se for "Cargo"/"Departamento", a coluna pode não existir com esse nome em collaborators. As avaliações continuam a funcionar, só falta esta informação de contexto.';
           avisoEl.style.display = 'block';
         } else {
           avisoEl.style.display = 'none';
@@ -283,7 +286,7 @@
   function estadoLabel(a) {
     if (a.avaliacao_director) return { texto: 'Completa', cls: 'badge-sucesso' };
     if (a.avaliacao_supervisor) return { texto: 'À espera do Director', cls: 'badge-aviso' };
-    if (a.auto_avaliacao) return { texto: 'À espera do Supervisor', cls: 'badge-info' };
+    if (a.auto_avaliacao) return { texto: 'À espera do Responsável', cls: 'badge-info' };
     return { texto: 'Sem Auto-Avaliação', cls: 'badge-secundario' };
   }
 
@@ -344,9 +347,9 @@
     document.getElementById('detalhe-titulo').textContent = a.colaborador_nome;
 
     var html = '<p style="font-size:var(--tamanho-sm);color:var(--cor-texto-sec);margin-bottom:12px;">' +
-      (a.colaborador_cargo || '—') + ' · ' + (a.colaborador_departamento || '—') + ' · Supervisor: ' + (a.supervisor_nome || '—') + '</p>';
+      (a.colaborador_cargo || '—') + ' · ' + (a.colaborador_departamento || '—') + ' · Responsável: ' + (a.supervisor_nome || '—') + '</p>';
 
-    html += '<table class="ref-tabela-detalhe"><thead><tr><th>Critério</th><th>Auto</th><th>Supervisor</th><th>Director</th></tr></thead><tbody>';
+    html += '<table class="ref-tabela-detalhe"><thead><tr><th>Critério</th><th>Auto</th><th>Responsável</th><th>Director</th></tr></thead><tbody>';
     CRITERIOS.forEach(function(cr) {
       var va = a.auto_avaliacao ? a.auto_avaliacao[cr.id] : null;
       var vs = a.avaliacao_supervisor ? a.avaliacao_supervisor[cr.id] : null;
@@ -367,7 +370,7 @@
 
     var obs = '';
     if (a.auto_observacoes) obs += '<p style="margin-top:10px;"><strong>Colaborador:</strong> ' + escapar(a.auto_observacoes) + '</p>';
-    if (a.supervisor_observacoes) obs += '<p style="margin-top:6px;"><strong>Supervisor:</strong> ' + escapar(a.supervisor_observacoes) + '</p>';
+    if (a.supervisor_observacoes) obs += '<p style="margin-top:6px;"><strong>Responsável:</strong> ' + escapar(a.supervisor_observacoes) + '</p>';
     if (a.director_observacoes) obs += '<p style="margin-top:6px;"><strong>Director:</strong> ' + escapar(a.director_observacoes) + '</p>';
     if (obs) html += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--cor-borda);font-size:var(--tamanho-sm);">' + obs + '</div>';
 
@@ -418,8 +421,9 @@
       });
       var campanhaId = novaCampanha[0].id;
 
-      /* 2. Buscar todos os colaboradores activos */
+      /* 2. Buscar todos os colaboradores activos e o mapa de Responsáveis por área */
       var colaboradores = await db.query('collaborators', 'active=eq.true&order=name.asc') || [];
+      var responsaveisArea = await db.query('rh_responsaveis_area', '') || [];
 
       if (!colaboradores.length) {
         mostrarToast('Campanha criada, mas não encontrei colaboradores activos para gerar as avaliações.', 'erro');
@@ -428,23 +432,40 @@
         return;
       }
 
-      /* 3. Gerar uma avaliação por colaborador (código = campo 'code') */
+      var mapaResponsaveis = {};
+      responsaveisArea.forEach(function(r) {
+        mapaResponsaveis[(r.area || '').toLowerCase().trim()] = r;
+      });
+
+      var semResponsavel = 0;
+
+      /* 3. Gerar uma avaliação por colaborador (código = campo 'code').
+         O Responsável vem de rh_responsaveis_area, casado pela área
+         (collaborators.setor) — não da tabela collaborators. */
       var linhas = colaboradores.map(function(c) {
+        var area = (c.setor || c.departamento || '').trim();
+        var resp = mapaResponsaveis[area.toLowerCase()];
+        if (!resp || !resp.responsavel_codigo) semResponsavel++;
+
         return {
           campanha_id: campanhaId,
           colaborador_codigo: c.code,
           colaborador_nome: c.name || c.nome || c.code,
           colaborador_cargo: c.cargo || c.categoria || null,
-          colaborador_departamento: c.departamento || c.setor || null,
-          supervisor_codigo: c.supervisor_codigo || c.supervisor_id || null,
-          supervisor_nome: c.supervisor_nome || null,
+          colaborador_departamento: area || null,
+          supervisor_codigo: resp ? resp.responsavel_codigo : null,
+          supervisor_nome: resp ? resp.responsavel_nome : null,
           estado: 'pendente'
         };
       });
 
       await db.insert('rh_avaliacoes', linhas);
 
-      mostrarToast('Campanha criada com ' + linhas.length + ' avaliações geradas.', 'sucesso');
+      var msgFinal = 'Campanha criada com ' + linhas.length + ' avaliações geradas.';
+      if (semResponsavel > 0) {
+        msgFinal += ' ⚠ ' + semResponsavel + ' colaborador(es) ficaram sem Responsável definido (área sem correspondência em "Responsáveis por Área").';
+      }
+      mostrarToast(msgFinal, semResponsavel > 0 ? 'aviso' : 'sucesso');
       fecharModal('modal-nova-campanha');
       await carregarCampanhas();
 

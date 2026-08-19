@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt" data-tema="claro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Responsáveis por Área — Admin. Oficinal — Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script>
+    if (!verificarSessao()) {
+      localStorage.setItem('dss_user', JSON.stringify({
+        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
+        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
+      }));
+    }
+  </script>
+  <style>
+    .area-card { background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio-lg); padding: 18px 20px; margin-bottom: 14px; }
+    .area-card .area-nome { font-weight: 700; font-size: var(--tamanho-lg); margin-bottom: 4px; }
+    .area-card .area-atual { font-size: var(--tamanho-sm); color: var(--cor-texto-sec); margin-bottom: 12px; }
+    .area-card .area-atual strong { color: var(--cor-texto); }
+    .area-card .area-vazia { color: var(--cor-erro); font-weight: 600; }
+    .area-linha { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+    .area-linha .tech-search-wrap { flex: 1; min-width: 220px; }
+    .area-obs { margin-top: 10px; }
+    .area-obs input { font-size: var(--tamanho-sm); }
+    .btn-guardar-area { white-space: nowrap; }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="main">
+    <h1 class="pagina-titulo">Responsáveis por Área</h1>
+    <p class="pagina-subtitulo">Define quem é o Responsável de cada área — usado na Avaliação de Desempenho e no futuro noutros módulos. Para substituir por férias, escolhe outra pessoa aqui e depois troca de volta.</p>
+
+    <div class="painel" style="margin-bottom:20px;">
+      <div class="form-grupo" style="max-width:360px;margin-bottom:0;">
+        <label class="form-label" for="nova-area-nome">Adicionar nova área</label>
+        <div style="display:flex;gap:8px;">
+          <input class="form-input" type="text" id="nova-area-nome" placeholder="Ex: Serralharia" />
+          <button class="btn btn-primario" id="btn-add-area">+ Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="lista-loading" class="spinner" style="padding:40px;text-align:center;">A carregar...</div>
+    <div id="lista-areas"></div>
+  </main>
+
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+  var areas = [];
+  var seletores = {};
+
+  (async function init() {
+    await carregarAreas();
+    document.getElementById('btn-add-area').addEventListener('click', adicionarArea);
+  })();
+
+  async function carregarAreas() {
+    document.getElementById('lista-loading').style.display = 'block';
+    try {
+      areas = await db.query('rh_responsaveis_area', 'order=area.asc') || [];
+      document.getElementById('lista-loading').style.display = 'none';
+      renderLista();
+    } catch (e) {
+      console.error(e);
+      document.getElementById('lista-loading').style.display = 'none';
+      mostrarToast('Erro ao carregar áreas.', 'erro');
+    }
+  }
+
+  function renderLista() {
+    var cont = document.getElementById('lista-areas');
+    if (!areas.length) {
+      cont.innerHTML = '<div class="painel" style="text-align:center;color:var(--cor-texto-sec);">Ainda não há nenhuma área registada. Adiciona a primeira acima (ex: Mecânica, Elétrica, Direcção...).</div>';
+      return;
+    }
+
+    cont.innerHTML = areas.map(function(a) {
+      var uid = 'area-' + a.id;
+      return '' +
+        '<div class="area-card">' +
+          '<div class="area-nome">' + escapar(a.area) + '</div>' +
+          '<div class="area-atual">Responsável atual: ' +
+            (a.responsavel_nome ? '<strong>' + escapar(a.responsavel_nome) + '</strong> (' + escapar(a.responsavel_codigo) + ')' : '<span class="area-vazia">Ninguém definido</span>') +
+          '</div>' +
+          '<div class="area-linha">' +
+            '<div class="tech-search-wrap">' +
+              '<input class="form-input" type="text" id="' + uid + '-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />' +
+              '<div id="' + uid + '-dropdown" class="tech-dropdown"></div>' +
+            '</div>' +
+            '<input type="hidden" id="' + uid + '-nome-oculto" />' +
+            '<input type="hidden" id="' + uid + '-codigo" />' +
+            '<button class="btn btn-verde btn-guardar-area" onclick="guardarArea(' + a.id + ')">Guardar</button>' +
+            '<button class="btn btn-secundario" onclick="removerArea(' + a.id + ')" title="Remover esta área">Remover</button>' +
+          '</div>' +
+          '<div id="' + uid + '-chip" class="chips-wrap"></div>' +
+          '<div class="area-obs form-grupo">' +
+            '<input class="form-input" type="text" id="' + uid + '-obs" placeholder="Observações (opcional) — ex: Substituto de férias até 20/08" value="' + escapar(a.observacoes || '') + '" />' +
+          '</div>' +
+        '</div>';
+    }).join('');
+
+    /* Ligar o seletor de colaborador a cada área.
+       NOTA: o hiddenId do seletor guarda o NOME (é assim que o
+       shared/utils.js já funciona, igual ao ferramenteiros.html) —
+       por isso o código vem à parte, pelo onSelect. */
+    areas.forEach(async function(a) {
+      var uid = 'area-' + a.id;
+      seletores[a.id] = await criarSeletorColaborador({
+        inputId: uid + '-search',
+        dropdownId: uid + '-dropdown',
+        hiddenId: uid + '-nome-oculto',
+        chipId: uid + '-chip',
+        onSelect: function(colab) {
+          document.getElementById(uid + '-codigo').value = colab ? (colab.code || '') : '';
+        }
+      });
+      if (a.responsavel_nome && seletores[a.id]) {
+        seletores[a.id].setValor(a.responsavel_nome);
+        document.getElementById(uid + '-codigo').value = a.responsavel_codigo || '';
+      }
+    });
+  }
+
+  function escapar(str) {
+    if (!str) return '';
+    var div = document.createElement('div'); div.appendChild(document.createTextNode(str)); return div.innerHTML;
+  }
+
+  async function adicionarArea() {
+    var nome = document.getElementById('nova-area-nome').value.trim();
+    if (!nome) { mostrarToast('Escreva o nome da área.', 'erro'); return; }
+    var duplicada = areas.some(function(a) { return a.area.toLowerCase() === nome.toLowerCase(); });
+    if (duplicada) { mostrarToast('Essa área já existe.', 'erro'); return; }
+
+    try {
+      await db.insert('rh_responsaveis_area', {
+        area: nome,
+        responsavel_codigo: '',
+        responsavel_nome: ''
+      });
+      document.getElementById('nova-area-nome').value = '';
+      mostrarToast('Área adicionada. Agora escolhe o responsável.', 'sucesso');
+      await carregarAreas();
+    } catch (e) {
+      console.error(e);
+      mostrarToast('Erro ao adicionar área.', 'erro');
+    }
+  }
+
+  async function guardarArea(id) {
+    var uid = 'area-' + id;
+    var codigo = document.getElementById(uid + '-codigo').value.trim();
+    var nome = document.getElementById(uid + '-search').value.trim();
+    var obs = document.getElementById(uid + '-obs').value.trim() || null;
+
+    if (!codigo || !nome) {
+      mostrarToast('Escolha um colaborador da lista (clique numa sugestão).', 'erro');
+      return;
+    }
+
+    try {
+      await db.update('rh_responsaveis_area', id, {
+        responsavel_codigo: codigo,
+        responsavel_nome: nome,
+        observacoes: obs,
+        updated_at: new Date().toISOString()
+      });
+      mostrarToast('Responsável actualizado.', 'sucesso');
+      await carregarAreas();
+    } catch (e) {
+      console.error(e);
+      mostrarToast('Erro ao guardar.', 'erro');
+    }
+  }
+
+  async function removerArea(id) {
+    if (!confirm('Remover esta área? (não apaga colaboradores, só a área da lista)')) return;
+    try {
+      await db.delete('rh_responsaveis_area', id);
+      mostrarToast('Área removida.', 'sucesso');
+      await carregarAreas();
+    } catch (e) {
+      console.error(e);
+      mostrarToast('Erro ao remover.', 'erro');
+    }
+  }
+  </script>
+</body>
+</html>
