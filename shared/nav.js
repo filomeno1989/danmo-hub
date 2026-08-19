@@ -29,6 +29,7 @@
       sub: [
         { label: 'RH & Quadro de Pessoal',   href: 'rh/index.html' },
         { label: 'Avaliação de Desempenho',  href: 'avaliacao-desempenho/avaliacoes.html' },
+        { label: 'Responsáveis por Área',    href: 'avaliacao-desempenho/gerir_responsaveis.html' },
         { label: 'Portal de Avaliação',      href: 'avaliacao-desempenho/portal.html' },
         { label: 'Finanças & Faturas',       href: 'financeiro/index.html' }
       ] },
