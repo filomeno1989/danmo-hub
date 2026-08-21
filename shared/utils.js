@@ -488,6 +488,21 @@ async function criarSeletorColaborador({ inputId, dropdownId, hiddenId, chipId, 
   return {
     reset: function () { hiddenEl.value = ''; inputEl.value = ''; renderChip(); },
     getColaboradores: function () { return colaboradores; },
-    setValor: function (nome) { hiddenEl.value = nome || ''; inputEl.value = nome || ''; renderChip(); }
+    setValor: function (nome) { hiddenEl.value = nome || ''; inputEl.value = ''; renderChip(); }
   };
+}
+
+/**
+ * Calcula a idade (em anos completos) a partir de uma data de
+ * nascimento (string ISO 'YYYY-MM-DD' ou Date).
+ */
+function calcularIdade(dataNascimento) {
+  if (!dataNascimento) return null;
+  var nasc = new Date(dataNascimento);
+  if (isNaN(nasc.getTime())) return null;
+  var hoje = new Date();
+  var idade = hoje.getFullYear() - nasc.getFullYear();
+  var m = hoje.getMonth() - nasc.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+  return idade;
 }
