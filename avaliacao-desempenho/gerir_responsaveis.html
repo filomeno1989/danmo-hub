@@ -160,22 +160,27 @@
   async function guardarArea(id) {
     var uid = 'area-' + id;
     var codigo = document.getElementById(uid + '-codigo').value.trim();
-    var nome = document.getElementById(uid + '-search').value.trim();
+    /* Ler o nome do campo escondido do seletor (não do campo de
+       pesquisa visível — esse agora fica vazio depois de escolhido,
+       só o chip por baixo mostra a seleção actual). */
+    var nome = document.getElementById(uid + '-nome-oculto').value.trim();
     var obs = document.getElementById(uid + '-obs').value.trim() || null;
 
-    if (!codigo || !nome) {
-      mostrarToast('Escolha um colaborador da lista (clique numa sugestão).', 'erro');
+    if (!codigo && !nome) {
+      if (!confirm('Não escolheste ninguém — isto vai deixar esta área SEM responsável. Confirmas?')) return;
+    } else if (!codigo || !nome) {
+      mostrarToast('Escolha um colaborador da lista (clique numa sugestão) ou limpe tudo para deixar sem responsável.', 'erro');
       return;
     }
 
     try {
       await db.update('rh_responsaveis_area', id, {
-        responsavel_codigo: codigo,
-        responsavel_nome: nome,
+        responsavel_codigo: codigo || null,
+        responsavel_nome: nome || null,
         observacoes: obs,
         updated_at: new Date().toISOString()
       });
-      mostrarToast('Responsável actualizado.', 'sucesso');
+      mostrarToast(nome ? 'Responsável actualizado.' : 'Área ficou sem responsável.', 'sucesso');
       await carregarAreas();
     } catch (e) {
       console.error(e);
