@@ -51,6 +51,11 @@
     <label for="input-codigo">O seu código de colaborador</label>
     <input type="text" id="input-codigo" placeholder="Ex: DM0013" autocomplete="off" autofocus />
     <div class="ajuda">É o mesmo código usado na sua ficha (Nº de Trabalhador)</div>
+
+    <label for="input-nascimento" style="margin-top:14px;">A sua data de nascimento</label>
+    <input type="date" id="input-nascimento" style="text-transform:none;letter-spacing:normal;font-weight:600;" />
+    <div class="ajuda">A mesma que está na sua ficha de colaborador</div>
+
     <button class="btn-entrar" id="btn-entrar">Entrar</button>
     <div class="msg-erro" id="msg-erro" style="display:none;"></div>
   </div>
@@ -90,6 +95,9 @@
   }
 
   document.getElementById('input-codigo').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('input-nascimento').focus();
+  });
+  document.getElementById('input-nascimento').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') verificarCodigo();
   });
   document.getElementById('btn-entrar').addEventListener('click', verificarCodigo);
@@ -97,13 +105,16 @@
     sessionStorage.removeItem('rh_portal_codigo');
     sessionStorage.removeItem('rh_portal_nome');
     document.getElementById('input-codigo').value = '';
+    document.getElementById('input-nascimento').value = '';
     irPara('login');
   });
 
   async function verificarCodigo() {
     var codigo = document.getElementById('input-codigo').value.trim().toUpperCase();
+    var nascimento = document.getElementById('input-nascimento').value;
     esconderErro();
     if (!codigo) { mostrarErro('Escreva o seu código.'); return; }
+    if (!nascimento) { mostrarErro('Escreva a sua data de nascimento.'); return; }
 
     irPara('loading');
 
@@ -116,6 +127,19 @@
         return;
       }
       var colaborador = colabs[0];
+
+      /* 1b. Confirmar a data de nascimento (segunda confirmação de identidade) */
+      if (!colaborador.data_nascimento) {
+        irPara('login');
+        mostrarErro('A sua data de nascimento ainda não está registada na ficha. Peça ao Administrativo para a preencher antes de entrar aqui.');
+        return;
+      }
+      var nascRegistado = colaborador.data_nascimento.split('T')[0];
+      if (nascRegistado !== nascimento) {
+        irPara('login');
+        mostrarErro('Código ou data de nascimento incorrectos. Verifique e tente novamente.');
+        return;
+      }
 
       /* 2. Campanha aberta */
       var campanhas = await db.query('rh_campanhas_avaliacao', 'estado=eq.aberta&order=created_at.desc&limit=1');

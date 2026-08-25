@@ -63,6 +63,7 @@
         <button class="btn btn-secundario" onclick="window.location.href='gerir_responsaveis.html'">Responsáveis por Área</button>
         <button class="btn btn-secundario" id="btn-exportar-excel">📊 Exportar Excel</button>
         <button class="btn btn-secundario" id="btn-exportar-pdf">🖨️ Exportar PDF</button>
+        <button class="btn btn-secundario" id="btn-cartaz-qr">🔲 Cartaz QR</button>
         <button class="btn btn-primario" id="btn-nova-campanha">+ Nova Campanha</button>
       </div>
     </div>
@@ -188,6 +189,10 @@
       window.open('imprimir_fichas.html?campanha=' + campanhaActual.id, '_blank');
     });
     document.getElementById('btn-exportar-excel').addEventListener('click', exportarExcel);
+    document.getElementById('btn-cartaz-qr').addEventListener('click', function() {
+      if (!campanhaActual) { mostrarToast('Escolhe uma campanha primeiro.', 'erro'); return; }
+      window.open('cartaz_qr.html?mes=' + campanhaActual.mes, '_blank');
+    });
     document.getElementById('sel-campanha').addEventListener('change', function() {
       campanhaActual = campanhas.find(function(c) { return String(c.id) === this.value; }, this);
       carregarAvaliacoes();
@@ -477,6 +482,10 @@
       mostrarToast(msgFinal, semResponsavel > 0 ? 'aviso' : 'sucesso');
       fecharModal('modal-nova-campanha');
       await carregarCampanhas();
+
+      if (confirm('Campanha criada! Queres abrir já o Cartaz QR para imprimir e colar na vitrine?')) {
+        window.open('cartaz_qr.html?mes=' + mes, '_blank');
+      }
 
     } catch (e) {
       console.error(e);

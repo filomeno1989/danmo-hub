@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cartaz QR — Portal de Avaliação — Danmo Service System</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; background: #E5E7EB; color: #1E293B; }
+
+    .barra-controlo {
+      position: sticky; top: 0; z-index: 100;
+      background: #1E293B; color: #fff;
+      padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .barra-controlo h1 { font-size: 1rem; }
+    .barra-controlo p { font-size: 0.8rem; color: #94A3B8; }
+    .barra-controlo button { padding: 10px 18px; border: none; border-radius: 8px; background: #F59E0B; color: #1E293B; font-weight: 700; cursor: pointer; }
+    .barra-controlo button:hover { background: #D97706; }
+    .barra-controlo a.voltar { color: #94A3B8; font-size: 0.85rem; text-decoration: none; }
+
+    .cartaz {
+      background: #fff;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 20px auto;
+      padding: 20mm;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 18px;
+    }
+
+    .cartaz .faixa-topo { width: 100%; height: 10mm; background: linear-gradient(90deg, #00A859, #FFD400, #E31E24); border-radius: 4mm; margin-bottom: 10mm; }
+
+    .cartaz h1 { font-size: 26pt; color: #1E293B; letter-spacing: 1px; }
+    .cartaz h2 { font-size: 18pt; color: #F59E0B; font-weight: 700; margin-top: 4mm; }
+    .cartaz .mes-campanha { font-size: 14pt; color: #64748B; margin-bottom: 10mm; }
+
+    .cartaz img.qr { width: 90mm; height: 90mm; border: 4mm solid #1E293B; border-radius: 6mm; }
+
+    .cartaz .instrucoes { max-width: 140mm; font-size: 13pt; line-height: 1.7; margin-top: 10mm; }
+    .cartaz .instrucoes strong { color: #1E293B; }
+
+    .cartaz .passos { text-align: left; max-width: 140mm; margin-top: 6mm; font-size: 12pt; line-height: 2; }
+    .cartaz .passos li { margin-left: 20pt; }
+
+    .cartaz .url-fallback { margin-top: 8mm; font-size: 10pt; color: #94A3B8; word-break: break-all; }
+
+    .cartaz .rodape { margin-top: auto; padding-top: 10mm; font-size: 10pt; color: #94A3B8; }
+
+    @media print {
+      body { background: #fff; }
+      .barra-controlo { display: none; }
+      .cartaz { box-shadow: none; margin: 0; width: auto; min-height: auto; }
+      @page { size: A4; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="barra-controlo">
+    <div>
+      <h1 id="titulo-barra">Cartaz QR — Portal de Avaliação</h1>
+      <p id="sub-barra">Imprime e cola na vitrine / mural, para qualquer colega poder ler com o telemóvel.</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <a class="voltar" href="avaliacoes.html">&#8592; Voltar ao Painel</a>
+      <button onclick="window.print()">🖨️ Imprimir Cartaz</button>
+    </div>
+  </div>
+
+  <div class="cartaz">
+    <div class="faixa-topo"></div>
+    <h1>DANMO SERVICE SYSTEM, LDA</h1>
+    <h2>Avaliação de Desempenho</h2>
+    <div class="mes-campanha" id="mes-campanha">A carregar...</div>
+
+    <img class="qr" id="qr-image" src="" alt="QR Code do Portal de Avaliação" />
+
+    <div class="instrucoes">
+      <strong>Aponte a câmara do telemóvel para o código acima</strong> para abrir o Portal de Avaliação.
+    </div>
+
+    <ol class="passos">
+      <li>Aponte a câmara para o QR Code (não precisa de app extra)</li>
+      <li>Escreva o seu <strong>código de colaborador</strong> (ex: DM0013)</li>
+      <li>Escreva a sua <strong>data de nascimento</strong> (a mesma da sua ficha)</li>
+      <li>Preencha a sua avaliação — leva 2 a 3 minutos</li>
+    </ol>
+
+    <div class="url-fallback" id="url-fallback"></div>
+
+    <div class="rodape">Dúvidas? Fale com a Administração Oficinal.</div>
+  </div>
+
+  <script>
+    var params = new URLSearchParams(window.location.search);
+    var mes = params.get('mes') || '';
+
+    var mesesPt = {'01':'Janeiro','02':'Fevereiro','03':'Março','04':'Abril','05':'Maio','06':'Junho','07':'Julho','08':'Agosto','09':'Setembro','10':'Outubro','11':'Novembro','12':'Dezembro'};
+    if (mes) {
+      var p = mes.split('-');
+      var nomeMes = (mesesPt[p[1]] || p[1]) + ' ' + p[0];
+      document.getElementById('mes-campanha').textContent = 'Campanha de ' + nomeMes;
+      document.getElementById('titulo-barra').textContent = 'Cartaz QR — ' + nomeMes;
+    } else {
+      document.getElementById('mes-campanha').textContent = 'Campanha em curso';
+    }
+
+    /* URL absoluta do portal (mesma pasta deste ficheiro) */
+    var urlPortal = window.location.href.replace(/cartaz_qr\.html.*$/, 'portal.html');
+    document.getElementById('url-fallback').textContent = urlPortal;
+
+    /* QR gerado via API pública (sem precisar de biblioteca) */
+    var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=10&data=' + encodeURIComponent(urlPortal);
+    document.getElementById('qr-image').src = qrSrc;
+  </script>
+</body>
+</html>
