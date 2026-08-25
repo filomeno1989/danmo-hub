@@ -16,6 +16,10 @@
     .card label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
     .card input { width: 100%; padding: 14px; border: 2px solid #E2E8F0; border-radius: 8px; font-size: 1.1rem; text-align: center; letter-spacing: 1px; font-weight: 700; text-transform: uppercase; }
     .card input:focus { outline: none; border-color: #F59E0B; }
+
+    .campo-data-wrap { position: relative; }
+    .btn-calendario { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.4rem; cursor: pointer; padding: 6px 8px; line-height: 1; border-radius: 6px; }
+    .btn-calendario:hover { background: #F4F6F9; }
     .card .ajuda { font-size: 0.78rem; color: #7F8C8D; margin-top: 8px; text-align: center; }
 
     .btn-entrar { display: block; width: 100%; padding: 14px; border: none; border-radius: 8px; background: #1E293B; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 18px; }
@@ -52,8 +56,12 @@
     <input type="text" id="input-codigo" placeholder="Ex: DM0013" autocomplete="off" autofocus />
     <div class="ajuda">É o mesmo código usado na sua ficha (Nº de Trabalhador)</div>
 
-    <label for="input-nascimento" style="margin-top:14px;">A sua data de nascimento</label>
-    <input type="date" id="input-nascimento" style="text-transform:none;letter-spacing:normal;font-weight:600;" />
+    <label for="input-nascimento-texto" style="margin-top:14px;">A sua data de nascimento</label>
+    <div class="campo-data-wrap">
+      <input type="text" id="input-nascimento-texto" placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" autocomplete="off" style="text-transform:none;letter-spacing:normal;font-weight:600;padding-right:44px;" />
+      <button type="button" class="btn-calendario" id="btn-abrir-calendario" title="Escolher no calendário" aria-label="Escolher no calendário">📅</button>
+      <input type="date" id="input-nascimento" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none;" tabindex="-1" />
+    </div>
     <div class="ajuda">A mesma que está na sua ficha de colaborador</div>
 
     <button class="btn-entrar" id="btn-entrar">Entrar</button>
@@ -95,17 +103,59 @@
   }
 
   document.getElementById('input-codigo').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') document.getElementById('input-nascimento').focus();
+    if (e.key === 'Enter') document.getElementById('input-nascimento-texto').focus();
   });
-  document.getElementById('input-nascimento').addEventListener('keydown', function(e) {
+
+  /* ── Campo de data com máscara DD/MM/AAAA + calendário nativo ── */
+  var campoTexto = document.getElementById('input-nascimento-texto');
+  var campoOculto = document.getElementById('input-nascimento');
+
+  campoTexto.addEventListener('input', function() {
+    var digitos = this.value.replace(/\D/g, '').slice(0, 8);
+    var formatado = digitos;
+    if (digitos.length > 4) formatado = digitos.slice(0,2) + '/' + digitos.slice(2,4) + '/' + digitos.slice(4);
+    else if (digitos.length > 2) formatado = digitos.slice(0,2) + '/' + digitos.slice(2);
+    this.value = formatado;
+
+    /* Manter o input[type=date] escondido sincronizado (usado como valor real) */
+    if (digitos.length === 8) {
+      var dd = digitos.slice(0,2), mm = digitos.slice(2,4), aaaa = digitos.slice(4,8);
+      campoOculto.value = aaaa + '-' + mm + '-' + dd;
+    } else {
+      campoOculto.value = '';
+    }
+  });
+
+  campoTexto.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') verificarCodigo();
   });
+
+  document.getElementById('btn-abrir-calendario').addEventListener('click', function() {
+    if (campoOculto.showPicker) {
+      campoOculto.showPicker();
+    } else {
+      campoOculto.style.pointerEvents = 'auto';
+      campoOculto.style.opacity = '1';
+      campoOculto.click();
+    }
+  });
+
+  /* Quando o utilizador escolhe no calendário, escrever no campo de texto */
+  campoOculto.addEventListener('change', function() {
+    if (!this.value) return;
+    var partes = this.value.split('-'); // AAAA-MM-DD
+    campoTexto.value = partes[2] + '/' + partes[1] + '/' + partes[0];
+    campoOculto.style.pointerEvents = 'none';
+    campoOculto.style.opacity = '0';
+  });
+
   document.getElementById('btn-entrar').addEventListener('click', verificarCodigo);
   document.getElementById('btn-sair').addEventListener('click', function() {
     sessionStorage.removeItem('rh_portal_codigo');
     sessionStorage.removeItem('rh_portal_nome');
     document.getElementById('input-codigo').value = '';
-    document.getElementById('input-nascimento').value = '';
+    campoTexto.value = '';
+    campoOculto.value = '';
     irPara('login');
   });
 
