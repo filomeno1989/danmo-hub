@@ -30,7 +30,7 @@
         { label: 'RH & Quadro de Pessoal',   href: 'rh/index.html' },
         { label: 'Avaliação de Desempenho',  href: 'avaliacao-desempenho/avaliacoes.html' },
         { label: 'Responsáveis por Área',    href: 'avaliacao-desempenho/gerir_responsaveis.html' },
-        { label: 'Portal de Avaliação',      href: 'avaliacao-desempenho/portal.html' },
+        { label: 'Portal de Avaliação',      href: 'avaliacao-desempenho/portal.html', novaAba: true },
         { label: 'Finanças & Faturas',       href: 'financeiro/index.html' }
       ] },
 
@@ -98,9 +98,10 @@
     const ativo = mod.id === 'inicio'
       ? (caminhoAtual.endsWith('/index.html') || caminhoAtual === '/' || caminhoAtual.endsWith('/danmo-hub/') || caminhoAtual.endsWith('/danmo-hub'))
       : ehAtivo(mod);
+    const alvoAtributo = mod.novaAba ? ' target="_blank" rel="noopener"' : '';
     return `
       <li class="sidebar-modulo">
-        <a href="${BASE}${mod.href}" class="sidebar-modulo-btn${ativo ? ' ativo' : ''}" title="${mod.label}">
+        <a href="${BASE}${mod.href}" class="sidebar-modulo-btn${ativo ? ' ativo' : ''}" title="${mod.label}"${alvoAtributo}>
           <span class="modulo-icon">${mod.icon}</span>
           <span class="modulo-label">${mod.label}</span>
         </a>
