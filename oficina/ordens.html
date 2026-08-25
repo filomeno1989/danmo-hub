@@ -26,7 +26,7 @@
   <div id="navbar" class="navbar"></div>
   
   <main class="main">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
       <div>
         <h1 class="pagina-titulo">Ordens de Serviço</h1>
         <p class="pagina-subtitulo">Acompanhamento de obras abertas e fechadas na oficina</p>
@@ -135,25 +135,23 @@
             <span class="nota">Opcional — pode ser preenchido depois quando a CdM atribuir.</span>
           </div>
 
-          <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-            <div class="form-grupo">
-              <label class="form-label">Equipamento *</label>
-              <select class="form-select" id="f-equipamento" required></select>
-            </div>
+          <div class="form-grupo">
+            <label class="form-label">Equipamento *</label>
+            <select class="form-select" id="f-equipamento" required></select>
+          </div>
 
-            <div class="form-grupo">
-              <label class="form-label">Sector *</label>
-              <select class="form-select" id="f-sector" required>
-                <option value="">— Selecionar —</option>
-                <option value="Elétrica">Elétrica</option>
-                <option value="Mecânica">Mecânica</option>
-                <option value="Serralharia">Serralharia</option>
-                <option value="Pneumática">Pneumática</option>
-                <option value="Lubrificação">Lubrificação</option>
-                <option value="Piquete">Piquete</option>
-                <option value="Máquinas e Ferramentas">Máquinas e Ferramentas</option>
-              </select>
-            </div>
+          <div class="form-grupo">
+            <label class="form-label">Sector *</label>
+            <select class="form-select" id="f-sector" required>
+              <option value="">— Selecionar —</option>
+              <option value="Elétrica">Elétrica</option>
+              <option value="Mecânica">Mecânica</option>
+              <option value="Serralharia">Serralharia</option>
+              <option value="Pneumática">Pneumática</option>
+              <option value="Lubrificação">Lubrificação</option>
+              <option value="Piquete">Piquete</option>
+              <option value="Máquinas e Ferramentas">Máquinas e Ferramentas</option>
+            </select>
           </div>
 
           <div class="form-grupo">
@@ -187,24 +185,22 @@
             </div>
           </div>
 
-          <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-            <div class="form-grupo">
-              <label class="form-label">Estado Físico *</label>
-              <select class="form-select" id="f-status-fisico" required>
-                <option value="">— Selecionar —</option>
-                <option value="Avariada">Avariada</option>
-                <option value="Acidentada">Acidentada</option>
-                <option value="Pneumático">Pneumático</option>
-                <option value="Revisão/Manutenção">Revisão/Manutenção</option>
-                <option value="Inspeção">Inspeção</option>
-                <option value="Aguarda Acessório">Aguarda Acessório</option>
-              </select>
-            </div>
+          <div class="form-grupo">
+            <label class="form-label">Estado Físico *</label>
+            <select class="form-select" id="f-status-fisico" required>
+              <option value="">— Selecionar —</option>
+              <option value="Avariada">Avariada</option>
+              <option value="Acidentada">Acidentada</option>
+              <option value="Pneumático">Pneumático</option>
+              <option value="Revisão/Manutenção">Revisão/Manutenção</option>
+              <option value="Inspeção">Inspeção</option>
+              <option value="Aguarda Acessório">Aguarda Acessório</option>
+            </select>
+          </div>
 
-            <div class="form-grupo">
-              <label class="form-label">Data de Abertura *</label>
-              <input class="form-input" type="date" id="f-data-abertura" required />
-            </div>
+          <div class="form-grupo">
+            <label class="form-label">Data de Abertura *</label>
+            <input class="form-input" type="date" id="f-data-abertura" required />
           </div>
 
           <!-- Componente de Colaboradores herdado do style.css -->
