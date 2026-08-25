@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acompanhamento da Equipa — Danmo Service System</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; background: #F4F6F9; color: #2C3E50; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+
+    .logo-bar { text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #1E293B; width: 100%; max-width: 700px; }
+    .logo-bar h1 { font-size: 1.1rem; color: #1E293B; margin-bottom: 2px; }
+    .logo-bar p { font-size: 0.82rem; color: #7F8C8D; }
+
+    .btn-voltar { align-self: flex-start; margin: 0 auto 12px; width: 100%; max-width: 700px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 1px solid #E2E8F0; border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #2C3E50; }
+    .btn-voltar:hover { background: #F4F6F9; }
+
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 28px; width: 100%; max-width: 700px; margin-bottom: 20px; }
+    .card h2 { font-size: 1.1rem; margin-bottom: 4px; color: #1E293B; }
+    .card .sub { font-size: 0.85rem; color: #7F8C8D; margin-bottom: 20px; }
+
+    .item-lista { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 2px solid #E2E8F0; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
+    .item-lista:hover { border-color: #F59E0B; background: #FEF3C7; }
+    .item-lista .nome { font-weight: 700; font-size: 0.95rem; color: #1E293B; }
+    .item-lista .cargo { font-size: 0.8rem; color: #7F8C8D; margin-top: 2px; }
+    .item-lista .contagem { background: #DBEAFE; color: #1E40AF; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
+    .lista-vazia { text-align: center; padding: 30px; color: #7F8C8D; }
+
+    .form-nota { margin-bottom: 20px; }
+    .form-nota label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; }
+    .tipo-nota-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .tipo-nota-btn { flex: 1; min-width: 100px; padding: 8px; border: 2px solid #E2E8F0; border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.78rem; font-weight: 600; text-align: center; }
+    .tipo-nota-btn.selecionado[data-tipo="elogio"] { border-color: #10B981; background: #D1FAE5; color: #047857; }
+    .tipo-nota-btn.selecionado[data-tipo="observacao"] { border-color: #3B82F6; background: #DBEAFE; color: #1E40AF; }
+    .tipo-nota-btn.selecionado[data-tipo="chamada_atencao"] { border-color: #F59E0B; background: #FEF3C7; color: #B45309; }
+    .tipo-nota-btn.selecionado[data-tipo="advertencia"] { border-color: #EF4444; background: #FEE2E2; color: #B91C1C; }
+    .form-nota textarea { width: 100%; padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; font-family: inherit; font-size: 0.88rem; resize: vertical; min-height: 80px; margin-bottom: 10px; }
+    .btn-guardar-nota { padding: 10px 20px; border: none; border-radius: 8px; background: #1E293B; color: #fff; font-weight: 700; cursor: pointer; }
+    .btn-guardar-nota:hover { background: #0F172A; }
+    .btn-guardar-nota:disabled { background: #94A3B8; cursor: not-allowed; }
+
+    .nota-item { padding: 12px 14px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #94A3B8; background: #F8FAFC; }
+    .nota-item.elogio { border-left-color: #10B981; background: #F0FDF4; }
+    .nota-item.observacao { border-left-color: #3B82F6; background: #EFF6FF; }
+    .nota-item.chamada_atencao { border-left-color: #F59E0B; background: #FFFBEB; }
+    .nota-item.advertencia { border-left-color: #EF4444; background: #FEF2F2; }
+    .nota-item .nota-cabecalho { display: flex; justify-content: space-between; font-size: 0.72rem; color: #7F8C8D; margin-bottom: 4px; }
+    .nota-item .nota-tag { font-weight: 700; text-transform: uppercase; font-size: 0.68rem; }
+    .nota-item .nota-texto { font-size: 0.88rem; line-height: 1.4; }
+    .sem-notas { text-align: center; padding: 20px; color: #7F8C8D; font-size: 0.85rem; }
+
+    .btn-cancelar-form { display: block; width: 100%; padding: 10px; border: 1px solid #E2E8F0; border-radius: 8px; background: #fff; color: #2C3E50; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 6px; }
+
+    .msg-erro { background: #FEE2E2; color: #EF4444; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem; }
+  </style>
+</head>
+<body>
+
+  <div class="logo-bar">
+    <h1>DANMO SERVICE SYSTEM, LDA</h1>
+    <p>Acompanhamento da Equipa</p>
+  </div>
+
+  <button class="btn-voltar" onclick="window.location.href='portal.html'">&#8592; Voltar ao Portal</button>
+
+  <div id="app" style="width:100%;max-width:700px;">
+    <div class="card" id="card-loading" style="text-align:center;padding:40px;">A carregar...</div>
+    <div class="card" id="card-erro" style="display:none;"><div class="msg-erro" id="msg-erro"></div></div>
+
+    <div class="card" id="card-lista" style="display:none;">
+      <h2>A Minha Equipa</h2>
+      <p class="sub" id="lista-sub"></p>
+      <div id="lista-container"></div>
+    </div>
+
+    <div class="card" id="card-colaborador" style="display:none;">
+      <h2 id="colab-nome"></h2>
+      <p class="sub" id="colab-sub"></p>
+
+      <div class="form-nota">
+        <label>Tipo de Nota</label>
+        <div class="tipo-nota-row" id="tipo-nota-row">
+          <div class="tipo-nota-btn" data-tipo="elogio" onclick="selecionarTipo(this)">👍 Elogio</div>
+          <div class="tipo-nota-btn selecionado" data-tipo="observacao" onclick="selecionarTipo(this)">📝 Observação</div>
+          <div class="tipo-nota-btn" data-tipo="chamada_atencao" onclick="selecionarTipo(this)">⚠️ Chamada de Atenção</div>
+          <div class="tipo-nota-btn" data-tipo="advertencia" onclick="selecionarTipo(this)">🚫 Advertência</div>
+        </div>
+        <label for="nota-texto">Descrição</label>
+        <textarea id="nota-texto" placeholder="Descreve o que aconteceu, com data e contexto se relevante..."></textarea>
+        <button class="btn-guardar-nota" id="btn-guardar-nota" onclick="guardarNota()">Registar Nota</button>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #E2E8F0;margin:16px 0;" />
+
+      <h2 style="font-size:0.95rem;">Histórico</h2>
+      <div id="historico-container"></div>
+
+      <button class="btn-cancelar-form" onclick="voltarLista()">&#8592; Voltar à lista da equipa</button>
+    </div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+
+  <script>
+  var TIPO_LABEL = { elogio: 'Elogio', observacao: 'Observação', chamada_atencao: 'Chamada de Atenção', advertencia: 'Advertência' };
+
+  var codigo = null, nomeResponsavel = null;
+  var equipa = [];
+  var contagemNotas = {};
+  var colaboradorAtual = null;
+  var tipoSelecionado = 'observacao';
+
+  (async function init() {
+    codigo = sessionStorage.getItem('rh_portal_codigo');
+    nomeResponsavel = sessionStorage.getItem('rh_portal_nome');
+    if (!codigo) { mostrarErro('Sessão expirada. Volte ao portal e entre novamente com o seu código.'); return; }
+
+    await carregarEquipa();
+  })();
+
+  function mostrarErro(msg) {
+    document.getElementById('card-loading').style.display = 'none';
+    document.getElementById('card-erro').style.display = 'block';
+    document.getElementById('msg-erro').textContent = msg;
+  }
+
+  function escapar(str) {
+    if (!str) return '';
+    var div = document.createElement('div'); div.appendChild(document.createTextNode(str)); return div.innerHTML;
+  }
+
+  function formatarDataHora(d) {
+    var dt = new Date(d);
+    return String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + dt.getFullYear() +
+      ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+  }
+
+  async function carregarEquipa() {
+    document.getElementById('card-loading').style.display = 'block';
+    document.getElementById('card-lista').style.display = 'none';
+    document.getElementById('card-colaborador').style.display = 'none';
+
+    try {
+      var areas = await db.query('rh_responsaveis_area', 'responsavel_codigo=eq.' + encodeURIComponent(codigo));
+      if (!areas.length) {
+        mostrarErro('O seu código não está definido como Responsável de nenhuma área. Fale com o administrador se isto for um engano.');
+        return;
+      }
+
+      var nomesAreas = areas.map(function(a) { return a.area; });
+      var filtroAreas = nomesAreas.map(function(a) { return '"' + a.replace(/"/g, '') + '"'; }).join(',');
+      equipa = await db.query('collaborators', 'setor=in.(' + filtroAreas + ')&active=eq.true&order=name.asc') || [];
+
+      document.getElementById('card-loading').style.display = 'none';
+
+      if (!equipa.length) {
+        document.getElementById('card-lista').style.display = 'block';
+        document.getElementById('lista-sub').textContent = 'Área(s): ' + nomesAreas.join(', ') + ' — sem colaboradores activos encontrados.';
+        document.getElementById('lista-container').innerHTML = '<div class="lista-vazia">Nenhum colaborador nesta área.</div>';
+        return;
+      }
+
+      /* Contar notas por colaborador (para mostrar na lista) */
+      var todasNotas = await db.query('rh_notas_acompanhamento', 'responsavel_codigo=eq.' + encodeURIComponent(codigo)) || [];
+      contagemNotas = {};
+      todasNotas.forEach(function(n) {
+        contagemNotas[n.colaborador_codigo] = (contagemNotas[n.colaborador_codigo] || 0) + 1;
+      });
+
+      document.getElementById('card-lista').style.display = 'block';
+      document.getElementById('lista-sub').textContent = 'Área(s): ' + nomesAreas.join(', ') + ' — ' + equipa.length + ' colaborador(es).';
+
+      document.getElementById('lista-container').innerHTML = equipa.map(function(c) {
+        var n = contagemNotas[c.code] || 0;
+        return '<div class="item-lista" onclick="abrirColaborador(\'' + c.code + '\')">' +
+          '<div><div class="nome">' + escapar(c.name) + '</div><div class="cargo">' + escapar(c.categoria || '—') + '</div></div>' +
+          (n > 0 ? '<span class="contagem">' + n + ' nota(s)</span>' : '') +
+          '</div>';
+      }).join('');
+
+    } catch (e) {
+      console.error(e);
+      mostrarErro('Erro ao carregar a equipa. Tente novamente.');
+    }
+  }
+
+  function voltarLista() {
+    colaboradorAtual = null;
+    document.getElementById('card-colaborador').style.display = 'none';
+    document.getElementById('card-lista').style.display = 'block';
+  }
+
+  function abrirColaborador(code) {
+    colaboradorAtual = equipa.find(function(c) { return c.code === code; });
+    if (!colaboradorAtual) return;
+
+    document.getElementById('card-lista').style.display = 'none';
+    document.getElementById('card-colaborador').style.display = 'block';
+    document.getElementById('colab-nome').textContent = colaboradorAtual.name;
+    document.getElementById('colab-sub').textContent = (colaboradorAtual.categoria || '—') + ' · ' + colaboradorAtual.code;
+    document.getElementById('nota-texto').value = '';
+    tipoSelecionado = 'observacao';
+    document.querySelectorAll('.tipo-nota-btn').forEach(function(b) { b.classList.toggle('selecionado', b.dataset.tipo === 'observacao'); });
+
+    carregarHistorico();
+    window.scrollTo(0, 0);
+  }
+
+  function selecionarTipo(el) {
+    tipoSelecionado = el.dataset.tipo;
+    document.querySelectorAll('.tipo-nota-btn').forEach(function(b) { b.classList.remove('selecionado'); });
+    el.classList.add('selecionado');
+  }
+
+  async function carregarHistorico() {
+    var cont = document.getElementById('historico-container');
+    cont.innerHTML = '<div class="sem-notas">A carregar histórico...</div>';
+    try {
+      var notas = await db.query('rh_notas_acompanhamento',
+        'colaborador_codigo=eq.' + encodeURIComponent(colaboradorAtual.code) + '&order=created_at.desc');
+
+      if (!notas.length) {
+        cont.innerHTML = '<div class="sem-notas">Ainda não há notas registadas para este colaborador.</div>';
+        return;
+      }
+
+      cont.innerHTML = notas.map(function(n) {
+        return '<div class="nota-item ' + n.tipo + '">' +
+          '<div class="nota-cabecalho"><span class="nota-tag">' + (TIPO_LABEL[n.tipo] || n.tipo) + '</span><span>' + formatarDataHora(n.created_at) + ' — ' + escapar(n.responsavel_nome) + '</span></div>' +
+          '<div class="nota-texto">' + escapar(n.texto) + '</div>' +
+          '</div>';
+      }).join('');
+    } catch (e) {
+      console.error(e);
+      cont.innerHTML = '<div class="sem-notas">Erro ao carregar histórico.</div>';
+    }
+  }
+
+  async function guardarNota() {
+    var texto = document.getElementById('nota-texto').value.trim();
+    if (!texto) { alert('Escreva a descrição da nota.'); return; }
+
+    var btn = document.getElementById('btn-guardar-nota');
+    btn.disabled = true;
+    btn.textContent = 'A guardar...';
+
+    try {
+      await db.insert('rh_notas_acompanhamento', {
+        colaborador_codigo: colaboradorAtual.code,
+        colaborador_nome: colaboradorAtual.name,
+        responsavel_codigo: codigo,
+        responsavel_nome: nomeResponsavel,
+        tipo: tipoSelecionado,
+        texto: texto
+      });
+
+      document.getElementById('nota-texto').value = '';
+      await carregarHistorico();
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao guardar: ' + (e.message || e));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Registar Nota';
+    }
+  }
+  </script>
+</body>
+</html>

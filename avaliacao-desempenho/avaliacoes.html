@@ -9,6 +9,7 @@
   <script src="../shared/supabase.js"></script>
   <script src="../shared/auth.js"></script>
   <script src="../shared/tema.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
     if (!verificarSessao()) {
       localStorage.setItem('dss_user', JSON.stringify({
@@ -58,7 +59,10 @@
         <p class="pagina-subtitulo">Admin. Oficinal — Gestão de Campanhas Mensais</p>
       </div>
       <div style="display:flex;gap:10px;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-secundario" onclick="window.location.href='gerir_responsaveis.html'">Responsáveis por Área</button>
+        <button class="btn btn-secundario" id="btn-exportar-excel">📊 Exportar Excel</button>
+        <button class="btn btn-secundario" id="btn-exportar-pdf">🖨️ Exportar PDF</button>
         <button class="btn btn-primario" id="btn-nova-campanha">+ Nova Campanha</button>
       </div>
     </div>
@@ -179,6 +183,11 @@
     document.getElementById('btn-fechar-nova-x').addEventListener('click', function() { fecharModal('modal-nova-campanha'); });
     document.getElementById('btn-criar-campanha').addEventListener('click', criarCampanha);
     document.getElementById('btn-fechar-campanha').addEventListener('click', fecharCampanhaAtual);
+    document.getElementById('btn-exportar-pdf').addEventListener('click', function() {
+      if (!campanhaActual) { mostrarToast('Escolhe uma campanha primeiro.', 'erro'); return; }
+      window.open('imprimir_fichas.html?campanha=' + campanhaActual.id, '_blank');
+    });
+    document.getElementById('btn-exportar-excel').addEventListener('click', exportarExcel);
     document.getElementById('sel-campanha').addEventListener('change', function() {
       campanhaActual = campanhas.find(function(c) { return String(c.id) === this.value; }, this);
       carregarAvaliacoes();
@@ -488,6 +497,60 @@
       console.error(e);
       mostrarToast('Erro ao fechar campanha.', 'erro');
     }
+  }
+
+  /* ═══ Exportar Excel — resumo de toda a campanha, 1 linha por colaborador ═══ */
+  function exportarExcel() {
+    if (!campanhaActual) { mostrarToast('Escolhe uma campanha primeiro.', 'erro'); return; }
+    if (!avaliacoesAtuais.length) { mostrarToast('Não há avaliações nesta campanha.', 'erro'); return; }
+
+    var cabecalho = ['Código', 'Nome', 'Cargo', 'Departamento', 'Responsável', 'Estado',
+                      'Auto-Avaliação', 'Avaliação Responsável', 'Avaliação Director',
+                      'Pontuação Final', 'Classificação',
+                      'Obs. Colaborador', 'Obs. Responsável', 'Obs. Director'];
+
+    CRITERIOS.forEach(function(cr) {
+      cabecalho.push('Auto: ' + cr.nome);
+      cabecalho.push('Resp: ' + cr.nome);
+      cabecalho.push('Dir: ' + cr.nome);
+    });
+
+    var linhas = avaliacoesAtuais.map(function(a) {
+      var e = estadoLabel(a);
+      var linha = [
+        a.colaborador_codigo,
+        a.colaborador_nome,
+        a.colaborador_cargo || '',
+        a.colaborador_departamento || '',
+        a.supervisor_nome || '',
+        e.texto,
+        a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos : '',
+        a.avaliacao_supervisor_pontos != null ? a.avaliacao_supervisor_pontos : '',
+        a.avaliacao_director_pontos != null ? a.avaliacao_director_pontos : '',
+        a.pontuacao_final != null ? a.pontuacao_final : '',
+        a.classificacao || '',
+        a.auto_observacoes || '',
+        a.supervisor_observacoes || '',
+        a.director_observacoes || ''
+      ];
+      CRITERIOS.forEach(function(cr) {
+        linha.push(a.auto_avaliacao ? (a.auto_avaliacao[cr.id] ?? '') : '');
+        linha.push(a.avaliacao_supervisor ? (a.avaliacao_supervisor[cr.id] ?? '') : '');
+        linha.push(a.avaliacao_director ? (a.avaliacao_director[cr.id] ?? '') : '');
+      });
+      return linha;
+    });
+
+    var dados = [cabecalho].concat(linhas);
+    var ws = XLSX.utils.aoa_to_sheet(dados);
+    ws['!cols'] = cabecalho.map(function(_, i) { return { wch: i < 6 ? 18 : 14 }; });
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Avaliações');
+
+    var nomeArquivo = 'Avaliacao_Desempenho_' + campanhaActual.mes + '.xlsx';
+    XLSX.writeFile(wb, nomeArquivo);
+    mostrarToast('Excel exportado: ' + nomeArquivo, 'sucesso');
   }
   </script>
 </body>

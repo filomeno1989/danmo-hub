@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Imprimir Fichas de Avaliação — Danmo Service System</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Times New Roman', Times, serif; background: #E5E7EB; color: #111827; }
+
+    /* Barra de controlo (não sai na impressão) */
+    .barra-controlo {
+      position: sticky; top: 0; z-index: 100;
+      background: #1E293B; color: #fff;
+      padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .barra-controlo h1 { font-family: 'Inter', sans-serif; font-size: 1rem; }
+    .barra-controlo p { font-family: 'Inter', sans-serif; font-size: 0.8rem; color: #94A3B8; }
+    .barra-controlo button { font-family: 'Inter', sans-serif; padding: 10px 18px; border: none; border-radius: 8px; background: #F59E0B; color: #1E293B; font-weight: 700; cursor: pointer; }
+    .barra-controlo button:hover { background: #D97706; }
+    .barra-controlo a.voltar { font-family: 'Inter', sans-serif; color: #94A3B8; font-size: 0.85rem; text-decoration: none; }
+
+    #status { font-family: 'Inter', sans-serif; text-align: center; padding: 60px 20px; color: #4B5563; }
+
+    /* Cada ficha = 1 página A4 */
+    .ficha {
+      background: #fff;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 20px auto;
+      padding: 14mm;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      page-break-after: always;
+    }
+    .ficha:last-child { page-break-after: auto; }
+
+    .cabecalho-ficha { text-align: center; border-bottom: 2px solid #111827; padding-bottom: 10px; margin-bottom: 14px; }
+    .cabecalho-ficha h2 { font-size: 15pt; letter-spacing: 1px; }
+    .cabecalho-ficha p { font-size: 10pt; margin-top: 2px; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4pt 20pt; margin-bottom: 14pt; font-size: 10.5pt; }
+    .info-grid .campo { border-bottom: 1px dotted #6B7280; padding-bottom: 2pt; }
+    .info-grid .campo strong { display: inline-block; min-width: 110pt; }
+
+    table.tabela-ficha { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-bottom: 12pt; }
+    table.tabela-ficha th, table.tabela-ficha td { border: 1px solid #111827; padding: 4pt 6pt; }
+    table.tabela-ficha th { background: #E5E7EB; font-weight: 700; text-align: center; }
+    table.tabela-ficha td.num { text-align: center; width: 60pt; }
+    table.tabela-ficha td.item { text-align: center; width: 24pt; }
+    table.tabela-ficha tr.linha-total td { font-weight: 700; background: #F3F4F6; text-align: center; }
+    table.tabela-ficha tr.linha-total td.factor-label { text-align: right; }
+
+    .classificacao-final { border: 2px solid #111827; padding: 8pt 12pt; margin-bottom: 14pt; display: flex; justify-content: space-between; align-items: center; }
+    .classificacao-final .pontos { font-size: 16pt; font-weight: 700; }
+    .classificacao-final .nome-classif { font-size: 12pt; font-weight: 700; }
+
+    .legenda-classif { font-size: 8pt; margin-bottom: 16pt; display: flex; gap: 10pt; justify-content: center; flex-wrap: wrap; }
+    .legenda-classif span { border: 1px solid #6B7280; padding: 2pt 6pt; border-radius: 3pt; }
+
+    .obs-ficha { font-size: 9pt; margin-bottom: 16pt; }
+    .obs-ficha .bloco-obs { border: 1px solid #9CA3AF; min-height: 30pt; padding: 4pt 6pt; margin-top: 3pt; }
+    .obs-ficha .titulo-obs { font-weight: 700; margin-top: 8pt; }
+
+    .assinaturas { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16pt; margin-top: 30pt; text-align: center; font-size: 9pt; }
+    .assinaturas .linha-assin { border-top: 1px solid #111827; margin-top: 26pt; padding-top: 4pt; }
+
+    @media print {
+      body { background: #fff; }
+      .barra-controlo { display: none; }
+      .ficha { box-shadow: none; margin: 0; width: auto; min-height: auto; }
+      @page { size: A4; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="barra-controlo">
+    <div>
+      <h1 id="titulo-barra">Fichas de Avaliação</h1>
+      <p id="sub-barra">A carregar...</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <a class="voltar" href="avaliacoes.html">&#8592; Voltar ao Painel</a>
+      <button onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+    </div>
+  </div>
+
+  <div id="status">A carregar avaliações...</div>
+  <div id="fichas-container"></div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="criterios.js"></script>
+
+  <script>
+  var MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  function escapar(str) {
+    if (!str) return '';
+    var div = document.createElement('div'); div.appendChild(document.createTextNode(str)); return div.innerHTML;
+  }
+
+  function formatarData(d) {
+    if (!d) return '—';
+    var dt = new Date(d);
+    if (isNaN(dt.getTime())) return d;
+    return String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + dt.getFullYear();
+  }
+
+  (async function init() {
+    var params = new URLSearchParams(window.location.search);
+    var campanhaId = params.get('campanha');
+    var apenasId = params.get('id'); // opcional: imprimir só 1 colaborador
+
+    if (!campanhaId) {
+      document.getElementById('status').textContent = 'Nenhuma campanha especificada. Volta ao painel e usa o botão "Exportar PDF".';
+      return;
+    }
+
+    try {
+      var campanhas = await db.query('rh_campanhas_avaliacao', 'id=eq.' + campanhaId + '&limit=1');
+      if (!campanhas.length) { document.getElementById('status').textContent = 'Campanha não encontrada.'; return; }
+      var campanha = campanhas[0];
+      var mesPartes = campanha.mes.split('-');
+      var nomeMes = MESES_PT[parseInt(mesPartes[1], 10) - 1] + ' ' + mesPartes[0];
+
+      var query = 'campanha_id=eq.' + campanhaId + '&order=colaborador_nome.asc';
+      if (apenasId) query = 'id=eq.' + apenasId;
+      var avaliacoes = await db.query('rh_avaliacoes', query) || [];
+
+      document.getElementById('titulo-barra').textContent = 'Fichas de Avaliação — ' + nomeMes;
+      document.getElementById('sub-barra').textContent = avaliacoes.length + ' ficha(s) prontas — usa "Imprimir" e escolhe "Guardar como PDF" no destino.';
+      document.getElementById('status').style.display = 'none';
+
+      document.getElementById('fichas-container').innerHTML = avaliacoes.map(function(a) {
+        return renderFicha(a, nomeMes);
+      }).join('');
+
+    } catch (e) {
+      console.error(e);
+      document.getElementById('status').textContent = 'Erro ao carregar. Tente novamente.';
+    }
+  })();
+
+  function renderFicha(a, nomeMes) {
+    var linhasCriterios = CRITERIOS.map(function(cr, i) {
+      var va = a.auto_avaliacao ? a.auto_avaliacao[cr.id] : null;
+      var vs = a.avaliacao_supervisor ? a.avaliacao_supervisor[cr.id] : null;
+      var vd = a.avaliacao_director ? a.avaliacao_director[cr.id] : null;
+      return '<tr>' +
+        '<td class="item">' + (i + 1) + '</td>' +
+        '<td>' + cr.nome + '</td>' +
+        '<td class="num">' + (va != null ? va : '—') + '</td>' +
+        '<td class="num">' + (vs != null ? vs : '—') + '</td>' +
+        '<td class="num">' + (vd != null ? vd : '—') + '</td>' +
+        '</tr>';
+    }).join('');
+
+    var totalLinha = '<tr class="linha-total">' +
+      '<td colspan="2" class="factor-label">TOTAL / MÉDIA</td>' +
+      '<td class="num">' + (a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos.toFixed(2) : '—') + '</td>' +
+      '<td class="num">' + (a.avaliacao_supervisor_pontos != null ? a.avaliacao_supervisor_pontos.toFixed(2) : '—') + '</td>' +
+      '<td class="num">' + (a.avaliacao_director_pontos != null ? a.avaliacao_director_pontos.toFixed(2) : '—') + '</td>' +
+      '</tr>';
+
+    var obsHtml = '';
+    ['auto_observacoes','supervisor_observacoes','director_observacoes'].forEach(function(campo, idx) {
+      var titulos = ['Observações do Colaborador', 'Observações do Responsável', 'Observações do Director'];
+      obsHtml += '<div class="titulo-obs">' + titulos[idx] + '</div>';
+      obsHtml += '<div class="bloco-obs">' + (a[campo] ? escapar(a[campo]) : '') + '</div>';
+    });
+
+    return '' +
+      '<div class="ficha">' +
+        '<div class="cabecalho-ficha">' +
+          '<h2>DANMO SERVICE SYSTEM, LDA</h2>' +
+          '<p>Ficha de Avaliação de Desempenho — ' + nomeMes + '</p>' +
+        '</div>' +
+
+        '<div class="info-grid">' +
+          '<div class="campo"><strong>Nome:</strong> ' + escapar(a.colaborador_nome) + '</div>' +
+          '<div class="campo"><strong>Nº de Trabalhador:</strong> ' + escapar(a.colaborador_codigo) + '</div>' +
+          '<div class="campo"><strong>Categoria/Função:</strong> ' + escapar(a.colaborador_cargo || '—') + '</div>' +
+          '<div class="campo"><strong>Departamento:</strong> ' + escapar(a.colaborador_departamento || '—') + '</div>' +
+          '<div class="campo"><strong>Período:</strong> ' + nomeMes + '</div>' +
+          '<div class="campo"><strong>Responsável:</strong> ' + escapar(a.supervisor_nome || '—') + '</div>' +
+        '</div>' +
+
+        '<table class="tabela-ficha">' +
+          '<thead><tr><th>Nº</th><th>Factor de Avaliação</th><th>Auto-Avaliação</th><th>Avaliação do Responsável</th><th>Avaliação da Direcção</th></tr></thead>' +
+          '<tbody>' + linhasCriterios + totalLinha + '</tbody>' +
+        '</table>' +
+
+        '<div class="classificacao-final">' +
+          '<span>PONTUAÇÃO FINAL:</span>' +
+          '<span class="pontos">' + (a.pontuacao_final != null ? a.pontuacao_final.toFixed(2) + ' / 100' : 'Em curso') + '</span>' +
+          '<span class="nome-classif">' + (a.classificacao || '—') + '</span>' +
+        '</div>' +
+
+        '<div class="legenda-classif">' +
+          '<span>Não Aceitável: 0-20</span>' +
+          '<span>Insuficiente: 21-40</span>' +
+          '<span>Satisfatório: 41-70</span>' +
+          '<span>Bom: 71-90</span>' +
+          '<span>Excelente: 91-100</span>' +
+        '</div>' +
+
+        '<div class="obs-ficha">' + obsHtml + '</div>' +
+
+        '<div class="assinaturas">' +
+          '<div><div class="linha-assin">Assinatura do Colaborador</div></div>' +
+          '<div><div class="linha-assin">Assinatura do Responsável</div></div>' +
+          '<div><div class="linha-assin">Assinatura da Direcção</div></div>' +
+        '</div>' +
+      '</div>';
+  }
+  </script>
+</body>
+</html>

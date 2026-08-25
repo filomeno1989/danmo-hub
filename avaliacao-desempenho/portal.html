@@ -176,6 +176,18 @@
         }
       }
 
+      /* 3d. Acompanhamento da equipa (disponível sempre, não depende da campanha) */
+      var areasResponsavel = await db.query('rh_responsaveis_area', 'responsavel_codigo=eq.' + encodeURIComponent(codigo));
+      if (areasResponsavel.length) {
+        opcoes.push({
+          tipo: 'acompanhamento',
+          titulo: '📋 Acompanhamento da Equipa',
+          sub: 'Registar ou consultar notas dos colaboradores (' + areasResponsavel.map(function(a){return a.area;}).join(', ') + ')',
+          href: 'acompanhamento.html',
+          contagem: null
+        });
+      }
+
       if (!opcoes.length) {
         irPara('login');
         mostrarErro('Não há nada pendente para si nesta campanha (' + nomeMes + '). Se já preencheu tudo, obrigado!');
