@@ -240,24 +240,48 @@
   }
 
   function ativarEventos() {
+    const sidebarEl = document.getElementById('sidebar');
+
     const nav = document.querySelector('.sidebar-nav');
     if (nav) {
       nav.addEventListener('click', function (e) {
         const btn = e.target.closest('[data-alvo]');
-        if (!btn) return;
+        if (!btn) return; // deixa os links normais (sem submenu) navegar à vontade
         e.preventDefault();
+        e.stopPropagation();
+
         const submenu = document.getElementById(btn.getAttribute('data-alvo'));
         if (!submenu) return;
-        const aberto = submenu.classList.contains('visivel');
+
+        const jaExpandida = sidebarEl.classList.contains('expandida');
+        const esteAberto = submenu.classList.contains('visivel');
+
+        // Clicar no mesmo módulo já aberto (com a sidebar já expandida) fecha tudo
+        if (jaExpandida && esteAberto) {
+          sidebarEl.classList.remove('expandida');
+          submenu.classList.remove('visivel');
+          btn.classList.remove('ativo');
+          btn.setAttribute('aria-expanded', 'false');
+          return;
+        }
+
+        // Caso contrário: expande a sidebar e abre só este submenu
         document.querySelectorAll('.sidebar-submenu').forEach(s => s.classList.remove('visivel'));
         document.querySelectorAll('[data-alvo]').forEach(b => { b.classList.remove('ativo'); b.setAttribute('aria-expanded', 'false'); });
-        if (!aberto) {
-          submenu.classList.add('visivel');
-          btn.classList.add('ativo');
-          btn.setAttribute('aria-expanded', 'true');
-        }
+
+        sidebarEl.classList.add('expandida');
+        submenu.classList.add('visivel');
+        btn.classList.add('ativo');
+        btn.setAttribute('aria-expanded', 'true');
       });
     }
+
+    // Clicar fora da sidebar recolhe-a de volta ao modo compacto
+    document.addEventListener('click', function (e) {
+      if (sidebarEl && sidebarEl.classList.contains('expandida') && !sidebarEl.contains(e.target)) {
+        sidebarEl.classList.remove('expandida');
+      }
+    });
 
     const btnTema = document.getElementById('btn-tema');
     if (btnTema && typeof alternarTema === 'function') {
@@ -290,9 +314,13 @@
       });
     }
 
+    // Hambúrguer: só existe (visualmente) em ecrãs <900px, para abrir/fechar
+    // a sidebar como overlay a toda a largura — nada a ver com o modo
+    // "expandida" do desktop, que é automático ao clicar num módulo.
     const btnMenu = document.getElementById('btn-menu-mobile');
     if (btnMenu) {
-      btnMenu.addEventListener('click', () => {
+      btnMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
         document.body.classList.toggle('sidebar-recolhida');
       });
     }
