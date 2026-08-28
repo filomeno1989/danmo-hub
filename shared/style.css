@@ -336,11 +336,13 @@ img { max-width: 100%; display: block; }
   transition: all var(--transicao);
 }
 .sidebar-modulo-btn:hover,
-.sidebar-modulo-btn.ativo {
+.sidebar-modulo-btn.ativo,
+.sidebar-modulo-btn.secao-atual {
   background: var(--chrome-overlay);
   color: var(--cor-ambar);
 }
-.sidebar-modulo-btn.ativo {
+.sidebar-modulo-btn.ativo,
+.sidebar-modulo-btn.secao-atual {
   font-weight: 600;
   box-shadow: inset 3px 0 0 var(--cor-ambar);
 }
