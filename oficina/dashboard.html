@@ -84,8 +84,8 @@
   <div id="navbar" class="navbar"></div>
 
   <main class="main">
-    <h1 class="page-title">Dashboard — Oficina</h1>
-    <p class="page-sub">Disponibilidade da frota e estado das ordens de serviço — clique nos indicadores para ver detalhes</p>
+    <h1 class="page-title">Dashboard da Oficina</h1>
+    <p class="page-sub">Disponibilidade da frota e estado das ordens de serviço: Clique nos indicadores para ver detalhes</p>
 
     <!-- Filtros -->
     <div class="card">
@@ -130,8 +130,8 @@
     <!-- KPIs topo -->
     <div class="kpi-topo" id="kpi-topo">
       <div class="kpi-card clicavel" id="kpi-oficina"><div class="kpi-label">Obras em Andamento (Oficina)</div><div class="kpi-value" id="v-oficina">—</div></div>
-      <div class="kpi-card red clicavel" id="kpi-sem-nr"><div class="kpi-label">Sem Nº de Obra</div><div class="kpi-value" id="v-sem-nr">—</div></div>
-      <div class="kpi-card blue clicavel" id="kpi-em-cdm"><div class="kpi-label">Em CdM (Aguarda Devolução)</div><div class="kpi-value" id="v-em-cdm">—</div></div>
+      <div class="kpi-card red clicavel" id="kpi-sem-nr"><div class="kpi-label">Ordens Sem Nº de Obra</div><div class="kpi-value" id="v-sem-nr">—</div></div>
+      <div class="kpi-card blue clicavel" id="kpi-em-cdm"><div class="kpi-label">Na CdM (Aguarda Devolução)</div><div class="kpi-value" id="v-em-cdm">—</div></div>
       <div class="kpi-card green clicavel" id="kpi-fechadas"><div class="kpi-label">Fechadas no Período</div><div class="kpi-value" id="v-fechadas">—</div></div>
       <div class="kpi-card clicavel" id="kpi-checklist"><div class="kpi-label">Checklists Pendentes</div><div class="kpi-value" id="v-checklist">—</div></div>
       <div class="kpi-card blue clicavel" id="kpi-total-equip"><div class="kpi-label">Total Equipamentos Ativos</div><div class="kpi-value" id="v-total-equip">—</div></div>
@@ -151,7 +151,7 @@
         <div class="kpi-card green"><div class="kpi-label">Retornaram e Fecharam</div><div class="kpi-value" id="v-cdm-voltaram">—</div></div>
       </div>
       <p class="text-muted" style="font-size:12px;margin-top:10px">
-        "Ainda na CdM" são obras cujo estado actual continua CdM — significa que a máquina já saiu da oficina mas ainda não foi facturada/devolvida.
+        "Ainda na CdM" são obras cujo estado actual continua "CdM", significa que a máquina já saiu da oficina mas ainda não foi facturada/devolvida.
         Se este número não bater com o que a CdM reporta, há obras "perdidas" do lado deles.
       </p>
       <div id="corpo-cdm">
@@ -212,7 +212,7 @@
 
     <!-- Obras sem nº -->
     <div class="card">
-      <div class="card-title">Obras sem Nº de Obra (aguardam CdM)</div>
+      <div class="card-title">Ordens sem Nº de Obra (aguardam CdM)</div>
       <div class="table-wrap">
         <table>
           <thead>
