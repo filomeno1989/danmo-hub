@@ -146,6 +146,7 @@ img { max-width: 100%; display: block; }
 }
 
 .topbar-hamburguer-btn {
+  display: none; /* só existe em ecrãs pequenos — ver media query 900px */
   background: none;
   border: none;
   color: var(--chrome-texto);
@@ -153,7 +154,6 @@ img { max-width: 100%; display: block; }
   cursor: pointer;
   width: 38px; height: 38px;
   border-radius: var(--raio-sm);
-  display: flex;
   align-items: center;
   justify-content: center;
   transition: background var(--transicao);
@@ -292,7 +292,13 @@ img { max-width: 100%; display: block; }
   white-space: nowrap;
 }
 
-/* ── SIDEBAR & LAYOUT ────────────────────────────────────── */
+/* ── SIDEBAR & LAYOUT ────────────────────────────────────────
+   Por defeito a sidebar mostra só os ícones (modo compacto) —
+   não precisa de nenhum botão para aparecer, está sempre visível.
+   Ao clicar num módulo com submenu, expande-se por cima do
+   conteúdo (não empurra o .main) para se poder ler os nomes e
+   escolher; ao navegar para uma página nova ou clicar fora,
+   volta sozinha ao modo compacto. ──────────────────────────── */
 .layout {
   display: flex;
   padding-top: var(--topbar-h);
@@ -300,14 +306,15 @@ img { max-width: 100%; display: block; }
 }
 
 .sidebar {
-  width: var(--sidebar-w);
+  width: 72px;
   min-height: calc(100vh - var(--topbar-h));
   background: var(--sidebar-colh);
   position: fixed;
   top: var(--topbar-h);
   left: 0; bottom: 0;
   overflow-y: auto;
-  z-index: 900;
+  overflow-x: hidden;
+  z-index: 950;
   transition: width var(--transicao), transform var(--transicao), background var(--transicao);
   border-right: 1px solid var(--chrome-borda);
 }
@@ -322,8 +329,9 @@ img { max-width: 100%; display: block; }
 .sidebar-modulo-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   width: 100%;
-  padding: 11px 14px;
+  padding: 12px 0;
   border: none;
   background: transparent;
   color: var(--chrome-texto-sec);
@@ -347,9 +355,9 @@ img { max-width: 100%; display: block; }
   box-shadow: inset 3px 0 0 var(--cor-ambar);
 }
 .sidebar-modulo-btn .modulo-icon {
-  width: 22px;
+  width: auto;
   text-align: center;
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   flex-shrink: 0;
 }
 .sidebar-modulo-btn .modulo-label {
@@ -366,17 +374,20 @@ img { max-width: 100%; display: block; }
   transform: rotate(90deg);
 }
 
+/* No modo compacto (por defeito), esconde tudo o que é texto */
+.sidebar .modulo-label,
+.sidebar .modulo-seta,
+.sidebar .sidebar-dev-badge,
+.sidebar .sidebar-separador,
 .sidebar-submenu {
-  display: none;
+  display: none !important;
+}
+
+.sidebar-submenu {
   padding-left: 12px;
   margin-top: 4px;
   border-left: 2px solid var(--chrome-borda);
   margin-left: 20px;
-}
-.sidebar-submenu.visivel {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
 }
 .sidebar-submenu a {
   display: block;
@@ -422,46 +433,53 @@ img { max-width: 100%; display: block; }
   background: rgba(239, 68, 68, 0.12) !important;
 }
 
-/* ── MODO RECOLHIDO (SIDEBAR COMPACTA) ───────────────────── */
-body.sidebar-recolhida .sidebar {
-  width: 72px;
+/* ── MODO EXPANDIDO (temporário, ao clicar num módulo) ─────
+   Flutua por cima do conteúdo (a sidebar já é position:fixed),
+   não desloca o .main — por isso não há "saltos" de layout
+   quando abre ou fecha. */
+.sidebar.expandida {
+  width: var(--sidebar-w);
+  box-shadow: var(--sombra-lg);
 }
-body.sidebar-recolhida .sidebar .modulo-label,
-body.sidebar-recolhida .sidebar .modulo-seta,
-body.sidebar-recolhida .sidebar .sidebar-dev-badge,
-body.sidebar-recolhida .sidebar .sidebar-separador,
-body.sidebar-recolhida .sidebar-submenu {
-  display: none !important;
+.sidebar.expandida .sidebar-modulo-btn {
+  justify-content: flex-start;
+  padding: 11px 14px;
 }
-body.sidebar-recolhida .sidebar-modulo-btn {
-  justify-content: center;
-  padding: 12px 0;
+.sidebar.expandida .sidebar-modulo-btn .modulo-icon {
+  width: 22px;
+  font-size: 1.1rem;
 }
-body.sidebar-recolhida .sidebar-modulo-btn .modulo-icon {
-  font-size: 1.3rem;
-  width: auto;
+.sidebar.expandida .modulo-label,
+.sidebar.expandida .modulo-seta,
+.sidebar.expandida .sidebar-dev-badge,
+.sidebar.expandida .sidebar-separador {
+  display: revert !important;
 }
-body.sidebar-recolhida .main {
-  margin-left: 72px !important;
+.sidebar.expandida .sidebar-submenu.visivel {
+  display: flex !important;
+  flex-direction: column;
+  gap: 2px;
 }
 
 /* ── CONTEÚDO PRINCIPAL ──────────────────────────────────── */
 .main {
   flex: 1;
   min-width: 0;
-  margin-left: var(--sidebar-w);
+  margin-left: 72px;
   padding: 30px;
   min-height: calc(100vh - var(--topbar-h));
-  transition: margin-left var(--transicao);
 }
 
 /* ── RESPONSIVO (TOPBAR / SIDEBAR / MAIN) ────────────────────
-   Antes não existia nenhum breakpoint: a sidebar fixa de 260px
-   e o relógio central espremiam o conteúdo em ecrãs estreitos
-   ou janelas redimensionadas. Agora a sidebar sai do ecrã por
-   omissão em <900px e só aparece como overlay ao clicar no
-   hambúrguer; o relógio central esconde-se em <600px. ────── */
+   Em ecrã grande a sidebar é sempre visível em modo compacto
+   (ver bloco principal acima) — não precisa de hambúrguer.
+   Só a partir daqui (<900px) é que ela sai do ecrã por omissão
+   e o hambúrguer aparece para a chamar como overlay a toda a
+   largura; o relógio central esconde-se em <600px. ────────── */
 @media (max-width: 900px) {
+  .topbar-hamburguer-btn {
+    display: flex;
+  }
   .sidebar {
     transform: translateX(-100%);
     width: 260px;
