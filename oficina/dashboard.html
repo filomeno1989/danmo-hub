@@ -55,6 +55,15 @@
     }
     .legenda-item:hover { border-color:var(--amber); background:rgba(245,158,11,.06); }
     .legenda-cor { width:10px; height:10px; border-radius:2px; }
+    .legenda-pct { color:var(--text2); font-weight:700; }
+    .card-title-flex { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:16px; }
+    .card-title-flex .card-title { margin-bottom:0; }
+    .btn-toggle-card {
+      background:transparent; border:1px solid var(--border); color:var(--text2);
+      font-size:15px; font-weight:700; line-height:1; width:26px; height:26px;
+      border-radius:6px; cursor:pointer; flex-shrink:0; transition:all .15s;
+    }
+    .btn-toggle-card:hover { border-color:var(--amber); color:var(--amber); }
     .grupo-section { margin-top:12px; padding-top:10px; border-top:1px solid var(--border); }
     .grupo-label { font-size:11px; color:var(--text2); font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
     .alerta-dias { font-size:11px; font-weight:700; }
@@ -132,7 +141,10 @@
 
     <!-- Rastreio CdM -->
     <div class="card">
-      <div class="card-title">Rastreio CdM — Envio, Devolução e Facturação</div>
+      <div class="card-title-flex">
+        <div class="card-title">Rastreio CdM — Envio, Devolução e Facturação</div>
+        <button class="btn-toggle-card" data-target="corpo-cdm" onclick="toggleCardBody(this)" title="Expandir/Recolher" aria-expanded="true">−</button>
+      </div>
       <div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
         <div class="kpi-card"><div class="kpi-label">Total Enviadas à CdM</div><div class="kpi-value" id="v-cdm-total">—</div></div>
         <div class="kpi-card blue"><div class="kpi-label">Ainda na CdM</div><div class="kpi-value" id="v-cdm-atual">—</div></div>
@@ -142,35 +154,42 @@
         "Ainda na CdM" são obras cujo estado actual continua CdM — significa que a máquina já saiu da oficina mas ainda não foi facturada/devolvida.
         Se este número não bater com o que a CdM reporta, há obras "perdidas" do lado deles.
       </p>
-      <div class="table-wrap mt-16">
-        <table>
-          <thead><tr><th>Nº Obra</th><th>Equipamento</th><th>Sector</th><th>Enviada à CdM em</th><th>Dias na CdM</th><th></th></tr></thead>
-          <tbody id="tbody-cdm-pendentes"><tr><td colspan="6">A carregar...</td></tr></tbody>
-        </table>
+      <div id="corpo-cdm">
+        <div class="table-wrap mt-16">
+          <table>
+            <thead><tr><th>Nº Obra</th><th>Equipamento</th><th>Sector</th><th>Enviada à CdM em</th><th>Dias na CdM</th><th></th></tr></thead>
+            <tbody id="tbody-cdm-pendentes"><tr><td colspan="6">A carregar...</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <!-- Checklists Pendentes -->
     <div class="card">
-      <div class="card-title">Checklists de Manutenção Pendentes</div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Nº Obra</th><th>Equipamento</th><th>Checklist</th><th>Situação</th><th>Progresso</th><th></th></tr></thead>
-          <tbody id="tbody-checklist-pendentes"><tr><td colspan="6">A carregar...</td></tr></tbody>
-        </table>
+      <div class="card-title-flex">
+        <div class="card-title">Checklists de Manutenção Pendentes</div>
+        <button class="btn-toggle-card" data-target="corpo-checklist" onclick="toggleCardBody(this)" title="Expandir/Recolher" aria-expanded="true">−</button>
+      </div>
+      <div id="corpo-checklist">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nº Obra</th><th>Equipamento</th><th>Checklist</th><th>Situação</th><th>Progresso</th><th></th></tr></thead>
+            <tbody id="tbody-checklist-pendentes"><tr><td colspan="6">A carregar...</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <!-- Legenda / filtros por estado físico -->
     <div class="legenda" id="legenda-estados">
-      <div class="legenda-item" data-estado="Disponível"><div class="legenda-cor cor-disponivel"></div>Disponível</div>
-      <div class="legenda-item" data-estado="Avariada"><div class="legenda-cor cor-avariada"></div>Avariada</div>
-      <div class="legenda-item" data-estado="Acidentada"><div class="legenda-cor cor-acidentada"></div>Acidentada</div>
-      <div class="legenda-item" data-estado="Pneumático"><div class="legenda-cor cor-pneumatico"></div>Pneumático</div>
-      <div class="legenda-item" data-estado="Revisão/Manutenção"><div class="legenda-cor cor-revisao"></div>Revisão/Manutenção</div>
-      <div class="legenda-item" data-estado="Inspeção"><div class="legenda-cor cor-inspecao"></div>Inspeção</div>
-      <div class="legenda-item" data-estado="Aguarda Acessório"><div class="legenda-cor cor-acessorio"></div>Aguarda Acessório</div>
-      <div class="legenda-item" data-estado="Concluído"><div class="legenda-cor cor-concluido"></div>Concluído</div>
+      <div class="legenda-item" data-estado="Disponível"><div class="legenda-cor cor-disponivel"></div>Disponível <span class="legenda-pct" id="pct-disp"></span></div>
+      <div class="legenda-item" data-estado="Avariada"><div class="legenda-cor cor-avariada"></div>Avariada <span class="legenda-pct" id="pct-av"></span></div>
+      <div class="legenda-item" data-estado="Acidentada"><div class="legenda-cor cor-acidentada"></div>Acidentada <span class="legenda-pct" id="pct-ac"></span></div>
+      <div class="legenda-item" data-estado="Pneumático"><div class="legenda-cor cor-pneumatico"></div>Pneumático <span class="legenda-pct" id="pct-pn"></span></div>
+      <div class="legenda-item" data-estado="Revisão/Manutenção"><div class="legenda-cor cor-revisao"></div>Revisão/Manutenção <span class="legenda-pct" id="pct-rv"></span></div>
+      <div class="legenda-item" data-estado="Inspeção"><div class="legenda-cor cor-inspecao"></div>Inspeção <span class="legenda-pct" id="pct-in"></span></div>
+      <div class="legenda-item" data-estado="Aguarda Acessório"><div class="legenda-cor cor-acessorio"></div>Aguarda Acessório <span class="legenda-pct" id="pct-aa"></span></div>
+      <div class="legenda-item" data-estado="Concluído"><div class="legenda-cor cor-concluido"></div>Concluído <span class="legenda-pct" id="pct-co"></span></div>
     </div>
 
     <!-- Disponibilidade por frota -->
@@ -304,6 +323,15 @@
     function abrirModal(id) { document.getElementById(id).classList.add('aberto'); }
     function fecharModal(id) { document.getElementById(id).classList.remove('aberto'); }
 
+    // ═══ COLAPSAR/EXPANDIR CARTÕES (Rastreio CdM, Checklists Pendentes) ═══
+    function toggleCardBody(btn) {
+      const el = document.getElementById(btn.dataset.target);
+      const aberto = el.style.display !== 'none';
+      el.style.display = aberto ? 'none' : '';
+      btn.textContent = aberto ? '+' : '−';
+      btn.setAttribute('aria-expanded', String(!aberto));
+    }
+
     function abrirModalOrdens(titulo, lista) {
       document.getElementById('modal-ordens-titulo').textContent = `${titulo} (${lista.length})`;
       const tbody = document.getElementById('modal-ordens-tbody');
@@ -415,6 +443,7 @@
       });
 
       renderFrotas(equipFiltrados, naOficina, catId, grupoId);
+      renderLegendaPct(equipFiltrados, naOficina);
       renderResumoWorkflow(todasOrdens);
       renderResumoFisico(naOficina);
       renderSemNr(semNr);
@@ -521,6 +550,27 @@
         <td>${p.progresso}</td>
         <td><a href="os_detalhe.html?id=${p.o.id}" style="color:var(--amber)">Abrir Obra →</a></td>
       </tr>`).join('');
+    }
+
+    // ═══ LEGENDA COM PERCENTAGENS ═══
+    function renderLegendaPct(equips, abertas) {
+      const total = equips.length || 1;
+      const contagem = { 'Disponível': 0 };
+      ESTADOS_FISICO.forEach(s => contagem[s] = 0);
+      equips.forEach(e => {
+        const est = estadoEquip(e.id, abertas);
+        contagem[est] = (contagem[est] || 0) + 1;
+      });
+      const idPorEstado = {
+        'Disponível':'disp','Avariada':'av','Acidentada':'ac','Pneumático':'pn',
+        'Revisão/Manutenção':'rv','Inspeção':'in','Aguarda Acessório':'aa','Concluído':'co'
+      };
+      Object.keys(idPorEstado).forEach(est => {
+        const qtd = contagem[est] || 0;
+        const pct = Math.round(qtd/total*100);
+        const span = document.getElementById('pct-'+idPorEstado[est]);
+        if (span) span.textContent = `(${pct}%)`;
+      });
     }
 
     // ═══ FROTAS ═══
@@ -635,7 +685,7 @@
         const osAb  = abertas.filter(o => o.equipment_id === e.id);
         const obras = osAb.map(o => `<a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">${o.numero_obra||'S/Nº'}</a>`).join(', ') || '—';
         html += `<tr>
-          <td>${e.code}</td>
+          <td><a href="maquina_historico.html?id=${e.id}" target="_blank" style="color:var(--amber)" title="Ver histórico completo desta máquina">${e.code}</a></td>
           <td>${e.group_name||'—'}</td>
           <td><span class="badge ${badge}">${est}</span></td>
           <td>${obras}</td>

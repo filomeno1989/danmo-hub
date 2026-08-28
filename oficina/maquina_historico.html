@@ -48,6 +48,21 @@
       </div>
     </div>
 
+    <!-- Distribuição por Estado Físico -->
+    <div class="card">
+      <div class="card-title">Distribuição por Estado Físico (todas as entradas)</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Estado Físico</th><th>Qtd. de Obras</th><th>Dias Acumulados</th><th>%</th></tr>
+          </thead>
+          <tbody id="tbody-distribuicao-fisico">
+            <tr><td colspan="4">A carregar...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Sumário de Peças -->
     <div class="card">
       <div class="card-title">Peças Aplicadas (Sumário)</div>
@@ -152,6 +167,7 @@
         // Renderizar
         renderKPIs();
         renderTimelineOS();
+        renderDistribuicaoFisico();
         await renderIntervencoesTabela();
         renderPecasSumario();
         await renderTecnicos();
@@ -190,6 +206,39 @@
           <div style="font-size:12px;color:var(--amber);margin-top:2px">${os.descricao_avaria||'—'}</div>
         </li>`;
       }).join('');
+    }
+
+    function renderDistribuicaoFisico() {
+      const tbody = document.getElementById('tbody-distribuicao-fisico');
+      if (!todasOS.length) { tbody.innerHTML = '<tr><td colspan="4">Nenhuma ordem de serviço registada.</td></tr>'; return; }
+
+      const BADGE_FISICO = {
+        'Avariada':'badge-red','Acidentada':'badge-red','Pneumático':'badge-blue',
+        'Revisão/Manutenção':'badge-amber','Inspeção':'badge-amber',
+        'Aguarda Acessório':'badge-gray','Concluído':'badge-green'
+      };
+      const mapa = {};
+      todasOS.forEach(os => {
+        const est = os.status_fisico || '—';
+        const dias = Math.floor((new Date(os.data_fecho || new Date()) - new Date(os.data_abertura)) / 86400000);
+        if (!mapa[est]) mapa[est] = { qtd: 0, dias: 0 };
+        mapa[est].qtd += 1;
+        mapa[est].dias += Math.max(0, dias);
+      });
+
+      const totalObras = todasOS.length;
+      tbody.innerHTML = Object.entries(mapa)
+        .sort((a,b) => b[1].qtd - a[1].qtd)
+        .map(([est, info]) => {
+          const pct = Math.round(info.qtd / totalObras * 100);
+          const badge = BADGE_FISICO[est] || 'badge-gray';
+          return `<tr>
+            <td><span class="badge ${badge}">${est}</span></td>
+            <td>${info.qtd}</td>
+            <td>${info.dias}</td>
+            <td>${pct}%</td>
+          </tr>`;
+        }).join('');
     }
 
     async function renderIntervencoesTabela() {
