@@ -6,6 +6,7 @@
   <title>Detalhe da Obra — Danmo Oficina</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <link rel="stylesheet" href="../shared/oficina.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap" />
   <style>
     .timeline { list-style:none; margin-top:8px; }
     .timeline li { padding:10px 14px; border-left:3px solid var(--amber); margin-bottom:8px; border-radius:0 6px 6px 0; background:rgba(255,255,255,0.03); font-size:14px; }
@@ -49,6 +50,12 @@
     .unidade-select { width:110px; flex-shrink:0; }
     .peca-linha { display:flex; gap:8px; }
     .peca-linha input:first-child { flex:1; }
+
+    /* ── Reposição de tipografia/espaçamento da versão original (danmo-oficina),
+       que se perderam na migração para o shared/style.css do Hub. Cores não
+       são alteradas — só fonte, altura de linha e largura dos cards de KPI. ── */
+    body { font-family: 'Source Sans 3', sans-serif; line-height: normal; }
+    .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
   </style>
 </head>
 <body>
