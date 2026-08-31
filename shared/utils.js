@@ -293,7 +293,12 @@ function hoje() { return dataHojeISO(); }
 // modais de Intervenção/Peça, Guardar Cabeçalho do checklist, e os históricos
 // (intervenções, mudanças de estado, trocas de checklist) em os_detalhe.html.
 function dataHoje() { return dataHojeISO(); }
-function formatarDataHora(d) { return formataData(d, true); }
+function formatarDataHora(d) {
+  if (!d) return '—';
+  var dt = new Date(d);
+  if (isNaN(dt.getTime())) return d;
+  return dt.toLocaleString('pt-MZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
 
 // Atalho para Notificações (Toast)
 function showToast(msg, tipo) { mostrarToast(msg, tipo); }

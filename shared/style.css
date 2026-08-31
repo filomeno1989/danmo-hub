@@ -614,12 +614,15 @@ table tbody tr:hover {
   background: rgba(245, 158, 11, 0.05);
 }
 
-.tabela-vazia,
-.text-muted {
+.tabela-vazia {
   text-align: center;
   padding: 30px 16px;
   color: var(--cor-texto-sec);
   font-style: italic;
+}
+
+.text-muted {
+  color: var(--cor-texto-sec);
 }
 
 /* ── DROPDOWN DE PERFIL ELEGANTE ─────────────────────────── */
