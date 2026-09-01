@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt" data-tema="claro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Directores — Avaliação de Desempenho — Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script>
+    if (!verificarSessao()) {
+      localStorage.setItem('dss_user', JSON.stringify({
+        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
+        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
+      }));
+    }
+  </script>
+  <style>
+    .item-diretor {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px 16px; border: 1px solid var(--cor-borda); border-radius: var(--raio-md);
+      margin-bottom: 10px; background: var(--cor-superficie);
+    }
+    .item-diretor .nome { font-weight: 700; }
+    .item-diretor .codigo { font-size: var(--tamanho-sm); color: var(--cor-texto-sec); }
+    .novo-diretor-linha { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+    .novo-diretor-linha .tech-search-wrap { flex: 1; min-width: 240px; }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="main">
+    <h1 class="pagina-titulo">Directores — Avaliação de Desempenho</h1>
+    <p class="pagina-subtitulo">Quem estiver aqui vê a opção "Avaliação Final" no Portal, para os colaboradores já avaliados pelo Responsável.</p>
+
+    <div class="painel">
+      <div class="form-label" style="font-size:1.05rem;margin-bottom:12px;">Adicionar Director</div>
+      <div class="novo-diretor-linha">
+        <div class="tech-search-wrap">
+          <input class="form-input" type="text" id="novo-search" placeholder="Pesquisar colaborador por nome ou código..." autocomplete="off" />
+          <div id="novo-dropdown" class="tech-dropdown"></div>
+        </div>
+        <input type="hidden" id="novo-nome-oculto" />
+        <input type="hidden" id="novo-codigo" />
+        <button class="btn btn-primario" id="btn-adicionar">+ Adicionar</button>
+      </div>
+      <div id="novo-chip" class="chips-wrap"></div>
+    </div>
+
+    <div class="painel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="form-label" style="font-size:1.05rem;margin:0;">Directores Actuais</div>
+        <span class="badge badge-info" id="count-diretores">0</span>
+      </div>
+      <div id="lista-loading" class="spinner" style="padding:32px;text-align:center;">A carregar...</div>
+      <div id="lista-vazia" class="tabela-vazia" style="display:none;">Ainda não há nenhum Director definido.</div>
+      <div id="lista-diretores"></div>
+    </div>
+  </main>
+
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+    var diretores = [];
+    var seletorNovo = null;
+
+    (async function init() {
+      seletorNovo = await criarSeletorColaborador({
+        inputId: 'novo-search',
+        dropdownId: 'novo-dropdown',
+        hiddenId: 'novo-nome-oculto',
+        chipId: 'novo-chip',
+        onSelect: function (colab) {
+          document.getElementById('novo-codigo').value = colab ? (colab.code || '') : '';
+        }
+      });
+      document.getElementById('btn-adicionar').addEventListener('click', adicionarDiretor);
+      await carregarDiretores();
+    })();
+
+    function escapar(str) {
+      if (!str) return '';
+      var div = document.createElement('div'); div.appendChild(document.createTextNode(str)); return div.innerHTML;
+    }
+
+    async function carregarDiretores() {
+      document.getElementById('lista-loading').style.display = 'block';
+      document.getElementById('lista-vazia').style.display = 'none';
+
+      try {
+        diretores = await db.query('rh_avaliadores_diretores', 'order=nome.asc') || [];
+        document.getElementById('lista-loading').style.display = 'none';
+        document.getElementById('count-diretores').textContent = diretores.filter(function(d) { return d.active; }).length;
+
+        if (!diretores.length) {
+          document.getElementById('lista-vazia').style.display = 'block';
+          document.getElementById('lista-diretores').innerHTML = '';
+          return;
+        }
+
+        document.getElementById('lista-diretores').innerHTML = diretores.map(function(d) {
+          var estadoBadge = d.active
+            ? '<span class="badge badge-sucesso">Activo</span>'
+            : '<span class="badge badge-secundario">Inactivo</span>';
+          var acaoTexto = d.active ? 'Desactivar' : 'Reactivar';
+          return '' +
+            '<div class="item-diretor">' +
+              '<div><div class="nome">' + escapar(d.nome || '—') + '</div><div class="codigo">' + escapar(d.codigo) + '</div></div>' +
+              '<div style="display:flex;align-items:center;gap:10px;">' +
+                estadoBadge +
+                '<button class="btn btn-secundario btn-sm" onclick="alternarDiretor(' + d.id + ')">' + acaoTexto + '</button>' +
+                '<button class="btn btn-vermelho btn-sm" onclick="removerDiretor(' + d.id + ')">Remover</button>' +
+              '</div>' +
+            '</div>';
+        }).join('');
+
+      } catch (e) {
+        console.error(e);
+        document.getElementById('lista-loading').style.display = 'none';
+        mostrarToast('Erro ao carregar directores.', 'erro');
+      }
+    }
+
+    async function adicionarDiretor() {
+      var codigo = document.getElementById('novo-codigo').value.trim();
+      var nome = document.getElementById('novo-nome-oculto').value.trim();
+
+      if (!codigo || !nome) {
+        mostrarToast('Escolha um colaborador da lista (clique numa sugestão).', 'erro');
+        return;
+      }
+
+      var jaExiste = diretores.some(function(d) { return d.codigo === codigo; });
+      if (jaExiste) {
+        mostrarToast('Este colaborador já está na lista de Directores.', 'erro');
+        return;
+      }
+
+      try {
+        await db.insert('rh_avaliadores_diretores', { codigo: codigo, nome: nome, active: true });
+        mostrarToast('Director adicionado.', 'sucesso');
+        if (seletorNovo) seletorNovo.reset();
+        document.getElementById('novo-codigo').value = '';
+        await carregarDiretores();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao adicionar director: ' + (e.message || JSON.stringify(e)), 'erro');
+      }
+    }
+
+    async function alternarDiretor(id) {
+      var d = diretores.find(function(x) { return x.id === id; });
+      if (!d) return;
+      try {
+        await db.update('rh_avaliadores_diretores', id, { active: !d.active });
+        mostrarToast(d.active ? 'Desactivado.' : 'Reactivado.', 'sucesso');
+        await carregarDiretores();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao actualizar.', 'erro');
+      }
+    }
+
+    async function removerDiretor(id) {
+      if (!confirm('Remover esta pessoa da lista de Directores? Deixa de ter acesso à avaliação final.')) return;
+      try {
+        await db.delete('rh_avaliadores_diretores', id);
+        mostrarToast('Removido.', 'sucesso');
+        await carregarDiretores();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao remover.', 'erro');
+      }
+    }
+  </script>
+</body>
+</html>
