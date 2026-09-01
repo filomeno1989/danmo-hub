@@ -410,6 +410,74 @@ img { max-width: 100%; display: block; }
   background: var(--chrome-overlay);
 }
 
+/* ── GRUPO ANINHADO (+/-) dentro de um submenu ─────────────
+   Usado quando um módulo (ex: Avaliação de Desempenho) tem
+   várias páginas próprias — fica escondido atrás de +/- para
+   o submenu principal não crescer demasiado. */
+.sidebar-grupo {
+  margin: 2px 0;
+}
+.sidebar-grupo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--chrome-texto-sec);
+  font-size: var(--tamanho-sm);
+  font-family: var(--fonte-principal);
+  border-radius: var(--raio-sm);
+  text-align: left;
+  transition: all var(--transicao);
+}
+.sidebar-grupo-btn:hover,
+.sidebar-grupo-btn.ativo {
+  color: var(--cor-ambar);
+  background: var(--chrome-overlay);
+}
+.sidebar-grupo-btn .grupo-sinal {
+  font-weight: 800;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.sidebar-grupo-itens {
+  display: none;
+  padding-left: 14px;
+  margin-left: 8px;
+  border-left: 1px dashed var(--chrome-borda);
+}
+.sidebar-grupo-itens.visivel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+.sidebar-grupo-itens a {
+  display: block;
+  padding: 6px 10px;
+  color: var(--chrome-texto-sec);
+  font-size: 0.78rem;
+  border-radius: var(--raio-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all var(--transicao);
+}
+.sidebar-grupo-itens a:hover {
+  color: var(--cor-ambar);
+  background: var(--chrome-overlay);
+}
+.sidebar-grupo-itens a.ativo {
+  color: var(--cor-ambar);
+  font-weight: 600;
+  background: var(--chrome-overlay);
+}
+
 .sidebar-dev-item {
   opacity: 0.55;
   cursor: default;

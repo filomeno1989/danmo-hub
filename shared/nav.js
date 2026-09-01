@@ -25,12 +25,16 @@
 
     { id: 'disponibilidade', label: 'Disponibilidade Equip.', icon: '&#128666;', href: '#', dev: true },
 
-    { id: 'admin', label: 'Admin. Oficinal', icon: '&#128188;', pasta: 'rh|financeiro',
+    { id: 'admin', label: 'Admin. Oficinal', icon: '&#128188;', pasta: 'rh|financeiro|avaliacao-desempenho',
       sub: [
         { label: 'RH & Quadro de Pessoal',   href: 'rh/index.html' },
-        { label: 'Avaliação de Desempenho',  href: 'avaliacao-desempenho/avaliacoes.html' },
-        { label: 'Responsáveis por Área',    href: 'avaliacao-desempenho/gerir_responsaveis.html' },
-        { label: 'Portal de Avaliação',      href: 'avaliacao-desempenho/portal.html', novaAba: true },
+        { label: 'Avaliação de Desempenho',  id: 'aval-desempenho',
+          itens: [
+            { label: 'Painel (Campanhas)',       href: 'avaliacao-desempenho/avaliacoes.html' },
+            { label: 'Responsáveis por Área',    href: 'avaliacao-desempenho/gerir_responsaveis.html' },
+            { label: 'Directores',               href: 'avaliacao-desempenho/gerir_diretores.html' },
+            { label: 'Portal de Avaliação',      href: 'avaliacao-desempenho/portal.html', novaAba: true }
+          ] },
         { label: 'Finanças & Faturas',       href: 'financeiro/index.html' }
       ] },
 
@@ -72,8 +76,28 @@
     if (mod.sub) {
       const aberto = ehAtivo(mod);
       const subHtml = mod.sub.map(s => {
+        // Grupo aninhado (ex: "Avaliação de Desempenho" dentro de "Admin. Oficinal") —
+        // tem as suas próprias páginas lá dentro, escondidas atrás de um +/-,
+        // para o submenu principal não ficar gigante à medida que se acrescentam módulos.
+        if (s.itens) {
+          const grupoAtivo = s.itens.some(i => caminhoAtual.includes(i.href));
+          const itensHtml = s.itens.map(i => {
+            const itemAtivo = caminhoAtual.endsWith(i.href) || caminhoAtual.includes(i.href);
+            const alvoItem = i.novaAba ? ' target="_blank" rel="noopener"' : '';
+            return `<a href="${BASE}${i.href}" class="${itemAtivo ? 'ativo' : ''}"${alvoItem}><span>${i.label}</span></a>`;
+          }).join('');
+          return `
+            <div class="sidebar-grupo">
+              <button class="sidebar-grupo-btn${grupoAtivo ? ' ativo' : ''}" data-grupo="grp-${s.id}" aria-expanded="${grupoAtivo}">
+                <span>${s.label}</span>
+                <span class="grupo-sinal">${grupoAtivo ? '−' : '+'}</span>
+              </button>
+              <div class="sidebar-grupo-itens${grupoAtivo ? ' visivel' : ''}" id="grp-${s.id}">${itensHtml}</div>
+            </div>`;
+        }
         const subAtivo = caminhoAtual.endsWith(s.href) || caminhoAtual.includes(s.href);
-        return `<a href="${BASE}${s.href}" class="${subAtivo ? 'ativo' : ''}"><span>${s.label}</span></a>`;
+        const alvoSub = s.novaAba ? ' target="_blank" rel="noopener"' : '';
+        return `<a href="${BASE}${s.href}" class="${subAtivo ? 'ativo' : ''}"${alvoSub}><span>${s.label}</span></a>`;
       }).join('');
       return `
         <li class="sidebar-modulo">
@@ -245,6 +269,19 @@
     const nav = document.querySelector('.sidebar-nav');
     if (nav) {
       nav.addEventListener('click', function (e) {
+        const btnGrupo = e.target.closest('[data-grupo]');
+        if (btnGrupo) {
+          e.preventDefault();
+          e.stopPropagation();
+          const itens = document.getElementById(btnGrupo.getAttribute('data-grupo'));
+          const sinal = btnGrupo.querySelector('.grupo-sinal');
+          const estaAberto = itens.classList.toggle('visivel');
+          btnGrupo.classList.toggle('ativo', estaAberto);
+          btnGrupo.setAttribute('aria-expanded', String(estaAberto));
+          if (sinal) sinal.textContent = estaAberto ? '−' : '+';
+          return;
+        }
+
         const btn = e.target.closest('[data-alvo]');
         if (!btn) return; // deixa os links normais (sem submenu) navegar à vontade
         e.preventDefault();
