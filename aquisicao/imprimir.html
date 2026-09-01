@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pedido de Aquisição — Impressão</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 11px;
+      background: #dcdcdc;
+      color: #000;
+    }
+
+    .btn-bar { display: flex; justify-content: center; gap: 12px; margin: 16px auto; }
+    .btn-print {
+      padding: 10px 28px; background: #0d5ca8; color: #fff; border: none;
+      border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;
+      font-family: Arial, sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .btn-voltar {
+      padding: 10px 28px; background: #fff; color: #0d5ca8; border: 1px solid #0d5ca8;
+      border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif;
+    }
+
+    .folha {
+      width: 148mm; min-height: 210mm; margin: 0 auto 40px; background: #fff;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.3); padding: 10mm 9mm;
+      display: flex; flex-direction: column;
+    }
+
+    .pa-cabecalho {
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px;
+    }
+    .pa-cabecalho img { height: 34px; }
+    .pa-titulo { text-align: center; font-size: 14px; font-weight: bold; text-transform: uppercase; }
+
+    .pa-linha-topo {
+      display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; flex-wrap: wrap; gap: 4px;
+    }
+    .pa-linha-topo b { font-weight: bold; }
+
+    .pa-ref {
+      font-size: 11.5px; font-weight: bold; text-align: center; margin: 6px 0 10px;
+      border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 4px 0;
+    }
+
+    table.pa-tabela { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 10px; }
+    table.pa-tabela th, table.pa-tabela td { border: 1px solid #000; padding: 3px 5px; vertical-align: top; }
+    table.pa-tabela th { text-align: center; font-weight: bold; }
+    table.pa-tabela td.centro { text-align: center; }
+    table.pa-tabela th.col-n, table.pa-tabela td.col-n { width: 22px; text-align: center; }
+    table.pa-tabela th.col-qnt, table.pa-tabela td.col-qnt { width: 34px; text-align: center; }
+
+    .pa-obs-geral { font-size: 10.5px; margin-bottom: 10px; }
+    .pa-obs-geral b { display: block; margin-bottom: 2px; }
+
+    .pa-assinaturas { margin-top: auto; padding-top: 14px; }
+    .pa-ass-linha { margin-bottom: 16px; font-size: 11px; }
+    .pa-ass-nome { font-weight: bold; }
+    .pa-ass-traco { border-bottom: 1px solid #000; display: inline-block; width: 100%; height: 16px; }
+    .pa-ass-label { font-size: 10px; margin-top: 2px; }
+
+    .pa-rodape {
+      margin-top: 10px; padding-top: 6px; border-top: 1px solid #999;
+      font-size: 7px; color: #333; line-height: 1.4; text-align: center;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .btn-bar { display: none !important; }
+      .folha { width: 100%; min-height: 0; margin: 0; box-shadow: none; }
+      @page { size: A5; margin: 8mm; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="btn-bar">
+  <button class="btn-voltar" onclick="window.location.href='lista.html'">&larr; Voltar</button>
+  <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+</div>
+
+<div class="folha">
+  <div class="pa-cabecalho">
+    <img src="../shared/logos/DANMO.png" alt="Danmo" onerror="this.style.display='none'" />
+    <div class="pa-titulo">Pedido de Aquisição<br>de Material</div>
+    <img src="../shared/logos/CORNELDER.png" alt="Cornelder de Moçambique" onerror="this.style.display='none'" />
+  </div>
+
+  <div class="pa-linha-topo">
+    <span><b>Data:</b> <span id="f-data">—</span></span>
+    <span><b>Pedido nº</b> <span id="f-numero">—</span></span>
+  </div>
+
+  <div class="pa-ref" id="f-ref">—</div>
+
+  <table class="pa-tabela">
+    <thead>
+      <tr>
+        <th class="col-n">Nº Ordem</th>
+        <th>Designação</th>
+        <th class="col-qnt">Qnt.</th>
+        <th>Propósito / Aplicação</th>
+        <th>Observação</th>
+      </tr>
+    </thead>
+    <tbody id="pa-itens"></tbody>
+  </table>
+
+  <div class="pa-obs-geral" id="pa-obs-wrap" style="display:none;">
+    <b>Observação Geral</b>
+    <span id="f-obs-geral"></span>
+  </div>
+
+  <div class="pa-assinaturas">
+    <div class="pa-ass-linha">
+      <span class="pa-ass-traco"></span>
+      <div class="pa-ass-label">Solicitante: <span class="pa-ass-nome" id="f-solicitante">—</span></div>
+    </div>
+    <div class="pa-ass-linha">
+      <span class="pa-ass-traco"></span>
+      <div class="pa-ass-label">Supervisor / Gestor</div>
+    </div>
+    <div class="pa-ass-linha">
+      <span class="pa-ass-traco"></span>
+      <div class="pa-ass-label">Chefe das Oficinas</div>
+    </div>
+  </div>
+
+  <div class="pa-rodape">
+    Código: DAN_ADO_FR_010_REV01_16.08.2021<br>
+    Este documento é propriedade da DANMO. Não é permitida a sua reprodução sem autorização.<br>
+    Depois de impresso este documento é considerado cópia não controlada.
+  </div>
+</div>
+
+<script src="../shared/supabase.js"></script>
+<script src="../shared/utils.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const pedidoId = params.get('id');
+  if (!pedidoId) { alert('Pedido não especificado.'); window.location.href = 'lista.html'; }
+
+  function fData(str) {
+    if (!str) return '—';
+    const d = new Date(str + 'T00:00:00');
+    return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  async function carregar() {
+    const [pedido] = await db.query('aquisicao_pedidos', `select=*&id=eq.${pedidoId}`);
+    if (!pedido) { alert('Pedido não encontrado.'); return; }
+
+    const numeroFmt = String(pedido.numero).padStart(3, '0') + '/' + pedido.ano;
+    document.title = `Pedido de Aquisição ${numeroFmt}`;
+    document.getElementById('f-data').textContent = fData(pedido.data_pedido);
+    document.getElementById('f-numero').textContent = numeroFmt;
+    document.getElementById('f-ref').textContent =
+      `Pedido ${numeroFmt} — ${pedido.tipo_documento} nº ${pedido.numero_cotacao_proforma} — ${pedido.fornecedor_nome}`;
+    document.getElementById('f-solicitante').textContent = pedido.solicitante || '—';
+
+    if (pedido.observacao_geral) {
+      document.getElementById('pa-obs-wrap').style.display = 'block';
+      document.getElementById('f-obs-geral').textContent = pedido.observacao_geral;
+    }
+
+    const itens = await db.query('aquisicao_itens', `select=*&pedido_id=eq.${pedidoId}&order=numero_ordem.asc`);
+    document.getElementById('pa-itens').innerHTML = itens.map(it => `
+      <tr>
+        <td class="col-n">${it.numero_ordem}</td>
+        <td>${it.designacao || ''}</td>
+        <td class="col-qnt">${it.quantidade}</td>
+        <td>${it.aplicacao || ''}</td>
+        <td>${it.observacao || ''}</td>
+      </tr>
+    `).join('');
+  }
+
+  carregar();
+</script>
+</body>
+</html>

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Novo Pedido de Aquisição — Danmo Hub</title>
+
+  <!-- CSS Global do Danmo Hub -->
+  <link rel="stylesheet" href="../shared/style.css" />
+
+  <style>
+    .itens-tabela { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .itens-tabela th {
+      text-align: left; font-size: var(--tamanho-xs); text-transform: uppercase;
+      letter-spacing: .5px; color: var(--cor-texto-sec); padding: 8px 6px;
+      border-bottom: 2px solid var(--cor-borda);
+    }
+    .itens-tabela td { padding: 6px; vertical-align: top; border-bottom: 1px solid var(--cor-borda); }
+    .itens-tabela input, .itens-tabela textarea {
+      width: 100%; border: 1px solid var(--cor-borda); border-radius: var(--raio-sm);
+      padding: 7px 8px; font-size: var(--tamanho-sm); background: var(--cor-superficie);
+      color: var(--cor-texto); font-family: inherit;
+    }
+    .itens-tabela textarea { min-height: 38px; resize: vertical; }
+    .col-ordem { width: 46px; text-align: center; font-weight: 700; color: var(--cor-texto-sec); }
+    .col-qnt { width: 80px; }
+    .col-remover { width: 40px; text-align: center; }
+    .btn-remover-linha {
+      background: none; border: none; color: var(--cor-vermelho-danmo); font-size: 1.1rem;
+      cursor: pointer; line-height: 1; padding: 6px;
+    }
+    .btn-remover-linha:hover { opacity: .7; }
+    .fornecedor-wrap, .solicitante-wrap { display: flex; gap: 8px; }
+    .fornecedor-wrap select, .solicitante-wrap select { flex: 1; }
+    .num-pedido-box {
+      background: var(--cor-navy); color: #fff; border-radius: var(--raio-md);
+      padding: 12px 18px; font-weight: 700; font-size: 1.05rem; display: inline-block;
+    }
+    .num-pedido-box small { display: block; font-weight: 500; font-size: var(--tamanho-xs); opacity: .8; text-transform: uppercase; letter-spacing: .5px; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+      <div>
+        <h1 class="pagina-titulo" id="pagina-titulo">Novo Pedido de Aquisição</h1>
+        <p class="pagina-subtitulo">Emitir pedido de aquisição de material com base numa cotação ou pro-forma</p>
+      </div>
+      <div class="num-pedido-box">
+        <small>Nº do Pedido</small>
+        <span id="num-pedido-preview">A calcular...</span>
+      </div>
+    </div>
+
+    <form id="form-pedido" autocomplete="off">
+
+      <!-- Dados do Pedido -->
+      <div class="card" style="margin-top:20px;">
+        <div class="form-label" style="font-size:1.1rem; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--cor-borda);">
+          Dados do Pedido
+        </div>
+        <div class="form-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px;">
+          <div class="form-grupo">
+            <label class="form-label" for="f-data">Data do Pedido *</label>
+            <input class="form-input" type="date" id="f-data" required />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="f-tipo">Denominação *</label>
+            <select class="form-select" id="f-tipo" required>
+              <option value="">Seleccionar...</option>
+              <option value="Cotação">Cotação</option>
+              <option value="Pro-forma">Pro-forma</option>
+            </select>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="f-num-doc">Nº da Cotação / Pro-forma *</label>
+            <input class="form-input" type="text" id="f-num-doc" placeholder="Ex: 211-0000000163-2026" required />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="f-fornecedor">Fornecedor *</label>
+            <div class="fornecedor-wrap">
+              <select class="form-select" id="f-fornecedor" required>
+                <option value="">Seleccionar fornecedor...</option>
+              </select>
+            </div>
+            <input class="form-input" type="text" id="f-fornecedor-novo" placeholder="Nome do novo fornecedor" style="display:none; margin-top:8px;" />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="f-solicitante">Solicitante *</label>
+            <div class="solicitante-wrap">
+              <select class="form-select" id="f-solicitante" required>
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <input class="form-input" type="text" id="f-solicitante-novo" placeholder="Nome do solicitante" style="display:none; margin-top:8px;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Itens -->
+      <div class="card" style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div class="form-label" style="font-size:1.1rem; margin:0;">Material Pedido</div>
+          <button type="button" class="btn btn-secundario btn-sm" id="btn-add-item">+ Adicionar Linha</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="itens-tabela">
+            <thead>
+              <tr>
+                <th class="col-ordem">Nº</th>
+                <th style="min-width:200px;">Designação</th>
+                <th class="col-qnt">Qtd.</th>
+                <th style="min-width:180px;">Aplicação / Para onde vai</th>
+                <th style="min-width:160px;">Observação</th>
+                <th class="col-remover"></th>
+              </tr>
+            </thead>
+            <tbody id="itens-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Observação Geral -->
+      <div class="card" style="margin-top:20px;">
+        <div class="form-grupo" style="margin-bottom:0;">
+          <label class="form-label" for="f-obs-geral">Observação Geral (opcional)</label>
+          <textarea class="form-textarea" id="f-obs-geral" placeholder="Notas adicionais sobre este pedido..."></textarea>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-secundario" onclick="window.location.href='lista.html'">Cancelar</button>
+        <button type="submit" class="btn btn-primario" id="btn-gravar">Gravar Pedido</button>
+        <button type="button" class="btn btn-ambar" id="btn-gravar-imprimir">Gravar e Imprimir</button>
+      </div>
+    </form>
+  </main>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const pedidoId = params.get('id');
+    let itemSeq = 0;
+    let fornecedores = [];
+
+    function novaLinhaItem(dados) {
+      itemSeq++;
+      const tr = document.createElement('tr');
+      tr.dataset.seq = itemSeq;
+      tr.innerHTML = `
+        <td class="col-ordem linha-ordem">${document.querySelectorAll('#itens-tbody tr').length + 1}</td>
+        <td><input type="text" class="i-designacao" value="${escaparHTML(dados?.designacao || '')}" placeholder="Ex: Óleo hidráulico 20L" required /></td>
+        <td class="col-qnt"><input type="number" class="i-qtd" min="1" step="1" value="${dados?.quantidade ?? 1}" required /></td>
+        <td><input type="text" class="i-aplicacao" value="${escaparHTML(dados?.aplicacao || '')}" placeholder="Ex: Para a viatura AAA 000 MC" /></td>
+        <td><input type="text" class="i-observacao" value="${escaparHTML(dados?.observacao || '')}" /></td>
+        <td class="col-remover"><button type="button" class="btn-remover-linha" title="Remover linha">&times;</button></td>
+      `;
+      tr.querySelector('.btn-remover-linha').addEventListener('click', () => {
+        tr.remove();
+        renumerarLinhas();
+      });
+      document.getElementById('itens-tbody').appendChild(tr);
+    }
+
+    function renumerarLinhas() {
+      document.querySelectorAll('#itens-tbody tr').forEach((tr, i) => {
+        tr.querySelector('.linha-ordem').textContent = i + 1;
+      });
+    }
+
+    document.getElementById('btn-add-item').addEventListener('click', () => novaLinhaItem());
+
+    // Fornecedor: carregar lista + opção "novo"
+    async function carregarFornecedores(selecionarId) {
+      fornecedores = await db.query('aquisicao_fornecedores', 'select=*&ativo=eq.true&order=nome.asc');
+      const sel = document.getElementById('f-fornecedor');
+      sel.innerHTML = '<option value="">Seleccionar fornecedor...</option>' +
+        fornecedores.map(f => `<option value="${f.id}">${escaparHTML(f.nome)}</option>`).join('') +
+        '<option value="__novo__">+ Novo fornecedor...</option>';
+      if (selecionarId) sel.value = selecionarId;
+    }
+    document.getElementById('f-fornecedor').addEventListener('change', function () {
+      document.getElementById('f-fornecedor-novo').style.display = this.value === '__novo__' ? 'block' : 'none';
+    });
+
+    // Solicitante: sugestões a partir de pedidos anteriores + opção "novo"
+    async function carregarSolicitantes(selecionarNome) {
+      const anteriores = await db.query('aquisicao_pedidos', 'select=solicitante&order=solicitante.asc');
+      const nomes = [...new Set(anteriores.map(p => p.solicitante).filter(Boolean))];
+      const sel = document.getElementById('f-solicitante');
+      sel.innerHTML = '<option value="">Seleccionar...</option>' +
+        nomes.map(n => `<option value="${escaparHTML(n)}">${escaparHTML(n)}</option>`).join('') +
+        '<option value="__novo__">+ Outro...</option>';
+      if (selecionarNome) {
+        const existe = nomes.includes(selecionarNome);
+        sel.value = existe ? selecionarNome : '__novo__';
+        if (!existe) {
+          document.getElementById('f-solicitante-novo').style.display = 'block';
+          document.getElementById('f-solicitante-novo').value = selecionarNome;
+        }
+      }
+    }
+    document.getElementById('f-solicitante').addEventListener('change', function () {
+      document.getElementById('f-solicitante-novo').style.display = this.value === '__novo__' ? 'block' : 'none';
+    });
+
+    // Nº do pedido: calculado a partir do ano da data seleccionada
+    async function atualizarPreviewNumero() {
+      if (pedidoId) return; // em edição o número já está fixo
+      const dataVal = document.getElementById('f-data').value;
+      const ano = dataVal ? new Date(dataVal + 'T00:00:00').getFullYear() : new Date().getFullYear();
+      const existentes = await db.query('aquisicao_pedidos', `select=numero&ano=eq.${ano}&order=numero.desc&limit=1`);
+      const proximo = (existentes[0]?.numero || 0) + 1;
+      document.getElementById('num-pedido-preview').textContent = String(proximo).padStart(3, '0') + '/' + ano;
+    }
+    document.getElementById('f-data').addEventListener('change', atualizarPreviewNumero);
+
+    async function garantirFornecedor() {
+      const sel = document.getElementById('f-fornecedor').value;
+      if (sel === '__novo__') {
+        const nome = document.getElementById('f-fornecedor-novo').value.trim();
+        if (!nome) throw new Error('Indica o nome do novo fornecedor.');
+        const existente = fornecedores.find(f => f.nome.toLowerCase() === nome.toLowerCase());
+        if (existente) return existente;
+        const [criado] = await db.insert('aquisicao_fornecedores', [{ nome, ativo: true }]);
+        return criado;
+      }
+      const f = fornecedores.find(f => f.id === sel);
+      if (!f) throw new Error('Selecciona um fornecedor.');
+      return f;
+    }
+
+    function obterSolicitante() {
+      const sel = document.getElementById('f-solicitante').value;
+      if (sel === '__novo__') {
+        const nome = document.getElementById('f-solicitante-novo').value.trim();
+        if (!nome) throw new Error('Indica o nome do solicitante.');
+        return nome;
+      }
+      if (!sel) throw new Error('Selecciona o solicitante.');
+      return sel;
+    }
+
+    async function carregarParaEdicao() {
+      const [pedido] = await db.query('aquisicao_pedidos', `select=*&id=eq.${pedidoId}`);
+      if (!pedido) { mostrarToast('Pedido não encontrado.', 'erro'); return; }
+      document.getElementById('pagina-titulo').textContent = `Editar Pedido ${String(pedido.numero).padStart(3, '0')}/${pedido.ano}`;
+      document.getElementById('num-pedido-preview').textContent = String(pedido.numero).padStart(3, '0') + '/' + pedido.ano;
+      setVal('f-data', pedido.data_pedido);
+      setVal('f-tipo', pedido.tipo_documento);
+      setVal('f-num-doc', pedido.numero_cotacao_proforma);
+      setVal('f-obs-geral', pedido.observacao_geral);
+      await carregarFornecedores(pedido.fornecedor_id);
+      await carregarSolicitantes(pedido.solicitante);
+
+      const itens = await db.query('aquisicao_itens', `select=*&pedido_id=eq.${pedidoId}&order=numero_ordem.asc`);
+      itens.forEach(it => novaLinhaItem(it));
+    }
+
+    document.getElementById('form-pedido').addEventListener('submit', (e) => {
+      e.preventDefault();
+      gravar(false);
+    });
+    document.getElementById('btn-gravar-imprimir').addEventListener('click', () => gravar(true));
+
+    async function gravar(irImprimir) {
+      const linhas = [...document.querySelectorAll('#itens-tbody tr')];
+      if (linhas.length === 0) { mostrarToast('Adiciona pelo menos um item.', 'aviso'); return; }
+
+      const btns = [document.getElementById('btn-gravar'), document.getElementById('btn-gravar-imprimir')];
+      btns.forEach(b => b.disabled = true);
+
+      try {
+        const fornecedor = await garantirFornecedor();
+        const solicitante = obterSolicitante();
+        const dataPedido = document.getElementById('f-data').value;
+        if (!dataPedido) throw new Error('Indica a data do pedido.');
+        const ano = new Date(dataPedido + 'T00:00:00').getFullYear();
+
+        const itensPayload = linhas.map((tr, i) => ({
+          numero_ordem: i + 1,
+          designacao: tr.querySelector('.i-designacao').value.trim(),
+          quantidade: parseFloat(tr.querySelector('.i-qtd').value) || 1,
+          aplicacao: tr.querySelector('.i-aplicacao').value.trim(),
+          observacao: tr.querySelector('.i-observacao').value.trim()
+        }));
+        if (itensPayload.some(i => !i.designacao)) throw new Error('Preenche a designação de todos os itens.');
+
+        let pedido;
+        if (pedidoId) {
+          [pedido] = await db.update('aquisicao_pedidos', pedidoId, {
+            data_pedido: dataPedido,
+            tipo_documento: document.getElementById('f-tipo').value,
+            numero_cotacao_proforma: document.getElementById('f-num-doc').value.trim(),
+            fornecedor_id: fornecedor.id,
+            fornecedor_nome: fornecedor.nome,
+            solicitante,
+            observacao_geral: document.getElementById('f-obs-geral').value.trim()
+          });
+          await db.query('aquisicao_itens', `pedido_id=eq.${pedidoId}`); // no-op safety read
+          const antigos = await db.query('aquisicao_itens', `select=id&pedido_id=eq.${pedidoId}`);
+          for (const it of antigos) await db.delete('aquisicao_itens', it.id);
+        } else {
+          // recalcula o número mesmo em cima da hora, para minimizar corridas entre pedidos
+          const existentes = await db.query('aquisicao_pedidos', `select=numero&ano=eq.${ano}&order=numero.desc&limit=1`);
+          const numero = (existentes[0]?.numero || 0) + 1;
+          [pedido] = await db.insert('aquisicao_pedidos', [{
+            ano, numero,
+            data_pedido: dataPedido,
+            tipo_documento: document.getElementById('f-tipo').value,
+            numero_cotacao_proforma: document.getElementById('f-num-doc').value.trim(),
+            fornecedor_id: fornecedor.id,
+            fornecedor_nome: fornecedor.nome,
+            solicitante,
+            observacao_geral: document.getElementById('f-obs-geral').value.trim()
+          }]);
+        }
+
+        await db.insert('aquisicao_itens', itensPayload.map(i => ({ ...i, pedido_id: pedido.id })));
+
+        mostrarToast('Pedido gravado com sucesso.', 'sucesso');
+        if (irImprimir) {
+          window.location.href = `imprimir.html?id=${pedido.id}`;
+        } else {
+          window.location.href = 'lista.html';
+        }
+      } catch (err) {
+        console.error(err);
+        mostrarToast(err.message || 'Erro ao gravar o pedido.', 'erro');
+        btns.forEach(b => b.disabled = false);
+      }
+    }
+
+    (async function init() {
+      if (pedidoId) {
+        await carregarParaEdicao();
+      } else {
+        setVal('f-data', dataHojeISO());
+        await carregarFornecedores();
+        await carregarSolicitantes();
+        novaLinhaItem();
+        atualizarPreviewNumero();
+      }
+    })();
+  </script>
+</body>
+</html>
