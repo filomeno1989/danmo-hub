@@ -40,6 +40,14 @@
 
     { id: 'stock', label: 'Gestão de Stock', icon: '&#128230;', href: 'stock/index.html', pasta: 'stock' },
 
+    { id: 'aquisicao', label: 'Pedidos de Aquisição', icon: '&#128179;', pasta: 'aquisicao',
+      sub: [
+        { label: 'Painel',        href: 'aquisicao/dashboard.html' },
+        { label: 'Novo Pedido',   href: 'aquisicao/novo.html' },
+        { label: 'Histórico',     href: 'aquisicao/lista.html' },
+        { label: 'Fornecedores',  href: 'aquisicao/configuracoes.html' }
+      ] },
+
     { id: 'hst', label: 'Portal HST', icon: '&#9888;', pasta: 'hst',
       sub: [
         { label: 'Painel',            href: 'hst/dashboard.html' },
