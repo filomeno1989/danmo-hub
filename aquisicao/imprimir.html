@@ -15,7 +15,7 @@
 
     .btn-bar { display: flex; justify-content: center; gap: 10px; margin: 16px auto; }
     .btn-print {
-      padding: 10px 30px; background: var(--verde, #10B981); color: #fff; border: none;
+      padding: 10px 30px; background: #10B981; color: #fff; border: none;
       border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;
       font-family: 'Times New Roman', serif; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
@@ -24,11 +24,10 @@
       border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; font-family: 'Times New Roman', serif;
     }
 
-    /* A5 paisagem: 210mm x 148mm */
+    /* A5 paisagem: 210mm de largura. Altura livre no ecrã (auto), fixa em páginas na impressão */
     .folha {
-      width: 210mm; height: 148mm; margin: 0 auto 40px; background: #fff;
-      box-shadow: 0 4px 30px rgba(0,0,0,0.3); padding: 7mm 10mm;
-      display: flex; flex-direction: column;
+      width: 210mm; margin: 0 auto 40px; background: #fff;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.3); padding: 7mm 10mm 10mm;
     }
 
     /* CABEÇALHO */
@@ -73,7 +72,7 @@
     .pa-obs-geral b { color: #059669; text-transform: uppercase; font-size: 8px; letter-spacing: .5px; display: block; margin-bottom: 2px; }
 
     /* ASSINATURAS · horizontal, ao estilo do print da oficina */
-    .assinaturas-wrap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: auto; margin-bottom: 6px; }
+    .assinaturas-wrap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; margin-bottom: 4px; }
     .ass-box { border: 1px solid #ccc; border-radius: 5px; padding: 8px; text-align: center; min-height: 50px; display: flex; flex-direction: column; justify-content: flex-end; }
     .ass-linha { border-bottom: 1px solid #999; height: 24px; font-size: 10.5px; font-style: italic; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 2px; color: #333; }
     .ass-cargo { font-size: 8px; text-transform: uppercase; letter-spacing: .6px; color: #666; margin-top: 4px; }
@@ -87,11 +86,32 @@
     .rodape-texto { font-size: 6.5px; color: #777; line-height: 1.4; }
     .rodape-logo img { height: 20px; }
 
+    /* ══ TABELA MÁGICA: repete o espaço do cabeçalho/rodapé em cada página impressa ══ */
+    .tabela-layout-impressao { width: 100%; border-collapse: collapse; border: none; }
+    .tabela-layout-impressao td, .tabela-layout-impressao th { padding: 0; border: none; }
+
+    @media screen {
+      .print-header-space, .print-footer-space { display: none; }
+    }
+
     @media print {
       body { background: #fff; }
       .btn-bar { display: none !important; }
-      .folha { width: 100%; height: 100%; margin: 0; box-shadow: none; }
+      .folha { width: 100%; margin: 0; box-shadow: none; padding: 0; }
+
       @page { size: A5 landscape; margin: 0; }
+
+      .cabecalho {
+        position: fixed; top: 0; left: 0; right: 0;
+        background: #fff; padding: 6mm 10mm 0; margin-bottom: 0; z-index: 1000;
+      }
+      .rodape-legal {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        background: #fff; padding: 0 10mm 5mm; margin-top: 0; z-index: 1000;
+      }
+      .conteudo { padding: 0 10mm; }
+
+      table.pa-tabela tbody tr, .assinaturas-wrap { page-break-inside: avoid; }
     }
   </style>
 </head>
@@ -103,6 +123,8 @@
 </div>
 
 <div class="folha">
+
+  <!-- CABEÇALHO REAL (fixo na impressão, repete em cada página) -->
   <div class="cabecalho">
     <div class="cab-esq">
       <img src="../shared/logos/DANMO.png" alt="Danmo" onerror="this.style.display='none'" />
@@ -128,45 +150,66 @@
     </div>
   </div>
 
-  <div class="pa-ref" id="f-ref">-</div>
-
-  <table class="pa-tabela">
+  <!-- TABELA DE LAYOUT: empurra o conteúdo para dar espaço ao cabeçalho/rodapé em TODAS as páginas -->
+  <table class="tabela-layout-impressao">
     <thead>
-      <tr>
-        <th class="col-n">Nº</th>
-        <th>Designação</th>
-        <th class="col-qnt">Qtd.</th>
-        <th class="col-un">Un.</th>
-        <th>Aplicação</th>
-        <th>Observação</th>
-      </tr>
+      <tr><td><div class="print-header-space"></div></td></tr>
     </thead>
-    <tbody id="pa-itens"></tbody>
+    <tbody>
+      <tr>
+        <td>
+          <div class="conteudo">
+
+            <div class="pa-ref" id="f-ref">-</div>
+
+            <table class="pa-tabela">
+              <thead>
+                <tr>
+                  <th class="col-n">Nº</th>
+                  <th>Designação</th>
+                  <th class="col-qnt">Qtd.</th>
+                  <th class="col-un">Un.</th>
+                  <th>Aplicação</th>
+                  <th>Observação</th>
+                </tr>
+              </thead>
+              <tbody id="pa-itens"></tbody>
+            </table>
+
+            <div class="pa-obs-geral" id="pa-obs-wrap" style="display:none;">
+              <b>Observação Geral</b>
+              <span id="f-obs-geral"></span>
+            </div>
+
+            <div class="assinaturas-wrap">
+              <div class="ass-box">
+                <div class="ass-linha" id="ass-solicitante-nome"></div>
+                <div class="ass-cargo">Solicitante</div>
+                <div class="ass-data">Data: ___/___/_____</div>
+              </div>
+              <div class="ass-box">
+                <div class="ass-linha"></div>
+                <div class="ass-cargo">Supervisor / Gestor</div>
+                <div class="ass-data">Data: ___/___/_____</div>
+              </div>
+              <div class="ass-box">
+                <div class="ass-linha"></div>
+                <div class="ass-cargo">Chefe das Oficinas</div>
+                <div class="ass-data">Data: ___/___/_____</div>
+              </div>
+            </div>
+
+          </div>
+          <!-- FIM DO CONTEÚDO -->
+        </td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr><td><div class="print-footer-space"></div></td></tr>
+    </tfoot>
   </table>
 
-  <div class="pa-obs-geral" id="pa-obs-wrap" style="display:none;">
-    <b>Observação Geral</b>
-    <span id="f-obs-geral"></span>
-  </div>
-
-  <div class="assinaturas-wrap">
-    <div class="ass-box">
-      <div class="ass-linha" id="ass-solicitante-nome"></div>
-      <div class="ass-cargo">Solicitante</div>
-      <div class="ass-data">Data: ___/___/_____</div>
-    </div>
-    <div class="ass-box">
-      <div class="ass-linha"></div>
-      <div class="ass-cargo">Supervisor / Gestor</div>
-      <div class="ass-data">Data: ___/___/_____</div>
-    </div>
-    <div class="ass-box">
-      <div class="ass-linha"></div>
-      <div class="ass-cargo">Chefe das Oficinas</div>
-      <div class="ass-data">Data: ___/___/_____</div>
-    </div>
-  </div>
-
+  <!-- RODAPÉ REAL (fixo na impressão, repete em cada página) -->
   <div class="rodape-legal">
     <div class="rodape-texto">
       Código: DAN_ADO_FR_010_REV01_16.08.2021<br>
@@ -175,6 +218,7 @@
     </div>
     <div class="rodape-logo"><img src="../shared/logos/MESQUITA.png" alt="Grupo Mesquita" onerror="this.style.display='none'" /></div>
   </div>
+
 </div>
 
 <script src="../shared/supabase.js"></script>
@@ -189,6 +233,31 @@
     const d = new Date(str + 'T00:00:00');
     return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
+
+  // Mede a altura real do cabeçalho/rodapé e ajusta os espaços da "tabela mágica"
+  // para que se repitam correctamente em cada página impressa.
+  function ajustarMargensImpressao() {
+    const cab = document.querySelector('.cabecalho');
+    const rod = document.querySelector('.rodape-legal');
+    if (!cab || !rod) return;
+
+    const alturaCab = cab.offsetHeight + 20;
+    const alturaRod = rod.offsetHeight + 20;
+
+    let estilo = document.getElementById('_margem-dinamica');
+    if (!estilo) {
+      estilo = document.createElement('style');
+      estilo.id = '_margem-dinamica';
+      document.head.appendChild(estilo);
+    }
+    estilo.textContent = `
+      @media print {
+        .print-header-space { height: ${alturaCab}px !important; }
+        .print-footer-space { height: ${alturaRod}px !important; }
+      }
+    `;
+  }
+  window.addEventListener('beforeprint', ajustarMargensImpressao);
 
   async function carregar() {
     const [pedido] = await db.query('aquisicao_pedidos', `select=*&id=eq.${pedidoId}`);
@@ -218,6 +287,10 @@
         <td>${it.observacao || ''}</td>
       </tr>
     `).join('');
+
+    // Pré-calcula os espaços assim que o conteúdo estiver pronto (caso o utilizador
+    // use Ctrl+P em vez do botão, o evento beforeprint trata do resto)
+    setTimeout(ajustarMargensImpressao, 100);
   }
 
   carregar();
