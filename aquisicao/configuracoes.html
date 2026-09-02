@@ -3,56 +3,105 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fornecedores — Pedidos de Aquisição — Danmo Hub</title>
+  <title>Configurações · Pedidos de Aquisição · Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
 
   <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
 
   <style>
     .link-action { color: var(--cor-info); cursor: pointer; font-weight: 600; margin-right: 12px; transition: color var(--transicao); }
-    .link-action:hover { color: var(--cor-ambar); }
+    .link-action:hover { color: var(--cor-verde-danmo); }
     .link-danger { color: var(--cor-vermelho-danmo); cursor: pointer; font-weight: 600; transition: opacity var(--transicao); }
     .link-danger:hover { opacity: .8; }
     .filtro-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .card-titulo-verde {
+      font-size: 1.1rem; margin-bottom: 16px; padding-bottom: 8px;
+      border-bottom: 2px solid var(--cor-verde-danmo); font-weight: 700; color: var(--cor-texto);
+    }
+    .abas-config { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--cor-borda); }
+    .aba-btn {
+      background: none; border: none; padding: 10px 18px; font-size: var(--tamanho-sm); font-weight: 600;
+      color: var(--cor-texto-sec); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px;
+    }
+    .aba-btn.ativa { color: var(--cor-verde-danmo); border-bottom-color: var(--cor-verde-danmo); }
+    .aba-painel { display: none; }
+    .aba-painel.ativa { display: block; }
   </style>
 </head>
 <body>
   <div id="navbar"></div>
 
   <main class="main">
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
-      <div>
-        <h1 class="pagina-titulo">Fornecedores</h1>
-        <p class="pagina-subtitulo">Casas / fornecedores usados nos pedidos de aquisição</p>
-      </div>
-      <button class="btn btn-primario" id="btn-novo">Novo Fornecedor</button>
+    <div>
+      <h1 class="pagina-titulo">Configurações</h1>
+      <p class="pagina-subtitulo">Fornecedores e denominações usados nos pedidos de aquisição</p>
     </div>
 
-    <div class="card" style="margin-top:24px;">
-      <div class="filtro-bar">
-        <div class="form-label" style="font-size:1.1rem; margin:0; flex:1;">Lista de Fornecedores</div>
-        <select class="form-select" id="f-filtro-estado" style="max-width:200px;">
-          <option value="ativos">Activos</option>
-          <option value="arquivados">Arquivados</option>
-          <option value="todos">Todos</option>
-        </select>
-        <input class="form-input" type="text" id="f-pesquisa" placeholder="Pesquisar por nome..." style="max-width:240px;" />
+    <div class="abas-config" style="margin-top:20px;">
+      <button class="aba-btn ativa" data-aba="aba-fornecedores">Fornecedores</button>
+      <button class="aba-btn" data-aba="aba-denominacoes">Denominações</button>
+    </div>
+
+    <!-- ABA: FORNECEDORES -->
+    <div class="aba-painel ativa" id="aba-fornecedores">
+      <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+        <button class="btn btn-verde" id="btn-novo">+ Novo Fornecedor</button>
       </div>
-      <div class="tabela-container">
-        <div id="lista-loading" class="spinner" style="padding:32px;text-align:center;">A carregar fornecedores...</div>
-        <div id="lista-empty" class="tabela-vazia" style="display:none;">Nenhum fornecedor encontrado.</div>
-        <table class="tabela" id="tabela-fornecedores" style="display:none;">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Contacto</th>
-              <th>NUIT</th>
-              <th>Nº Pedidos</th>
-              <th>Estado</th>
-              <th>Acções</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-fornecedores"></tbody>
-        </table>
+
+      <div class="card">
+        <div class="filtro-bar">
+          <div class="card-titulo-verde" style="border:none; padding:0; margin:0; flex:1;">Lista de Fornecedores</div>
+          <select class="form-select" id="f-filtro-estado" style="max-width:200px;">
+            <option value="ativos">Activos</option>
+            <option value="arquivados">Arquivados</option>
+            <option value="todos">Todos</option>
+          </select>
+          <input class="form-input" type="text" id="f-pesquisa" placeholder="Pesquisar por nome..." style="max-width:240px;" />
+        </div>
+        <div class="tabela-container">
+          <div id="lista-loading" class="spinner" style="padding:32px;text-align:center;">A carregar fornecedores...</div>
+          <div id="lista-empty" class="tabela-vazia" style="display:none;">Nenhum fornecedor encontrado.</div>
+          <table class="tabela" id="tabela-fornecedores" style="display:none;">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Contacto</th>
+                <th>NUIT</th>
+                <th>Nº Pedidos</th>
+                <th>Estado</th>
+                <th>Acções</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-fornecedores"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA: DENOMINAÇÕES -->
+    <div class="aba-painel" id="aba-denominacoes">
+      <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+        <button class="btn btn-verde" id="btn-nova-denominacao">+ Nova Denominação</button>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo-verde">Denominações Disponíveis</div>
+        <p style="color:var(--cor-texto-sec); font-size:var(--tamanho-sm); margin:-8px 0 12px;">
+          Ex: Cotação, Pro-forma, Venda a Dinheiro. Aparecem no formulário de Novo Pedido.
+        </p>
+        <div class="tabela-container">
+          <div id="denom-loading" class="spinner" style="padding:32px;text-align:center;">A carregar...</div>
+          <div id="denom-empty" class="tabela-vazia" style="display:none;">Nenhuma denominação encontrada.</div>
+          <table class="tabela" id="tabela-denominacoes" style="display:none;">
+            <thead>
+              <tr><th>Nome</th><th>Nº Pedidos</th><th>Estado</th><th>Acções</th></tr>
+            </thead>
+            <tbody id="tbody-denominacoes"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </main>
@@ -89,12 +138,36 @@
       </div>
       <div class="modal-rodape">
         <button class="btn btn-secundario" id="btn-cancelar">Cancelar</button>
-        <button class="btn btn-primario" id="btn-salvar">Gravar</button>
+        <button class="btn btn-verde" id="btn-salvar">Gravar</button>
       </div>
     </div>
   </div>
 
-  <script src="../shared/supabase.js"></script>
+  <!-- Modal Nova/Editar Denominação -->
+  <div id="modal-denominacao" class="modal-fundo">
+    <div class="modal" style="max-width: 420px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="modal-denom-titulo">Nova Denominação</span>
+        <button class="modal-fechar" id="btn-fechar-denom-x" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <input type="hidden" id="d-id" />
+        <div class="form-grupo">
+          <label class="form-label" for="d-nome">Nome *</label>
+          <input class="form-input" type="text" id="d-nome" placeholder="Ex: Venda a Dinheiro" required />
+        </div>
+        <div class="form-grupo" style="margin-bottom:0;">
+          <label class="form-label" for="d-ordem">Ordem de Exibição</label>
+          <input class="form-input" type="number" id="d-ordem" min="0" step="1" value="0" />
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" id="btn-cancelar-denom">Cancelar</button>
+        <button class="btn btn-verde" id="btn-salvar-denom">Gravar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="../shared/utils.js"></script>
   <script src="../shared/nav.js"></script>
   <script>
@@ -139,8 +212,8 @@
       document.getElementById('tbody-fornecedores').innerHTML = lista.map(f => `
         <tr>
           <td>${escaparHTML(f.nome)}</td>
-          <td>${escaparHTML(f.contacto || '—')}</td>
-          <td>${escaparHTML(f.nuit || '—')}</td>
+          <td>${escaparHTML(f.contacto || '-')}</td>
+          <td>${escaparHTML(f.nuit || '-')}</td>
           <td>${contagemPedidos[f.id] || 0}</td>
           <td><span class="badge ${f.ativo ? 'badge-sucesso' : 'badge-secundario'}">${f.ativo ? 'Activo' : 'Arquivado'}</span></td>
           <td>
@@ -190,7 +263,7 @@
 
     window.eliminar = async function (id) {
       if (contagemPedidos[id]) {
-        mostrarToast('Este fornecedor já tem pedidos associados — arquiva-o em vez de eliminar.', 'aviso');
+        mostrarToast('Este fornecedor já tem pedidos associados - arquiva-o em vez de eliminar.', 'aviso');
         return;
       }
       if (!confirmarAcao('Eliminar definitivamente este fornecedor?')) return;
@@ -230,7 +303,121 @@
       }
     });
 
+    // Abas
+    document.querySelectorAll('.aba-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.aba-btn').forEach(b => b.classList.remove('ativa'));
+        document.querySelectorAll('.aba-painel').forEach(p => p.classList.remove('ativa'));
+        btn.classList.add('ativa');
+        document.getElementById(btn.dataset.aba).classList.add('ativa');
+      });
+    });
+
+    // ── Denominações ─────────────────────────────────────────────
+    let denominacoes = [];
+    let contagemDenom = {};
+
+    async function carregarDenominacoes() {
+      document.getElementById('denom-loading').style.display = 'block';
+      document.getElementById('tabela-denominacoes').style.display = 'none';
+      document.getElementById('denom-empty').style.display = 'none';
+
+      denominacoes = await db.query('aquisicao_denominacoes', 'select=*&order=ordem.asc,nome.asc');
+      const pedidos = await db.query('aquisicao_pedidos', 'select=tipo_documento');
+      contagemDenom = {};
+      pedidos.forEach(p => { contagemDenom[p.tipo_documento] = (contagemDenom[p.tipo_documento] || 0) + 1; });
+
+      renderizarDenominacoes();
+    }
+
+    function renderizarDenominacoes() {
+      document.getElementById('denom-loading').style.display = 'none';
+      if (!denominacoes.length) {
+        document.getElementById('denom-empty').style.display = 'block';
+        return;
+      }
+      document.getElementById('tabela-denominacoes').style.display = 'table';
+      document.getElementById('tbody-denominacoes').innerHTML = denominacoes.map(d => `
+        <tr>
+          <td>${escaparHTML(d.nome)}</td>
+          <td>${contagemDenom[d.nome] || 0}</td>
+          <td><span class="badge ${d.ativo ? 'badge-sucesso' : 'badge-secundario'}">${d.ativo ? 'Activa' : 'Arquivada'}</span></td>
+          <td>
+            <span class="link-action" onclick="editarDenominacao('${d.id}')">Editar</span>
+            <span class="link-action" onclick="alternarEstadoDenominacao('${d.id}', ${d.ativo})">${d.ativo ? 'Arquivar' : 'Reactivar'}</span>
+            <span class="link-danger" onclick="eliminarDenominacao('${d.id}')">Eliminar</span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function abrirModalDenominacao(d) {
+      setVal('d-id', d?.id || '');
+      setVal('d-nome', d?.nome || '');
+      setVal('d-ordem', d?.ordem ?? denominacoes.length);
+      document.getElementById('modal-denom-titulo').textContent = d ? 'Editar Denominação' : 'Nova Denominação';
+      document.getElementById('modal-denominacao').classList.add('aberto');
+    }
+    function fecharModalDenominacao() { document.getElementById('modal-denominacao').classList.remove('aberto'); }
+
+    document.getElementById('btn-nova-denominacao').addEventListener('click', () => abrirModalDenominacao());
+    document.getElementById('btn-fechar-denom-x').addEventListener('click', fecharModalDenominacao);
+    document.getElementById('btn-cancelar-denom').addEventListener('click', fecharModalDenominacao);
+
+    window.editarDenominacao = function (id) {
+      const d = denominacoes.find(x => x.id === id);
+      if (d) abrirModalDenominacao(d);
+    };
+
+    window.alternarEstadoDenominacao = async function (id, estaAtiva) {
+      const acao = estaAtiva ? 'arquivar' : 'reactivar';
+      if (!confirmarAcao(`Tens a certeza que queres ${acao} esta denominação?`)) return;
+      try {
+        await db.update('aquisicao_denominacoes', id, { ativo: !estaAtiva });
+        mostrarToast(`Denominação ${estaAtiva ? 'arquivada' : 'reactivada'}.`, 'sucesso');
+        await carregarDenominacoes();
+      } catch (err) {
+        mostrarToast('Erro ao actualizar denominação.', 'erro');
+      }
+    };
+
+    window.eliminarDenominacao = async function (id) {
+      const d = denominacoes.find(x => x.id === id);
+      if (d && contagemDenom[d.nome]) {
+        mostrarToast('Esta denominação já tem pedidos associados - arquiva-a em vez de eliminar.', 'aviso');
+        return;
+      }
+      if (!confirmarAcao('Eliminar definitivamente esta denominação?')) return;
+      try {
+        await db.delete('aquisicao_denominacoes', id);
+        mostrarToast('Denominação eliminada.', 'sucesso');
+        await carregarDenominacoes();
+      } catch (err) {
+        mostrarToast('Erro ao eliminar denominação.', 'erro');
+      }
+    };
+
+    document.getElementById('btn-salvar-denom').addEventListener('click', async () => {
+      const nome = document.getElementById('d-nome').value.trim();
+      if (!nome) { mostrarToast('Indica o nome da denominação.', 'aviso'); return; }
+      const dados = { nome, ordem: parseInt(document.getElementById('d-ordem').value, 10) || 0 };
+      const id = document.getElementById('d-id').value;
+      try {
+        if (id) {
+          await db.update('aquisicao_denominacoes', id, dados);
+        } else {
+          await db.insert('aquisicao_denominacoes', [{ ...dados, ativo: true }]);
+        }
+        mostrarToast('Denominação gravada.', 'sucesso');
+        fecharModalDenominacao();
+        await carregarDenominacoes();
+      } catch (err) {
+        mostrarToast('Erro ao gravar denominação.', 'erro');
+      }
+    });
+
     carregar();
+    carregarDenominacoes();
   </script>
 </body>
 </html>

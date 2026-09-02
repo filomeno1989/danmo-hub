@@ -3,9 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel — Pedidos de Aquisição — Danmo Hub</title>
+  <title>Painel · Pedidos de Aquisição · Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
 
   <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
 
   <style>
     .graficos-grid {
@@ -16,19 +20,24 @@
     }
     .bar-chart-row { display: flex; align-items: center; margin-bottom: 12px; }
     .bar-chart-label {
-      width: 70px; font-size: 0.85rem; font-weight: 600; white-space: nowrap;
+      width: 90px; font-size: 0.85rem; font-weight: 600; white-space: nowrap;
       overflow: hidden; text-overflow: ellipsis; padding-right: 12px; color: var(--cor-texto-sec);
       text-transform: capitalize;
     }
     .bar-chart-track { flex: 1; background: var(--cor-fundo); border-radius: 4px; height: 12px; overflow: hidden; }
-    .bar-chart-fill { background: var(--cor-info); height: 100%; border-radius: 4px; transition: width 1s ease-out; }
+    .bar-chart-fill { background: var(--cor-verde-danmo); height: 100%; border-radius: 4px; transition: width 1s ease-out; }
     .bar-chart-value { margin-left: 12px; font-size: 0.85rem; font-weight: bold; width: 30px; text-align: right; }
 
     .pesquisa-rapida { display: flex; gap: 10px; margin-top: 12px; }
     .pesquisa-rapida input { flex: 1; }
 
     .link-action { color: var(--cor-info); cursor: pointer; font-weight: 600; margin-right: 12px; transition: color var(--transicao); }
-    .link-action:hover { color: var(--cor-ambar); }
+    .link-action:hover { color: var(--cor-verde-danmo); }
+
+    .card-titulo-verde {
+      font-size: 1.1rem; margin-bottom: 16px; padding-bottom: 8px;
+      border-bottom: 2px solid var(--cor-verde-danmo); font-weight: 700; color: var(--cor-texto);
+    }
   </style>
 </head>
 <body>
@@ -40,36 +49,37 @@
         <h1 class="pagina-titulo">Pedidos de Aquisição</h1>
         <p class="pagina-subtitulo">Painel geral do módulo</p>
       </div>
-      <button class="btn btn-primario" onclick="window.location.href='novo.html'">+ Novo Pedido</button>
+      <button class="btn btn-verde" onclick="window.location.href='novo.html'">+ Novo Pedido</button>
     </div>
 
     <!-- KPIs -->
     <div class="kpi-grid" style="margin-top:24px;">
-      <div class="kpi-card">
+      <div class="kpi-card verde">
         <div class="kpi-icone">&#128196;</div>
-        <div class="kpi-label">Pedidos em <span id="kpi-ano-label">—</span></div>
+        <div class="kpi-label">Pedidos em <span id="kpi-ano-label">-</span></div>
         <div class="kpi-valor" id="kpi-total-ano"><div class="spinner" style="width:20px;height:20px;"></div></div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card azul">
         <div class="kpi-icone">&#128197;</div>
         <div class="kpi-label">Pedidos Este Mês</div>
         <div class="kpi-valor" id="kpi-total-mes"><div class="spinner" style="width:20px;height:20px;"></div></div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card amarelo">
         <div class="kpi-icone">&#127970;</div>
         <div class="kpi-label">Fornecedores Activos</div>
         <div class="kpi-valor" id="kpi-fornecedores"><div class="spinner" style="width:20px;height:20px;"></div></div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-icone">&#128278;</div>
-        <div class="kpi-label">Último Pedido</div>
-        <div class="kpi-valor" id="kpi-ultimo" style="font-size:1.3rem;"><div class="spinner" style="width:20px;height:20px;"></div></div>
+      <div class="kpi-card verde">
+        <div class="kpi-icone">&#127942;</div>
+        <div class="kpi-label">Fornecedor Mais Usado</div>
+        <div class="kpi-valor" id="kpi-top-fornecedor" style="font-size:1.15rem;"><div class="spinner" style="width:20px;height:20px;"></div></div>
+        <div class="kpi-sub" id="kpi-top-fornecedor-sub" style="font-size:var(--tamanho-xs); color:var(--cor-texto-sec); margin-top:4px;"></div>
       </div>
     </div>
 
     <!-- Pesquisa rápida -->
     <div class="card" style="margin-top:24px;">
-      <div class="form-label" style="font-size:1.1rem; margin-bottom:4px;">Pesquisa Rápida</div>
+      <div class="card-titulo-verde" style="border:none; padding:0; margin-bottom:4px;">Pesquisa Rápida</div>
       <p style="color:var(--cor-texto-sec); font-size:var(--tamanho-sm); margin:0;">Procura por nº do pedido, fornecedor, solicitante ou material</p>
       <div class="pesquisa-rapida">
         <input class="form-input" type="text" id="f-pesquisa" placeholder="Ex: 004/2026, Prosol, óleo hidráulico..." />
@@ -81,17 +91,13 @@
     <!-- Gráfico + Top Fornecedores -->
     <div class="graficos-grid">
       <div class="card" style="margin-bottom:0;">
-        <div class="form-label" style="font-size:1.1rem; margin-bottom:16px; border-bottom:1px solid var(--cor-borda); padding-bottom:8px;">
-          Pedidos por Mês — <span id="grafico-ano-label">—</span>
-        </div>
+        <div class="card-titulo-verde">Pedidos por Mês · <span id="grafico-ano-label">-</span></div>
         <div id="chart-meses">
           <div class="spinner" style="padding:24px;text-align:center;">A processar...</div>
         </div>
       </div>
       <div class="card" style="margin-bottom:0;">
-        <div class="form-label" style="font-size:1.1rem; margin-bottom:16px; border-bottom:1px solid var(--cor-borda); padding-bottom:8px;">
-          Top 5 Fornecedores Mais Usados
-        </div>
+        <div class="card-titulo-verde">Top 5 Fornecedores Mais Usados</div>
         <div id="chart-fornecedores">
           <div class="spinner" style="padding:24px;text-align:center;">A processar...</div>
         </div>
@@ -100,9 +106,7 @@
 
     <!-- Últimos pedidos -->
     <div class="card mt-32" style="margin-top:24px;">
-      <div class="form-label" style="font-size:1.1rem; margin-bottom:16px; border-bottom:1px solid var(--cor-borda); padding-bottom:8px;">
-        Pedidos Recentes
-      </div>
+      <div class="card-titulo-verde">Pedidos Recentes</div>
       <div class="tabela-container">
         <div id="recentes-loading" class="spinner" style="padding:24px;text-align:center;">A carregar...</div>
         <div id="recentes-empty" class="tabela-vazia" style="display:none;">Ainda não há pedidos registados.</div>
@@ -116,7 +120,6 @@
     </div>
   </main>
 
-  <script src="../shared/supabase.js"></script>
   <script src="../shared/utils.js"></script>
   <script src="../shared/nav.js"></script>
   <script>
@@ -124,12 +127,12 @@
     let todosPedidos = [];
 
     function fData(str) {
-      if (!str) return '—';
+      if (!str) return '-';
       const d = new Date(str + 'T00:00:00');
       return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
-    function renderBarChart(containerId, data, maxVal, unidade) {
+    function renderBarChart(containerId, data, maxVal) {
       const el2 = document.getElementById(containerId);
       if (!data.length || maxVal === 0) {
         el2.innerHTML = '<div class="tabela-vazia">Sem dados suficientes.</div>';
@@ -165,11 +168,18 @@
       document.getElementById('kpi-total-mes').textContent = pedidosMes.length;
       document.getElementById('kpi-fornecedores').textContent = fornecedores.filter(f => f.ativo).length;
 
-      if (todosPedidos.length) {
-        const ultimo = todosPedidos.reduce((a, b) => (a.ano === b.ano ? (a.numero > b.numero ? a : b) : (a.ano > b.ano ? a : b)));
-        document.getElementById('kpi-ultimo').textContent = String(ultimo.numero).padStart(3, '0') + '/' + ultimo.ano;
+      // Fornecedor mais usado (todos os anos)
+      const contagemForn = {};
+      todosPedidos.forEach(p => {
+        const nome = p.fornecedor_nome || 'Desconhecido';
+        contagemForn[nome] = (contagemForn[nome] || 0) + 1;
+      });
+      const topEntries = Object.entries(contagemForn).sort((a, b) => b[1] - a[1]);
+      if (topEntries.length) {
+        document.getElementById('kpi-top-fornecedor').textContent = topEntries[0][0];
+        document.getElementById('kpi-top-fornecedor-sub').textContent = `${topEntries[0][1]} pedido(s) no total`;
       } else {
-        document.getElementById('kpi-ultimo').textContent = '—';
+        document.getElementById('kpi-top-fornecedor').textContent = '-';
       }
 
       // Gráfico: pedidos por mês (ano corrente)
@@ -182,15 +192,7 @@
       renderBarChart('chart-meses', dadosMeses, Math.max(...contagemMeses, 1));
 
       // Gráfico: top fornecedores (todos os anos)
-      const contagemForn = {};
-      todosPedidos.forEach(p => {
-        const nome = p.fornecedor_nome || 'Desconhecido';
-        contagemForn[nome] = (contagemForn[nome] || 0) + 1;
-      });
-      const topForn = Object.entries(contagemForn)
-        .map(([label, count]) => ({ label, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
+      const topForn = topEntries.map(([label, count]) => ({ label, count })).slice(0, 5);
       renderBarChart('chart-fornecedores', topForn, topForn[0]?.count || 0);
 
       // Tabela de recentes
@@ -204,8 +206,8 @@
           <tr>
             <td><b>${String(p.numero).padStart(3, '0')}/${p.ano}</b></td>
             <td>${fData(p.data_pedido)}</td>
-            <td>${escaparHTML(p.fornecedor_nome || '—')}</td>
-            <td>${escaparHTML(p.solicitante || '—')}</td>
+            <td>${escaparHTML(p.fornecedor_nome || '-')}</td>
+            <td>${escaparHTML(p.solicitante || '-')}</td>
             <td>
               <span class="link-action" onclick="window.location.href='imprimir.html?id=${p.id}'">Ver</span>
               <span class="link-action" onclick="window.location.href='novo.html?id=${p.id}'">Editar</span>
@@ -242,7 +244,7 @@
 
       container.innerHTML = encontrados.map(p => `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--cor-borda);">
-          <span><b>${String(p.numero).padStart(3, '0')}/${p.ano}</b> — ${escaparHTML(p.fornecedor_nome || '—')} — ${fData(p.data_pedido)}</span>
+          <span><b>${String(p.numero).padStart(3, '0')}/${p.ano}</b> · ${escaparHTML(p.fornecedor_nome || '-')} · ${fData(p.data_pedido)}</span>
           <span class="link-action" style="margin:0;" onclick="window.location.href='imprimir.html?id=${p.id}'">Ver</span>
         </div>
       `).join('');

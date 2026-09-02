@@ -3,13 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Histórico de Pedidos — Pedidos de Aquisição — Danmo Hub</title>
+  <title>Histórico de Pedidos · Pedidos de Aquisição · Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
 
   <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
 
   <style>
     .link-action { color: var(--cor-info); cursor: pointer; font-weight: 600; margin-right: 12px; transition: color var(--transicao); }
-    .link-action:hover { color: var(--cor-ambar); }
+    .link-action:hover { color: var(--cor-verde-danmo); }
     .link-danger { color: var(--cor-vermelho-danmo); cursor: pointer; font-weight: 600; transition: opacity var(--transicao); }
     .link-danger:hover { opacity: .8; }
     .filtro-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
@@ -26,7 +30,7 @@
         <h1 class="pagina-titulo">Histórico de Pedidos</h1>
         <p class="pagina-subtitulo">Todos os pedidos de aquisição, por ano</p>
       </div>
-      <button class="btn btn-primario" onclick="window.location.href='novo.html'">+ Novo Pedido</button>
+      <button class="btn btn-verde" onclick="window.location.href='novo.html'">+ Novo Pedido</button>
     </div>
 
     <div class="card" style="margin-top:24px;">
@@ -60,7 +64,6 @@
     </div>
   </main>
 
-  <script src="../shared/supabase.js"></script>
   <script src="../shared/utils.js"></script>
   <script src="../shared/nav.js"></script>
   <script>
@@ -69,7 +72,7 @@
     let fornecedoresMapa = {};
 
     function fData(str) {
-      if (!str) return '—';
+      if (!str) return '-';
       const d = new Date(str + 'T00:00:00');
       return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
@@ -145,8 +148,8 @@
           <td><b>${numeroFmt}</b></td>
           <td>${fData(p.data_pedido)}</td>
           <td>${escaparHTML(p.tipo_documento)} nº ${escaparHTML(p.numero_cotacao_proforma)}</td>
-          <td>${escaparHTML(p.fornecedor_nome || '—')}</td>
-          <td>${escaparHTML(p.solicitante || '—')}</td>
+          <td>${escaparHTML(p.fornecedor_nome || '-')}</td>
+          <td>${escaparHTML(p.solicitante || '-')}</td>
           <td><span class="badge badge-info">${nItens}</span></td>
           <td>
             <span class="link-action" onclick="window.location.href='imprimir.html?id=${p.id}'">Ver / Imprimir</span>

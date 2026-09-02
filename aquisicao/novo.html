@@ -3,40 +3,49 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Novo Pedido de Aquisição — Danmo Hub</title>
+  <title>Novo Pedido de Aquisição · Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
 
-  <!-- CSS Global do Danmo Hub -->
   <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
 
   <style>
     .itens-tabela { width: 100%; border-collapse: collapse; margin-top: 8px; }
     .itens-tabela th {
       text-align: left; font-size: var(--tamanho-xs); text-transform: uppercase;
       letter-spacing: .5px; color: var(--cor-texto-sec); padding: 8px 6px;
-      border-bottom: 2px solid var(--cor-borda);
+      border-bottom: 2px solid var(--cor-verde-danmo);
     }
     .itens-tabela td { padding: 6px; vertical-align: top; border-bottom: 1px solid var(--cor-borda); }
-    .itens-tabela input, .itens-tabela textarea {
+    .itens-tabela input, .itens-tabela select {
       width: 100%; border: 1px solid var(--cor-borda); border-radius: var(--raio-sm);
       padding: 7px 8px; font-size: var(--tamanho-sm); background: var(--cor-superficie);
       color: var(--cor-texto); font-family: inherit;
     }
-    .itens-tabela textarea { min-height: 38px; resize: vertical; }
-    .col-ordem { width: 46px; text-align: center; font-weight: 700; color: var(--cor-texto-sec); }
-    .col-qnt { width: 80px; }
-    .col-remover { width: 40px; text-align: center; }
+    .col-ordem { width: 40px; text-align: center; font-weight: 700; color: var(--cor-texto-sec); }
+    .col-qnt { width: 70px; }
+    .col-un { width: 90px; }
+    .col-remover { width: 36px; text-align: center; }
     .btn-remover-linha {
       background: none; border: none; color: var(--cor-vermelho-danmo); font-size: 1.1rem;
       cursor: pointer; line-height: 1; padding: 6px;
     }
     .btn-remover-linha:hover { opacity: .7; }
-    .fornecedor-wrap, .solicitante-wrap { display: flex; gap: 8px; }
-    .fornecedor-wrap select, .solicitante-wrap select { flex: 1; }
+    .fornecedor-wrap { display: flex; gap: 8px; }
+    .fornecedor-wrap select { flex: 1; }
     .num-pedido-box {
-      background: var(--cor-navy); color: #fff; border-radius: var(--raio-md);
+      background: linear-gradient(135deg, var(--cor-verde-danmo), var(--cor-verde-hover));
+      color: #fff; border-radius: var(--raio-md);
       padding: 12px 18px; font-weight: 700; font-size: 1.05rem; display: inline-block;
+      box-shadow: var(--sombra-md);
     }
-    .num-pedido-box small { display: block; font-weight: 500; font-size: var(--tamanho-xs); opacity: .8; text-transform: uppercase; letter-spacing: .5px; }
+    .num-pedido-box small { display: block; font-weight: 500; font-size: var(--tamanho-xs); opacity: .85; text-transform: uppercase; letter-spacing: .5px; }
+    .card-titulo-verde {
+      font-size: 1.1rem; margin-bottom: 16px; padding-bottom: 8px;
+      border-bottom: 2px solid var(--cor-verde-danmo); font-weight: 700; color: var(--cor-texto);
+    }
   </style>
 </head>
 <body>
@@ -46,7 +55,7 @@
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
       <div>
         <h1 class="pagina-titulo" id="pagina-titulo">Novo Pedido de Aquisição</h1>
-        <p class="pagina-subtitulo">Emitir pedido de aquisição de material com base numa cotação ou pro-forma</p>
+        <p class="pagina-subtitulo">Emitir pedido de aquisição de material com base numa cotação, pro-forma ou venda a dinheiro</p>
       </div>
       <div class="num-pedido-box">
         <small>Nº do Pedido</small>
@@ -58,9 +67,7 @@
 
       <!-- Dados do Pedido -->
       <div class="card" style="margin-top:20px;">
-        <div class="form-label" style="font-size:1.1rem; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--cor-borda);">
-          Dados do Pedido
-        </div>
+        <div class="card-titulo-verde">Dados do Pedido</div>
         <div class="form-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px;">
           <div class="form-grupo">
             <label class="form-label" for="f-data">Data do Pedido *</label>
@@ -70,9 +77,8 @@
             <label class="form-label" for="f-tipo">Denominação *</label>
             <select class="form-select" id="f-tipo" required>
               <option value="">Seleccionar...</option>
-              <option value="Cotação">Cotação</option>
-              <option value="Pro-forma">Pro-forma</option>
             </select>
+            <input class="form-input" type="text" id="f-tipo-novo" placeholder="Nome da nova denominação" style="display:none; margin-top:8px;" />
           </div>
           <div class="form-grupo">
             <label class="form-label" for="f-num-doc">Nº da Cotação / Pro-forma *</label>
@@ -87,14 +93,14 @@
             </div>
             <input class="form-input" type="text" id="f-fornecedor-novo" placeholder="Nome do novo fornecedor" style="display:none; margin-top:8px;" />
           </div>
-          <div class="form-grupo">
-            <label class="form-label" for="f-solicitante">Solicitante *</label>
-            <div class="solicitante-wrap">
-              <select class="form-select" id="f-solicitante" required>
-                <option value="">Seleccionar...</option>
-              </select>
+          <div class="form-grupo" style="position:relative;">
+            <label class="form-label" for="f-solicitante-search">Solicitante *</label>
+            <div class="tech-search-wrap">
+              <input class="form-input" type="text" id="f-solicitante-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" required />
+              <div id="f-solicitante-dropdown" class="tech-dropdown"></div>
             </div>
-            <input class="form-input" type="text" id="f-solicitante-novo" placeholder="Nome do solicitante" style="display:none; margin-top:8px;" />
+            <input type="hidden" id="f-solicitante" />
+            <input type="hidden" id="f-solicitante-codigo" />
           </div>
         </div>
       </div>
@@ -102,7 +108,7 @@
       <!-- Itens -->
       <div class="card" style="margin-top:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div class="form-label" style="font-size:1.1rem; margin:0;">Material Pedido</div>
+          <div class="card-titulo-verde" style="margin:0; border:none; padding:0;">Material Pedido</div>
           <button type="button" class="btn btn-secundario btn-sm" id="btn-add-item">+ Adicionar Linha</button>
         </div>
         <div style="overflow-x:auto;">
@@ -110,16 +116,32 @@
             <thead>
               <tr>
                 <th class="col-ordem">Nº</th>
-                <th style="min-width:200px;">Designação</th>
+                <th style="min-width:190px;">Designação</th>
                 <th class="col-qnt">Qtd.</th>
-                <th style="min-width:180px;">Aplicação / Para onde vai</th>
-                <th style="min-width:160px;">Observação</th>
+                <th class="col-un">Unidade</th>
+                <th style="min-width:170px;">Aplicação / Para onde vai</th>
+                <th style="min-width:150px;">Observação</th>
                 <th class="col-remover"></th>
               </tr>
             </thead>
             <tbody id="itens-tbody"></tbody>
           </table>
         </div>
+        <datalist id="dl-unidades">
+          <option value="Un">
+          <option value="Kg">
+          <option value="L">
+          <option value="m">
+          <option value="m²">
+          <option value="m³">
+          <option value="Cx">
+          <option value="Saco">
+          <option value="Rolo">
+          <option value="Par">
+          <option value="Galão">
+          <option value="Pacote">
+        </datalist>
+        <datalist id="dl-aplicacoes"></datalist>
       </div>
 
       <!-- Observação Geral -->
@@ -132,13 +154,12 @@
 
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px; flex-wrap:wrap;">
         <button type="button" class="btn btn-secundario" onclick="window.location.href='lista.html'">Cancelar</button>
-        <button type="submit" class="btn btn-primario" id="btn-gravar">Gravar Pedido</button>
+        <button type="submit" class="btn btn-verde" id="btn-gravar">Gravar Pedido</button>
         <button type="button" class="btn btn-ambar" id="btn-gravar-imprimir">Gravar e Imprimir</button>
       </div>
     </form>
   </main>
 
-  <script src="../shared/supabase.js"></script>
   <script src="../shared/utils.js"></script>
   <script src="../shared/nav.js"></script>
   <script>
@@ -146,6 +167,8 @@
     const pedidoId = params.get('id');
     let itemSeq = 0;
     let fornecedores = [];
+    let denominacoes = [];
+    let seletorSolicitante = null;
 
     function novaLinhaItem(dados) {
       itemSeq++;
@@ -154,8 +177,9 @@
       tr.innerHTML = `
         <td class="col-ordem linha-ordem">${document.querySelectorAll('#itens-tbody tr').length + 1}</td>
         <td><input type="text" class="i-designacao" value="${escaparHTML(dados?.designacao || '')}" placeholder="Ex: Óleo hidráulico 20L" required /></td>
-        <td class="col-qnt"><input type="number" class="i-qtd" min="1" step="1" value="${dados?.quantidade ?? 1}" required /></td>
-        <td><input type="text" class="i-aplicacao" value="${escaparHTML(dados?.aplicacao || '')}" placeholder="Ex: Para a viatura AAA 000 MC" /></td>
+        <td class="col-qnt"><input type="number" class="i-qtd" min="0.01" step="0.01" value="${dados?.quantidade ?? 1}" required /></td>
+        <td class="col-un"><input type="text" class="i-unidade" list="dl-unidades" value="${escaparHTML(dados?.unidade || '')}" placeholder="Un" /></td>
+        <td><input type="text" class="i-aplicacao" list="dl-aplicacoes" value="${escaparHTML(dados?.aplicacao || '')}" placeholder="Ex: Serralharia" /></td>
         <td><input type="text" class="i-observacao" value="${escaparHTML(dados?.observacao || '')}" /></td>
         <td class="col-remover"><button type="button" class="btn-remover-linha" title="Remover linha">&times;</button></td>
       `;
@@ -174,6 +198,33 @@
 
     document.getElementById('btn-add-item').addEventListener('click', () => novaLinhaItem());
 
+    // Aplicação: datalist que "aprende" com pedidos anteriores
+    async function carregarAplicacoesConhecidas() {
+      const itens = await db.query('aquisicao_itens', 'select=aplicacao');
+      const valores = [...new Set(itens.map(i => i.aplicacao).filter(Boolean))].sort();
+      document.getElementById('dl-aplicacoes').innerHTML = valores.map(v => `<option value="${escaparHTML(v)}">`).join('');
+    }
+
+    // Denominação: carregar lista configurável + opção "nova"
+    async function carregarDenominacoes(selecionarNome) {
+      denominacoes = await db.query('aquisicao_denominacoes', 'select=*&ativo=eq.true&order=ordem.asc,nome.asc');
+      const sel = document.getElementById('f-tipo');
+      sel.innerHTML = '<option value="">Seleccionar...</option>' +
+        denominacoes.map(d => `<option value="${escaparHTML(d.nome)}">${escaparHTML(d.nome)}</option>`).join('') +
+        '<option value="__novo__">+ Nova denominação...</option>';
+      if (selecionarNome) {
+        const existe = denominacoes.some(d => d.nome === selecionarNome);
+        sel.value = existe ? selecionarNome : '__novo__';
+        if (!existe) {
+          document.getElementById('f-tipo-novo').style.display = 'block';
+          document.getElementById('f-tipo-novo').value = selecionarNome;
+        }
+      }
+    }
+    document.getElementById('f-tipo').addEventListener('change', function () {
+      document.getElementById('f-tipo-novo').style.display = this.value === '__novo__' ? 'block' : 'none';
+    });
+
     // Fornecedor: carregar lista + opção "novo"
     async function carregarFornecedores(selecionarId) {
       fornecedores = await db.query('aquisicao_fornecedores', 'select=*&ativo=eq.true&order=nome.asc');
@@ -187,26 +238,17 @@
       document.getElementById('f-fornecedor-novo').style.display = this.value === '__novo__' ? 'block' : 'none';
     });
 
-    // Solicitante: sugestões a partir de pedidos anteriores + opção "novo"
-    async function carregarSolicitantes(selecionarNome) {
-      const anteriores = await db.query('aquisicao_pedidos', 'select=solicitante&order=solicitante.asc');
-      const nomes = [...new Set(anteriores.map(p => p.solicitante).filter(Boolean))];
-      const sel = document.getElementById('f-solicitante');
-      sel.innerHTML = '<option value="">Seleccionar...</option>' +
-        nomes.map(n => `<option value="${escaparHTML(n)}">${escaparHTML(n)}</option>`).join('') +
-        '<option value="__novo__">+ Outro...</option>';
-      if (selecionarNome) {
-        const existe = nomes.includes(selecionarNome);
-        sel.value = existe ? selecionarNome : '__novo__';
-        if (!existe) {
-          document.getElementById('f-solicitante-novo').style.display = 'block';
-          document.getElementById('f-solicitante-novo').value = selecionarNome;
+    // Solicitante: seletor de colaboradores (pesquisa por nome ou código)
+    async function iniciarSeletorSolicitante() {
+      seletorSolicitante = await criarSeletorColaborador({
+        inputId: 'f-solicitante-search',
+        dropdownId: 'f-solicitante-dropdown',
+        hiddenId: 'f-solicitante',
+        onSelect: (c) => {
+          document.getElementById('f-solicitante-codigo').value = c ? (c.code || '') : '';
         }
-      }
+      });
     }
-    document.getElementById('f-solicitante').addEventListener('change', function () {
-      document.getElementById('f-solicitante-novo').style.display = this.value === '__novo__' ? 'block' : 'none';
-    });
 
     // Nº do pedido: calculado a partir do ano da data seleccionada
     async function atualizarPreviewNumero() {
@@ -234,15 +276,23 @@
       return f;
     }
 
-    function obterSolicitante() {
-      const sel = document.getElementById('f-solicitante').value;
+    async function garantirDenominacao() {
+      const sel = document.getElementById('f-tipo').value;
       if (sel === '__novo__') {
-        const nome = document.getElementById('f-solicitante-novo').value.trim();
-        if (!nome) throw new Error('Indica o nome do solicitante.');
+        const nome = document.getElementById('f-tipo-novo').value.trim();
+        if (!nome) throw new Error('Indica o nome da nova denominação.');
+        const existente = denominacoes.find(d => d.nome.toLowerCase() === nome.toLowerCase());
+        if (!existente) await db.insert('aquisicao_denominacoes', [{ nome, ativo: true, ordem: denominacoes.length + 1 }]);
         return nome;
       }
-      if (!sel) throw new Error('Selecciona o solicitante.');
+      if (!sel) throw new Error('Selecciona a denominação.');
       return sel;
+    }
+
+    function obterSolicitante() {
+      const nome = document.getElementById('f-solicitante').value;
+      if (!nome) throw new Error('Selecciona o solicitante na lista.');
+      return { nome, codigo: document.getElementById('f-solicitante-codigo').value || null };
     }
 
     async function carregarParaEdicao() {
@@ -251,11 +301,14 @@
       document.getElementById('pagina-titulo').textContent = `Editar Pedido ${String(pedido.numero).padStart(3, '0')}/${pedido.ano}`;
       document.getElementById('num-pedido-preview').textContent = String(pedido.numero).padStart(3, '0') + '/' + pedido.ano;
       setVal('f-data', pedido.data_pedido);
-      setVal('f-tipo', pedido.tipo_documento);
       setVal('f-num-doc', pedido.numero_cotacao_proforma);
       setVal('f-obs-geral', pedido.observacao_geral);
+      await carregarDenominacoes(pedido.tipo_documento);
       await carregarFornecedores(pedido.fornecedor_id);
-      await carregarSolicitantes(pedido.solicitante);
+
+      document.getElementById('f-solicitante-search').value = pedido.solicitante || '';
+      document.getElementById('f-solicitante').value = pedido.solicitante || '';
+      document.getElementById('f-solicitante-codigo').value = pedido.solicitante_codigo || '';
 
       const itens = await db.query('aquisicao_itens', `select=*&pedido_id=eq.${pedidoId}&order=numero_ordem.asc`);
       itens.forEach(it => novaLinhaItem(it));
@@ -276,6 +329,7 @@
 
       try {
         const fornecedor = await garantirFornecedor();
+        const denominacao = await garantirDenominacao();
         const solicitante = obterSolicitante();
         const dataPedido = document.getElementById('f-data').value;
         if (!dataPedido) throw new Error('Indica a data do pedido.');
@@ -285,39 +339,32 @@
           numero_ordem: i + 1,
           designacao: tr.querySelector('.i-designacao').value.trim(),
           quantidade: parseFloat(tr.querySelector('.i-qtd').value) || 1,
+          unidade: tr.querySelector('.i-unidade').value.trim(),
           aplicacao: tr.querySelector('.i-aplicacao').value.trim(),
           observacao: tr.querySelector('.i-observacao').value.trim()
         }));
         if (itensPayload.some(i => !i.designacao)) throw new Error('Preenche a designação de todos os itens.');
 
+        const dadosPedido = {
+          data_pedido: dataPedido,
+          tipo_documento: denominacao,
+          numero_cotacao_proforma: document.getElementById('f-num-doc').value.trim(),
+          fornecedor_id: fornecedor.id,
+          fornecedor_nome: fornecedor.nome,
+          solicitante: solicitante.nome,
+          solicitante_codigo: solicitante.codigo,
+          observacao_geral: document.getElementById('f-obs-geral').value.trim()
+        };
+
         let pedido;
         if (pedidoId) {
-          [pedido] = await db.update('aquisicao_pedidos', pedidoId, {
-            data_pedido: dataPedido,
-            tipo_documento: document.getElementById('f-tipo').value,
-            numero_cotacao_proforma: document.getElementById('f-num-doc').value.trim(),
-            fornecedor_id: fornecedor.id,
-            fornecedor_nome: fornecedor.nome,
-            solicitante,
-            observacao_geral: document.getElementById('f-obs-geral').value.trim()
-          });
-          await db.query('aquisicao_itens', `pedido_id=eq.${pedidoId}`); // no-op safety read
+          [pedido] = await db.update('aquisicao_pedidos', pedidoId, dadosPedido);
           const antigos = await db.query('aquisicao_itens', `select=id&pedido_id=eq.${pedidoId}`);
           for (const it of antigos) await db.delete('aquisicao_itens', it.id);
         } else {
-          // recalcula o número mesmo em cima da hora, para minimizar corridas entre pedidos
           const existentes = await db.query('aquisicao_pedidos', `select=numero&ano=eq.${ano}&order=numero.desc&limit=1`);
           const numero = (existentes[0]?.numero || 0) + 1;
-          [pedido] = await db.insert('aquisicao_pedidos', [{
-            ano, numero,
-            data_pedido: dataPedido,
-            tipo_documento: document.getElementById('f-tipo').value,
-            numero_cotacao_proforma: document.getElementById('f-num-doc').value.trim(),
-            fornecedor_id: fornecedor.id,
-            fornecedor_nome: fornecedor.nome,
-            solicitante,
-            observacao_geral: document.getElementById('f-obs-geral').value.trim()
-          }]);
+          [pedido] = await db.insert('aquisicao_pedidos', [{ ano, numero, ...dadosPedido }]);
         }
 
         await db.insert('aquisicao_itens', itensPayload.map(i => ({ ...i, pedido_id: pedido.id })));
@@ -336,12 +383,14 @@
     }
 
     (async function init() {
+      await iniciarSeletorSolicitante();
+      await carregarAplicacoesConhecidas();
       if (pedidoId) {
         await carregarParaEdicao();
       } else {
         setVal('f-data', dataHojeISO());
+        await carregarDenominacoes();
         await carregarFornecedores();
-        await carregarSolicitantes();
         novaLinhaItem();
         atualizarPreviewNumero();
       }
