@@ -25,7 +25,7 @@
 
     { id: 'disponibilidade', label: 'Disponibilidade Equip.', icon: '&#128666;', href: '#', dev: true },
 
-    { id: 'admin', label: 'Admin. Oficinal', icon: '&#128188;', pasta: 'rh|financeiro|avaliacao-desempenho',
+    { id: 'admin', label: 'Admin. Oficinal', icon: '&#128188;', pasta: 'rh|avaliacao-desempenho|aquisicao',
       sub: [
         { label: 'RH & Quadro de Pessoal',   href: 'rh/index.html' },
         { label: 'Avaliação de Desempenho',  id: 'aval-desempenho',
@@ -35,18 +35,16 @@
             { label: 'Directores',               href: 'avaliacao-desempenho/gerir_diretores.html' },
             { label: 'Portal de Avaliação',      href: 'avaliacao-desempenho/portal.html', novaAba: true }
           ] },
-        { label: 'Finanças & Faturas',       href: 'financeiro/index.html' }
+        { label: 'Pedidos de Aquisição',     id: 'aquisicao-grupo',
+          itens: [
+            { label: 'Painel',        href: 'aquisicao/dashboard.html' },
+            { label: 'Novo Pedido',   href: 'aquisicao/novo.html' },
+            { label: 'Histórico',     href: 'aquisicao/lista.html' },
+            { label: 'Configurações', href: 'aquisicao/configuracoes.html' }
+          ] }
       ] },
 
     { id: 'stock', label: 'Gestão de Stock', icon: '&#128230;', href: 'stock/index.html', pasta: 'stock' },
-
-    { id: 'aquisicao', label: 'Pedidos de Aquisição', icon: '&#128179;', pasta: 'aquisicao',
-      sub: [
-        { label: 'Painel',        href: 'aquisicao/dashboard.html' },
-        { label: 'Novo Pedido',   href: 'aquisicao/novo.html' },
-        { label: 'Histórico',     href: 'aquisicao/lista.html' },
-        { label: 'Fornecedores',  href: 'aquisicao/configuracoes.html' }
-      ] },
 
     { id: 'hst', label: 'Portal HST', icon: '&#9888;', pasta: 'hst',
       sub: [
