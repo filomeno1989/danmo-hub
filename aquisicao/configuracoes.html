@@ -43,6 +43,7 @@
     <div class="abas-config" style="margin-top:20px;">
       <button class="aba-btn ativa" data-aba="aba-fornecedores">Fornecedores</button>
       <button class="aba-btn" data-aba="aba-denominacoes">Denominações</button>
+      <button class="aba-btn" data-aba="aba-numeracao">Numeração</button>
     </div>
 
     <!-- ABA: FORNECEDORES -->
@@ -100,6 +101,38 @@
               <tr><th>Nome</th><th>Nº Pedidos</th><th>Estado</th><th>Acções</th></tr>
             </thead>
             <tbody id="tbody-denominacoes"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA: NUMERAÇÃO -->
+    <div class="aba-painel" id="aba-numeracao">
+      <div class="card">
+        <div class="card-titulo-verde">Ajustar Numeração dos Pedidos</div>
+        <p style="color:var(--cor-texto-sec); font-size:var(--tamanho-sm); margin:-8px 0 16px;">
+          Define o próximo número a atribuir em cada ano. Útil ao começar a usar o sistema
+          (para continuar a partir dos pedidos já feitos em papel) ou para corrigir a numeração manualmente.
+          O sistema nunca deixa repetir um número já usado - usa sempre o maior valor entre o que aqui defines
+          e o último pedido já gravado nesse ano.
+        </p>
+
+        <div class="form-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:16px; max-width:520px; align-items:end;">
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label" for="n-ano">Ano</label>
+            <input class="form-input" type="number" id="n-ano" min="2000" step="1" />
+          </div>
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label" for="n-proximo">Próximo Número a Atribuir</label>
+            <input class="form-input" type="number" id="n-proximo" min="1" step="1" />
+          </div>
+          <button class="btn btn-verde" id="btn-salvar-contador" style="height:38px;">Gravar</button>
+        </div>
+
+        <div class="tabela-container" style="margin-top:24px;">
+          <table class="tabela" id="tabela-contadores">
+            <thead><tr><th>Ano</th><th>Próximo Número Configurado</th><th>Último Pedido Gravado</th><th>Acções</th></tr></thead>
+            <tbody id="tbody-contadores"></tbody>
           </table>
         </div>
       </div>
@@ -416,8 +449,66 @@
       }
     });
 
+    // ── Numeração ────────────────────────────────────────────────
+    async function carregarNumeracao() {
+      setVal('n-ano', new Date().getFullYear());
+
+      const contadores = await db.query('aquisicao_contadores', 'select=*&order=ano.desc');
+      const pedidos = await db.query('aquisicao_pedidos', 'select=ano,numero');
+      const ultimoPorAno = {};
+      pedidos.forEach(p => {
+        if (!ultimoPorAno[p.ano] || p.numero > ultimoPorAno[p.ano]) ultimoPorAno[p.ano] = p.numero;
+      });
+
+      const anos = [...new Set([...contadores.map(c => c.ano), ...Object.keys(ultimoPorAno).map(Number)])].sort((a, b) => b - a);
+
+      if (!anos.length) {
+        document.getElementById('tbody-contadores').innerHTML = `<tr><td colspan="4" class="tabela-vazia">Ainda não há pedidos nem contadores configurados.</td></tr>`;
+        return;
+      }
+
+      document.getElementById('tbody-contadores').innerHTML = anos.map(ano => {
+        const c = contadores.find(x => x.ano === ano);
+        const ultimo = ultimoPorAno[ano];
+        return `
+          <tr>
+            <td><b>${ano}</b></td>
+            <td>${c ? c.proximo_numero : '<span style="color:var(--cor-texto-sec);">não definido</span>'}</td>
+            <td>${ultimo ? String(ultimo).padStart(3, '0') : '-'}</td>
+            <td><span class="link-action" onclick="editarContador(${ano}, ${c ? c.proximo_numero : ''})">Editar</span></td>
+          </tr>`;
+      }).join('');
+    }
+
+    window.editarContador = function (ano, proximoNumero) {
+      setVal('n-ano', ano);
+      setVal('n-proximo', proximoNumero || '');
+      document.getElementById('n-proximo').focus();
+    };
+
+    document.getElementById('btn-salvar-contador').addEventListener('click', async () => {
+      const ano = parseInt(document.getElementById('n-ano').value, 10);
+      const proximo = parseInt(document.getElementById('n-proximo').value, 10);
+      if (!ano || !proximo || proximo < 1) { mostrarToast('Indica o ano e o próximo número (mínimo 1).', 'aviso'); return; }
+
+      try {
+        const [existente] = await db.query('aquisicao_contadores', `select=id&ano=eq.${ano}`);
+        if (existente) {
+          await db.update('aquisicao_contadores', existente.id, { proximo_numero: proximo });
+        } else {
+          await db.insert('aquisicao_contadores', [{ ano, proximo_numero: proximo }]);
+        }
+        mostrarToast(`Próximo pedido de ${ano} passa a ser o nº ${String(proximo).padStart(3, '0')}.`, 'sucesso');
+        setVal('n-proximo', '');
+        await carregarNumeracao();
+      } catch (err) {
+        mostrarToast('Erro ao gravar a numeração.', 'erro');
+      }
+    });
+
     carregar();
     carregarDenominacoes();
+    carregarNumeracao();
   </script>
 </body>
 </html>

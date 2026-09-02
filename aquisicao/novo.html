@@ -251,12 +251,31 @@
     }
 
     // Nº do pedido: calculado a partir do ano da data seleccionada
+    // Calcula o próximo número respeitando o maior valor entre:
+    // - o contador configurado manualmente em Configurações > Numeração
+    // - o maior número já gravado nesse ano
+    async function calcularProximoNumero(ano) {
+      const [contador] = await db.query('aquisicao_contadores', `select=proximo_numero&ano=eq.${ano}`);
+      const existentes = await db.query('aquisicao_pedidos', `select=numero&ano=eq.${ano}&order=numero.desc&limit=1`);
+      const proximoPeloHistorico = (existentes[0]?.numero || 0) + 1;
+      const proximoPeloContador = contador?.proximo_numero || 1;
+      return Math.max(proximoPeloHistorico, proximoPeloContador);
+    }
+
+    async function atualizarContadorApos(ano, proximoNumero) {
+      const [contador] = await db.query('aquisicao_contadores', `select=id&ano=eq.${ano}`);
+      if (contador) {
+        await db.update('aquisicao_contadores', contador.id, { proximo_numero: proximoNumero });
+      } else {
+        await db.insert('aquisicao_contadores', [{ ano, proximo_numero: proximoNumero }]);
+      }
+    }
+
     async function atualizarPreviewNumero() {
       if (pedidoId) return; // em edição o número já está fixo
       const dataVal = document.getElementById('f-data').value;
       const ano = dataVal ? new Date(dataVal + 'T00:00:00').getFullYear() : new Date().getFullYear();
-      const existentes = await db.query('aquisicao_pedidos', `select=numero&ano=eq.${ano}&order=numero.desc&limit=1`);
-      const proximo = (existentes[0]?.numero || 0) + 1;
+      const proximo = await calcularProximoNumero(ano);
       document.getElementById('num-pedido-preview').textContent = String(proximo).padStart(3, '0') + '/' + ano;
     }
     document.getElementById('f-data').addEventListener('change', atualizarPreviewNumero);
@@ -362,9 +381,9 @@
           const antigos = await db.query('aquisicao_itens', `select=id&pedido_id=eq.${pedidoId}`);
           for (const it of antigos) await db.delete('aquisicao_itens', it.id);
         } else {
-          const existentes = await db.query('aquisicao_pedidos', `select=numero&ano=eq.${ano}&order=numero.desc&limit=1`);
-          const numero = (existentes[0]?.numero || 0) + 1;
+          const numero = await calcularProximoNumero(ano);
           [pedido] = await db.insert('aquisicao_pedidos', [{ ano, numero, ...dadosPedido }]);
+          await atualizarContadorApos(ano, numero + 1);
         }
 
         await db.insert('aquisicao_itens', itensPayload.map(i => ({ ...i, pedido_id: pedido.id })));
