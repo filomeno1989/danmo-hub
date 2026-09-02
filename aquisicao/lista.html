@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Histórico de Pedidos — Pedidos de Aquisição — Danmo Hub</title>
+
+  <link rel="stylesheet" href="../shared/style.css" />
+
+  <style>
+    .link-action { color: var(--cor-info); cursor: pointer; font-weight: 600; margin-right: 12px; transition: color var(--transicao); }
+    .link-action:hover { color: var(--cor-ambar); }
+    .link-danger { color: var(--cor-vermelho-danmo); cursor: pointer; font-weight: 600; transition: opacity var(--transicao); }
+    .link-danger:hover { opacity: .8; }
+    .filtro-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .filtro-bar > * { flex: 1; min-width: 160px; }
+    .filtro-bar .form-label-inline { flex: 0 0 auto; font-size: 1.1rem; font-weight: 600; margin: 0; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+      <div>
+        <h1 class="pagina-titulo">Histórico de Pedidos</h1>
+        <p class="pagina-subtitulo">Todos os pedidos de aquisição, por ano</p>
+      </div>
+      <button class="btn btn-primario" onclick="window.location.href='novo.html'">+ Novo Pedido</button>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+      <div class="filtro-bar">
+        <span class="form-label-inline">Pedidos</span>
+        <select class="form-select" id="f-ano"></select>
+        <select class="form-select" id="f-fornecedor">
+          <option value="">Todos os fornecedores</option>
+        </select>
+        <input class="form-input" type="text" id="f-pesquisa" placeholder="Pesquisar por nº, solicitante ou material..." />
+      </div>
+
+      <div class="tabela-container">
+        <div id="lista-loading" class="spinner" style="padding:32px;text-align:center;">A carregar pedidos...</div>
+        <div id="lista-empty" class="tabela-vazia" style="display:none;">Nenhum pedido encontrado.</div>
+        <table class="tabela" id="tabela-pedidos" style="display:none;">
+          <thead>
+            <tr>
+              <th>Nº Pedido</th>
+              <th>Data</th>
+              <th>Tipo / Nº Doc.</th>
+              <th>Fornecedor</th>
+              <th>Solicitante</th>
+              <th>Itens</th>
+              <th>Acções</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-pedidos"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+    let pedidos = [];
+    let itensPorPedido = {};
+    let fornecedoresMapa = {};
+
+    function fData(str) {
+      if (!str) return '—';
+      const d = new Date(str + 'T00:00:00');
+      return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    async function popularFiltroAnos() {
+      const anos = [...new Set(pedidos.map(p => p.ano))].sort((a, b) => b - a);
+      const anoAtual = new Date().getFullYear();
+      const sel = document.getElementById('f-ano');
+      const listaAnos = anos.length ? anos : [anoAtual];
+      sel.innerHTML = listaAnos.map(a => `<option value="${a}">${a}</option>`).join('');
+      sel.value = listaAnos.includes(anoAtual) ? anoAtual : listaAnos[0];
+    }
+
+    async function popularFiltroFornecedores() {
+      const fornecedores = await db.query('aquisicao_fornecedores', 'select=id,nome&order=nome.asc');
+      fornecedores.forEach(f => fornecedoresMapa[f.id] = f.nome);
+      const sel = document.getElementById('f-fornecedor');
+      sel.innerHTML = '<option value="">Todos os fornecedores</option>' +
+        fornecedores.map(f => `<option value="${f.id}">${escaparHTML(f.nome)}</option>`).join('');
+    }
+
+    async function carregar() {
+      document.getElementById('lista-loading').style.display = 'block';
+      document.getElementById('tabela-pedidos').style.display = 'none';
+      document.getElementById('lista-empty').style.display = 'none';
+
+      pedidos = await db.query('aquisicao_pedidos', 'select=*&order=ano.desc,numero.desc');
+      const itens = await db.query('aquisicao_itens', 'select=pedido_id,designacao');
+      itensPorPedido = {};
+      itens.forEach(it => {
+        if (!itensPorPedido[it.pedido_id]) itensPorPedido[it.pedido_id] = [];
+        itensPorPedido[it.pedido_id].push(it.designacao);
+      });
+
+      await popularFiltroAnos();
+      await popularFiltroFornecedores();
+      renderizar();
+    }
+
+    function renderizar() {
+      const ano = document.getElementById('f-ano').value;
+      const fornecedorId = document.getElementById('f-fornecedor').value;
+      const termo = normalizarTexto(document.getElementById('f-pesquisa').value || '');
+
+      let lista = pedidos.filter(p => {
+        if (ano && String(p.ano) !== String(ano)) return false;
+        if (fornecedorId && p.fornecedor_id !== fornecedorId) return false;
+        if (termo) {
+          const numeroFmt = String(p.numero).padStart(3, '0') + '/' + p.ano;
+          const materiais = (itensPorPedido[p.id] || []).join(' ');
+          const alvo = normalizarTexto(`${numeroFmt} ${p.solicitante || ''} ${p.fornecedor_nome || ''} ${materiais}`);
+          if (!alvo.includes(termo)) return false;
+        }
+        return true;
+      });
+
+      document.getElementById('lista-loading').style.display = 'none';
+
+      if (lista.length === 0) {
+        document.getElementById('tabela-pedidos').style.display = 'none';
+        document.getElementById('lista-empty').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('lista-empty').style.display = 'none';
+      document.getElementById('tabela-pedidos').style.display = 'table';
+
+      document.getElementById('tbody-pedidos').innerHTML = lista.map(p => {
+        const numeroFmt = String(p.numero).padStart(3, '0') + '/' + p.ano;
+        const nItens = (itensPorPedido[p.id] || []).length;
+        return `
+        <tr>
+          <td><b>${numeroFmt}</b></td>
+          <td>${fData(p.data_pedido)}</td>
+          <td>${escaparHTML(p.tipo_documento)} nº ${escaparHTML(p.numero_cotacao_proforma)}</td>
+          <td>${escaparHTML(p.fornecedor_nome || '—')}</td>
+          <td>${escaparHTML(p.solicitante || '—')}</td>
+          <td><span class="badge badge-info">${nItens}</span></td>
+          <td>
+            <span class="link-action" onclick="window.location.href='imprimir.html?id=${p.id}'">Ver / Imprimir</span>
+            <span class="link-action" onclick="window.location.href='novo.html?id=${p.id}'">Editar</span>
+            <span class="link-danger" onclick="eliminar('${p.id}')">Eliminar</span>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    document.getElementById('f-ano').addEventListener('change', renderizar);
+    document.getElementById('f-fornecedor').addEventListener('change', renderizar);
+    document.getElementById('f-pesquisa').addEventListener('input', debounce(renderizar, 200));
+
+    window.eliminar = async function (id) {
+      if (!confirmarAcao('Eliminar definitivamente este pedido? Esta acção não pode ser desfeita.')) return;
+      try {
+        const itens = await db.query('aquisicao_itens', `select=id&pedido_id=eq.${id}`);
+        for (const it of itens) await db.delete('aquisicao_itens', it.id);
+        await db.delete('aquisicao_pedidos', id);
+        mostrarToast('Pedido eliminado.', 'sucesso');
+        await carregar();
+      } catch (err) {
+        mostrarToast('Erro ao eliminar pedido.', 'erro');
+      }
+    };
+
+    carregar();
+  </script>
+</body>
+</html>

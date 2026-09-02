@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fornecedores — Pedidos de Aquisição — Danmo Hub</title>
+
+  <link rel="stylesheet" href="../shared/style.css" />
+
+  <style>
+    .link-action { color: var(--cor-info); cursor: pointer; font-weight: 600; margin-right: 12px; transition: color var(--transicao); }
+    .link-action:hover { color: var(--cor-ambar); }
+    .link-danger { color: var(--cor-vermelho-danmo); cursor: pointer; font-weight: 600; transition: opacity var(--transicao); }
+    .link-danger:hover { opacity: .8; }
+    .filtro-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+      <div>
+        <h1 class="pagina-titulo">Fornecedores</h1>
+        <p class="pagina-subtitulo">Casas / fornecedores usados nos pedidos de aquisição</p>
+      </div>
+      <button class="btn btn-primario" id="btn-novo">Novo Fornecedor</button>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+      <div class="filtro-bar">
+        <div class="form-label" style="font-size:1.1rem; margin:0; flex:1;">Lista de Fornecedores</div>
+        <select class="form-select" id="f-filtro-estado" style="max-width:200px;">
+          <option value="ativos">Activos</option>
+          <option value="arquivados">Arquivados</option>
+          <option value="todos">Todos</option>
+        </select>
+        <input class="form-input" type="text" id="f-pesquisa" placeholder="Pesquisar por nome..." style="max-width:240px;" />
+      </div>
+      <div class="tabela-container">
+        <div id="lista-loading" class="spinner" style="padding:32px;text-align:center;">A carregar fornecedores...</div>
+        <div id="lista-empty" class="tabela-vazia" style="display:none;">Nenhum fornecedor encontrado.</div>
+        <table class="tabela" id="tabela-fornecedores" style="display:none;">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Contacto</th>
+              <th>NUIT</th>
+              <th>Nº Pedidos</th>
+              <th>Estado</th>
+              <th>Acções</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-fornecedores"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Novo/Editar Fornecedor -->
+  <div id="modal-fornecedor" class="modal-fundo">
+    <div class="modal" style="max-width: 480px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="modal-titulo">Novo Fornecedor</span>
+        <button class="modal-fechar" id="btn-fechar-x" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <input type="hidden" id="m-id" />
+        <div class="form-grupo">
+          <label class="form-label" for="m-nome">Nome *</label>
+          <input class="form-input" type="text" id="m-nome" required />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="m-contacto">Contacto</label>
+          <input class="form-input" type="text" id="m-contacto" placeholder="Telefone / email" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="m-morada">Morada</label>
+          <input class="form-input" type="text" id="m-morada" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="m-nuit">NUIT</label>
+          <input class="form-input" type="text" id="m-nuit" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="m-observacao">Observação</label>
+          <textarea class="form-textarea" id="m-observacao"></textarea>
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" id="btn-cancelar">Cancelar</button>
+        <button class="btn btn-primario" id="btn-salvar">Gravar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+    let fornecedores = [];
+    let contagemPedidos = {};
+
+    async function carregar() {
+      document.getElementById('lista-loading').style.display = 'block';
+      document.getElementById('tabela-fornecedores').style.display = 'none';
+      document.getElementById('lista-empty').style.display = 'none';
+
+      fornecedores = await db.query('aquisicao_fornecedores', 'select=*&order=nome.asc');
+      const pedidos = await db.query('aquisicao_pedidos', 'select=fornecedor_id');
+      contagemPedidos = {};
+      pedidos.forEach(p => { contagemPedidos[p.fornecedor_id] = (contagemPedidos[p.fornecedor_id] || 0) + 1; });
+
+      renderizar();
+    }
+
+    function renderizar() {
+      const estado = document.getElementById('f-filtro-estado').value;
+      const termo = normalizarTexto(document.getElementById('f-pesquisa').value || '');
+
+      let lista = fornecedores.filter(f => {
+        if (estado === 'ativos' && !f.ativo) return false;
+        if (estado === 'arquivados' && f.ativo) return false;
+        if (termo && !normalizarTexto(f.nome).includes(termo)) return false;
+        return true;
+      });
+
+      document.getElementById('lista-loading').style.display = 'none';
+
+      if (lista.length === 0) {
+        document.getElementById('tabela-fornecedores').style.display = 'none';
+        document.getElementById('lista-empty').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('lista-empty').style.display = 'none';
+      document.getElementById('tabela-fornecedores').style.display = 'table';
+
+      document.getElementById('tbody-fornecedores').innerHTML = lista.map(f => `
+        <tr>
+          <td>${escaparHTML(f.nome)}</td>
+          <td>${escaparHTML(f.contacto || '—')}</td>
+          <td>${escaparHTML(f.nuit || '—')}</td>
+          <td>${contagemPedidos[f.id] || 0}</td>
+          <td><span class="badge ${f.ativo ? 'badge-sucesso' : 'badge-secundario'}">${f.ativo ? 'Activo' : 'Arquivado'}</span></td>
+          <td>
+            <span class="link-action" onclick="editar('${f.id}')">Editar</span>
+            <span class="link-action" onclick="alternarEstado('${f.id}', ${f.ativo})">${f.ativo ? 'Arquivar' : 'Reactivar'}</span>
+            <span class="link-danger" onclick="eliminar('${f.id}')">Eliminar</span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    document.getElementById('f-filtro-estado').addEventListener('change', renderizar);
+    document.getElementById('f-pesquisa').addEventListener('input', debounce(renderizar, 200));
+
+    function abrirModal(fornecedor) {
+      setVal('m-id', fornecedor?.id || '');
+      setVal('m-nome', fornecedor?.nome || '');
+      setVal('m-contacto', fornecedor?.contacto || '');
+      setVal('m-morada', fornecedor?.morada || '');
+      setVal('m-nuit', fornecedor?.nuit || '');
+      setVal('m-observacao', fornecedor?.observacao || '');
+      document.getElementById('modal-titulo').textContent = fornecedor ? 'Editar Fornecedor' : 'Novo Fornecedor';
+      document.getElementById('modal-fornecedor').classList.add('aberto');
+    }
+    function fecharModalFornecedor() { document.getElementById('modal-fornecedor').classList.remove('aberto'); }
+
+    document.getElementById('btn-novo').addEventListener('click', () => abrirModal());
+    document.getElementById('btn-fechar-x').addEventListener('click', fecharModalFornecedor);
+    document.getElementById('btn-cancelar').addEventListener('click', fecharModalFornecedor);
+
+    window.editar = function (id) {
+      const f = fornecedores.find(x => x.id === id);
+      if (f) abrirModal(f);
+    };
+
+    window.alternarEstado = async function (id, estaAtivo) {
+      const acao = estaAtivo ? 'arquivar' : 'reactivar';
+      if (!confirmarAcao(`Tens a certeza que queres ${acao} este fornecedor?`)) return;
+      try {
+        await db.update('aquisicao_fornecedores', id, { ativo: !estaAtivo });
+        mostrarToast(`Fornecedor ${estaAtivo ? 'arquivado' : 'reactivado'}.`, 'sucesso');
+        await carregar();
+      } catch (err) {
+        mostrarToast('Erro ao actualizar fornecedor.', 'erro');
+      }
+    };
+
+    window.eliminar = async function (id) {
+      if (contagemPedidos[id]) {
+        mostrarToast('Este fornecedor já tem pedidos associados — arquiva-o em vez de eliminar.', 'aviso');
+        return;
+      }
+      if (!confirmarAcao('Eliminar definitivamente este fornecedor?')) return;
+      try {
+        await db.delete('aquisicao_fornecedores', id);
+        mostrarToast('Fornecedor eliminado.', 'sucesso');
+        await carregar();
+      } catch (err) {
+        mostrarToast('Erro ao eliminar fornecedor.', 'erro');
+      }
+    };
+
+    document.getElementById('btn-salvar').addEventListener('click', async () => {
+      const nome = document.getElementById('m-nome').value.trim();
+      if (!nome) { mostrarToast('Indica o nome do fornecedor.', 'aviso'); return; }
+
+      const dados = {
+        nome,
+        contacto: document.getElementById('m-contacto').value.trim(),
+        morada: document.getElementById('m-morada').value.trim(),
+        nuit: document.getElementById('m-nuit').value.trim(),
+        observacao: document.getElementById('m-observacao').value.trim()
+      };
+
+      const id = document.getElementById('m-id').value;
+      try {
+        if (id) {
+          await db.update('aquisicao_fornecedores', id, dados);
+        } else {
+          await db.insert('aquisicao_fornecedores', [{ ...dados, ativo: true }]);
+        }
+        mostrarToast('Fornecedor gravado.', 'sucesso');
+        fecharModalFornecedor();
+        await carregar();
+      } catch (err) {
+        mostrarToast('Erro ao gravar fornecedor.', 'erro');
+      }
+    });
+
+    carregar();
+  </script>
+</body>
+</html>
