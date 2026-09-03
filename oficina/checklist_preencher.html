@@ -32,6 +32,25 @@
     .ck-dados-form label { font-size:10px; }
     .ck-dados-form input:disabled { opacity:.6; cursor:not-allowed; }
 
+    /* O .ck-header não é .card nem .modal-box, por isso os estilos de
+       formulário do oficina.css (fundo escuro, largura 100%, label em
+       maiúsculas) não chegam aqui por defeito — repõem-se só para esta
+       caixa, sem mexer no ficheiro partilhado. */
+    .ck-header .form-group { display:flex; flex-direction:column; gap:6px; }
+    .ck-header .form-group label {
+      font-size:11px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.5px;
+    }
+    .ck-header input, .ck-header select, .ck-header textarea {
+      background: var(--navy, #0A1628); border:1px solid var(--border); border-radius:6px;
+      color:var(--text); padding:9px 12px; font-size:14px; font-family:inherit;
+      width:100%; transition:border-color .2s; box-sizing:border-box;
+    }
+    .ck-header input:focus, .ck-header select:focus, .ck-header textarea:focus {
+      outline:none; border-color:var(--amber);
+    }
+    .ck-header textarea { resize:vertical; min-height:80px; }
+    .ck-header select option { background:var(--navy2); color:var(--text); }
+
     .secao-card {
       background: var(--navy2); border: 1px solid var(--border); border-radius: var(--radius);
       margin-bottom: 12px; overflow: hidden;
