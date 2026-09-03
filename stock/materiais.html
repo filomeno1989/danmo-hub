@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Materiais — Gestão de Stock — Danmo Hub</title>
+  <link rel="stylesheet" href="../shared/style.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <h1 class="pagina-titulo">Materiais</h1>
+    <p class="pagina-subtitulo">Catálogo de materiais, stock actual e alertas de mínimo</p>
+
+    <div class="card" id="card-form">
+      <div class="form-label" style="font-size:1.1rem; margin-bottom:16px;" id="form-titulo">➕ Novo Material</div>
+      <div class="form-grid">
+        <div class="form-grupo">
+          <label class="form-label">Referência *</label>
+          <input class="form-input" type="text" id="f-ref" placeholder="Ex: DAN_LUB_001">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Nome *</label>
+          <input class="form-input" type="text" id="f-nome" placeholder="Ex: Óleo DX3">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Categoria</label>
+          <select class="form-select" id="f-categoria"></select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Unidade *</label>
+          <select class="form-select" id="f-unidade">
+            <option value="">-- Seleccione --</option>
+            <option>Un</option><option>Kg</option><option>Lt</option>
+            <option>Mt</option><option>Cx</option><option>Par</option>
+            <option>Rolo</option><option>Saco</option>
+          </select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Stock Mínimo</label>
+          <input class="form-input" type="number" id="f-minimo" min="0" step="0.01" placeholder="0">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Localização</label>
+          <input class="form-input" type="text" id="f-local" placeholder="Ex: Armazém, Prateleira A2">
+        </div>
+      </div>
+      <div style="margin-top:20px; display:flex; gap:10px;">
+        <button class="btn btn-primario" onclick="guardar()" id="btn-guardar">💾 Guardar</button>
+        <button class="btn btn-secundario" onclick="cancelarEdicao()">✖ Cancelar</button>
+      </div>
+    </div>
+
+    <div id="card-alertas" class="card" style="display:none;">
+      <div class="form-label" style="font-size:1.1rem; margin-bottom:16px;">⚠️ Alertas de Stock Mínimo</div>
+      <div id="lista-alertas"></div>
+    </div>
+
+    <div class="card">
+      <div class="form-label" style="font-size:1.1rem; margin-bottom:16px;">📋 Todos os Materiais</div>
+      <div style="margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap;">
+        <input class="form-input" type="text" id="pesquisa" placeholder="🔍 Pesquisar..." style="max-width:260px;" oninput="filtrar()">
+        <select class="form-select" id="filtro-cat" onchange="filtrar()" style="max-width:200px;">
+          <option value="">Todas as categorias</option>
+        </select>
+      </div>
+      <div class="tabela-container">
+        <div id="mat-loading" class="spinner" style="padding:32px; text-align:center;">A carregar...</div>
+        <div id="mat-empty" class="tabela-vazia" style="display:none;">Nenhum material encontrado.</div>
+        <table class="tabela" id="mat-tabela" style="display:none;">
+          <thead>
+            <tr>
+              <th>Referência</th><th>Nome</th><th>Categoria</th>
+              <th>Unid.</th><th>Stock Mín.</th><th>Stock Actual</th>
+              <th>Estado</th><th>Localização</th><th>Acções</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-materiais"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+    var materiais = [], categorias = [], stockCalc = {}, editId = null;
+
+    async function init() {
+      try {
+        var resultados = await Promise.all([
+          db.query('materiais', 'ativo=eq.true&order=referencia.asc'),
+          db.query('categorias_material', 'ativo=eq.true&order=nome.asc')
+        ]);
+        materiais = resultados[0];
+        categorias = resultados[1];
+
+        var selCat = document.getElementById('f-categoria');
+        selCat.innerHTML = '<option value="">-- Seleccione --</option>';
+        categorias.forEach(function (c) {
+          var o = document.createElement('option');
+          o.value = c.nome; o.textContent = c.nome;
+          selCat.appendChild(o);
+        });
+
+        var filtCat = document.getElementById('filtro-cat');
+        categorias.forEach(function (c) {
+          var o = document.createElement('option');
+          o.value = c.nome; o.textContent = c.nome;
+          filtCat.appendChild(o);
+        });
+
+        await calcularStock();
+        renderAlertas();
+        renderTabela();
+      } catch (err) {
+        console.error('Erro ao inicializar Materiais:', err);
+        mostrarToast('Erro ao carregar dados. Verifica a ligação.', 'erro');
+      }
+    }
+
+    async function calcularStock() {
+      var movs = await db.query('stock_movimentos', 'estado=eq.confirmado');
+      stockCalc = {};
+      movs.forEach(function (m) {
+        if (!stockCalc[m.material_id]) stockCalc[m.material_id] = 0;
+        if (m.tipo === 'entrada') stockCalc[m.material_id] += Number(m.quantidade);
+        if (m.tipo === 'saida') stockCalc[m.material_id] -= Number(m.quantidade);
+      });
+    }
+
+    function renderAlertas() {
+      var alertas = materiais.filter(function (m) { return (stockCalc[m.id] || 0) <= (m.stock_minimo || 0); });
+      var card = document.getElementById('card-alertas');
+      if (alertas.length === 0) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+      document.getElementById('lista-alertas').innerHTML = alertas.map(function (m) {
+        var stock = stockCalc[m.id] || 0;
+        var badge = stock <= 0
+          ? '<span class="badge badge-erro">Esgotado</span>'
+          : '<span class="badge badge-aviso">Stock Baixo</span>';
+        return '<div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--cor-borda);">' +
+          badge + '<strong>' + m.referencia + ' — ' + m.nome + '</strong>' +
+          '<span style="color:var(--cor-texto-sec); font-size:var(--tamanho-sm);">Stock: ' + fmtNum(stock) + ' ' + m.unidade + ' &nbsp;|&nbsp; Mínimo: ' + fmtNum(m.stock_minimo) + ' ' + m.unidade + '</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    function renderTabela(filtro, catFiltro) {
+      filtro = filtro || ''; catFiltro = catFiltro || '';
+      document.getElementById('mat-loading').style.display = 'none';
+      var lista = materiais;
+      if (filtro) lista = lista.filter(function (m) {
+        return m.referencia.toLowerCase().indexOf(filtro.toLowerCase()) !== -1 ||
+               m.nome.toLowerCase().indexOf(filtro.toLowerCase()) !== -1;
+      });
+      if (catFiltro) lista = lista.filter(function (m) { return m.categoria === catFiltro; });
+
+      if (lista.length === 0) {
+        document.getElementById('mat-empty').style.display = 'block';
+        document.getElementById('mat-tabela').style.display = 'none';
+        return;
+      }
+      document.getElementById('mat-empty').style.display = 'none';
+      document.getElementById('mat-tabela').style.display = 'table';
+
+      document.getElementById('tbody-materiais').innerHTML = lista.map(function (m) {
+        var stock = stockCalc[m.id] || 0;
+        var minimo = m.stock_minimo || 0;
+        var badge, cor;
+        if (stock <= 0) { badge = '<span class="badge badge-erro">Esgotado</span>'; cor = 'var(--cor-erro)'; }
+        else if (stock <= minimo) { badge = '<span class="badge badge-aviso">Stock Baixo</span>'; cor = 'var(--cor-aviso)'; }
+        else { badge = '<span class="badge badge-sucesso">OK</span>'; cor = 'var(--cor-sucesso)'; }
+
+        var user = obterUtilizador();
+        var podeEditar = user && (user.nivel === 'admin' || user.nivel === 'gestor');
+        var acoes = podeEditar
+          ? '<div style="display:flex; gap:6px;">' +
+              '<button class="btn btn-secundario btn-sm" onclick="editar(\'' + m.id + '\')">✏️</button>' +
+              '<button class="btn btn-secundario btn-sm" onclick="desactivar(\'' + m.id + '\')">🗑</button>' +
+            '</div>'
+          : '—';
+
+        return '<tr>' +
+          '<td><code style="color:var(--cor-ambar);">' + m.referencia + '</code></td>' +
+          '<td><strong>' + m.nome + '</strong></td>' +
+          '<td>' + (m.categoria || '—') + '</td>' +
+          '<td>' + m.unidade + '</td>' +
+          '<td>' + fmtNum(minimo) + '</td>' +
+          '<td style="color:' + cor + '; font-weight:700;">' + fmtNum(stock) + '</td>' +
+          '<td>' + badge + '</td>' +
+          '<td>' + (m.localizacao || '—') + '</td>' +
+          '<td>' + acoes + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function filtrar() {
+      renderTabela(document.getElementById('pesquisa').value, document.getElementById('filtro-cat').value);
+    }
+
+    async function guardar() {
+      var ref = document.getElementById('f-ref').value.trim();
+      var nome = document.getElementById('f-nome').value.trim();
+      var cat = document.getElementById('f-categoria').value;
+      var unid = document.getElementById('f-unidade').value;
+      var min = parseFloat(document.getElementById('f-minimo').value) || 0;
+      var local = document.getElementById('f-local').value.trim();
+
+      if (!ref) { mostrarToast('Referência obrigatória!', 'aviso'); return; }
+      if (!nome) { mostrarToast('Nome obrigatório!', 'aviso'); return; }
+      if (!unid) { mostrarToast('Unidade obrigatória!', 'aviso'); return; }
+
+      var dados = { referencia: ref, nome: nome, categoria: cat, unidade: unid, stock_minimo: min, localizacao: local, ativo: true };
+
+      try {
+        var res = editId
+          ? await db.update('materiais', editId, dados)
+          : await db.insert('materiais', dados);
+
+        if (res && res.length > 0) {
+          mostrarToast(editId ? 'Material actualizado! ✅' : 'Material criado! ✅', 'sucesso');
+          cancelarEdicao();
+          materiais = await db.query('materiais', 'ativo=eq.true&order=referencia.asc');
+          await calcularStock();
+          renderAlertas();
+          renderTabela();
+        } else {
+          mostrarToast('Erro ao guardar. Tenta novamente.', 'erro');
+        }
+      } catch (err) {
+        console.error('Erro ao guardar material:', err);
+        mostrarToast('Erro ao guardar. Tenta novamente.', 'erro');
+      }
+    }
+
+    function editar(id) {
+      var m = materiais.find(function (x) { return x.id === id; });
+      if (!m) return;
+      editId = id;
+      document.getElementById('f-ref').value = m.referencia;
+      document.getElementById('f-nome').value = m.nome;
+      document.getElementById('f-categoria').value = m.categoria || '';
+      document.getElementById('f-unidade').value = m.unidade;
+      document.getElementById('f-minimo').value = m.stock_minimo || 0;
+      document.getElementById('f-local').value = m.localizacao || '';
+      document.getElementById('form-titulo').textContent = '✏️ Editar Material';
+      document.getElementById('btn-guardar').textContent = '💾 Actualizar';
+      document.getElementById('card-form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelarEdicao() {
+      editId = null;
+      ['f-ref', 'f-nome', 'f-minimo', 'f-local'].forEach(function (id) {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('f-categoria').value = '';
+      document.getElementById('f-unidade').value = '';
+      document.getElementById('form-titulo').textContent = '➕ Novo Material';
+      document.getElementById('btn-guardar').textContent = '💾 Guardar';
+    }
+
+    async function desactivar(id) {
+      if (!confirmarAcao('Desactivar este material?')) return;
+      await db.update('materiais', id, { ativo: false });
+      mostrarToast('Material desactivado.', 'info');
+      materiais = await db.query('materiais', 'ativo=eq.true&order=referencia.asc');
+      await calcularStock();
+      renderAlertas();
+      renderTabela();
+    }
+
+    init();
+  </script>
+</body>
+</html>

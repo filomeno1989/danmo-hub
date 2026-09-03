@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configurações — Gestão de Stock — Danmo Hub</title>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <style>
+    .link-action { color:var(--cor-info); cursor:pointer; font-weight:600; margin-right:12px; transition:color var(--transicao); }
+    .link-action:hover { color:var(--cor-ambar); }
+    .link-danger { color:var(--cor-vermelho-danmo); cursor:pointer; font-weight:600; transition:opacity var(--transicao); }
+    .link-danger:hover { opacity:.8; }
+    .config-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px; }
+    @media (max-width:900px) { .config-grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <h1 class="pagina-titulo">Configurações de Stock</h1>
+    <p class="pagina-subtitulo">Gerir fornecedores, departamentos, finalidades, categorias e responsáveis</p>
+
+    <div class="config-grid">
+
+      <!-- FORNECEDORES -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div class="form-label" style="font-size:1.1rem; margin:0;">🏪 Fornecedores</div>
+          <button class="btn btn-primario btn-sm" id="forn-btn-novo">+ Novo</button>
+        </div>
+        <div class="tabela-container">
+          <div id="forn-loading" class="spinner" style="padding:32px; text-align:center;">A carregar...</div>
+          <div id="forn-empty" class="tabela-vazia" style="display:none;">Nenhum fornecedor registado.</div>
+          <table class="tabela" id="forn-tabela" style="display:none;">
+            <thead><tr><th>Nome</th><th>Estado</th><th>Acções</th></tr></thead>
+            <tbody id="forn-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DEPARTAMENTOS -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div class="form-label" style="font-size:1.1rem; margin:0;">🏢 Departamentos</div>
+          <button class="btn btn-primario btn-sm" id="dep-btn-novo">+ Novo</button>
+        </div>
+        <p style="font-size:var(--tamanho-sm); color:var(--cor-texto-sec); margin-bottom:16px;">Lista partilhada — também usada na Ferramentaria</p>
+        <div class="tabela-container">
+          <div id="dep-loading" class="spinner" style="padding:32px; text-align:center;">A carregar...</div>
+          <div id="dep-empty" class="tabela-vazia" style="display:none;">Nenhum departamento registado.</div>
+          <table class="tabela" id="dep-tabela" style="display:none;">
+            <thead><tr><th>Nome</th><th>Estado</th><th>Acções</th></tr></thead>
+            <tbody id="dep-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FINALIDADES -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div class="form-label" style="font-size:1.1rem; margin:0;">🎯 Finalidades</div>
+          <button class="btn btn-primario btn-sm" id="final-btn-novo">+ Nova</button>
+        </div>
+        <div class="tabela-container">
+          <div id="final-loading" class="spinner" style="padding:32px; text-align:center;">A carregar...</div>
+          <div id="final-empty" class="tabela-vazia" style="display:none;">Nenhuma finalidade registada.</div>
+          <table class="tabela" id="final-tabela" style="display:none;">
+            <thead><tr><th>Nome</th><th>Estado</th><th>Acções</th></tr></thead>
+            <tbody id="final-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CATEGORIAS -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div class="form-label" style="font-size:1.1rem; margin:0;">🏷️ Categorias de Material</div>
+          <button class="btn btn-primario btn-sm" id="cat-btn-novo">+ Nova</button>
+        </div>
+        <div class="tabela-container">
+          <div id="cat-loading" class="spinner" style="padding:32px; text-align:center;">A carregar...</div>
+          <div id="cat-empty" class="tabela-vazia" style="display:none;">Nenhuma categoria registada.</div>
+          <table class="tabela" id="cat-tabela" style="display:none;">
+            <thead><tr><th>Nome</th><th>Estado</th><th>Acções</th></tr></thead>
+            <tbody id="cat-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- COMPRADORES -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div class="form-label" style="font-size:1.1rem; margin:0;">🛒 Compradores</div>
+          <button class="btn btn-primario btn-sm" id="comp-btn-novo">+ Novo</button>
+        </div>
+        <p style="font-size:var(--tamanho-sm); color:var(--cor-texto-sec); margin-bottom:16px;">Quem vai às compras</p>
+        <div class="tabela-container">
+          <div id="comp-loading" class="spinner" style="padding:32px; text-align:center;">A carregar...</div>
+          <div id="comp-empty" class="tabela-vazia" style="display:none;">Nenhum comprador registado.</div>
+          <table class="tabela" id="comp-tabela" style="display:none;">
+            <thead><tr><th>Nome</th><th>Estado</th><th>Acções</th></tr></thead>
+            <tbody id="comp-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RECEPTORES -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div class="form-label" style="font-size:1.1rem; margin:0;">📬 Receptores</div>
+          <button class="btn btn-primario btn-sm" id="recp-btn-novo">+ Novo</button>
+        </div>
+        <p style="font-size:var(--tamanho-sm); color:var(--cor-texto-sec); margin-bottom:16px;">Quem recebe no armazém</p>
+        <div class="tabela-container">
+          <div id="recp-loading" class="spinner" style="padding:32px; text-align:center;">A carregar...</div>
+          <div id="recp-empty" class="tabela-vazia" style="display:none;">Nenhum receptor registado.</div>
+          <table class="tabela" id="recp-tabela" style="display:none;">
+            <thead><tr><th>Nome</th><th>Estado</th><th>Acções</th></tr></thead>
+            <tbody id="recp-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal genérico Nome -->
+  <div id="modal-item" class="modal-fundo">
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="modal-item-title">Novo Item</span>
+        <button class="modal-fechar" id="item-btn-fechar-x" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="form-grupo">
+          <label class="form-label" for="item-nome">Nome *</label>
+          <input class="form-input" type="text" id="item-nome" required placeholder="Ex: Nome completo">
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" id="item-btn-cancelar">Cancelar</button>
+        <button class="btn btn-verde" id="item-btn-guardar">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+    /**
+     * Gestor genérico de lista simples nome + estado. Serve tanto para listas
+     * simples (tabela com coluna 'nome' + coluna de activo) como para
+     * responsáveis (tabela 'responsaveis', filtradas por 'funcao').
+     *
+     * campoActivo: nome da coluna booleana de activo ('ativo' por defeito).
+     * Para 'departamentos' (tabela partilhada com a Ferramentaria, que usa
+     * 'active') o campo é detectado automaticamente a partir dos dados lidos,
+     * para não partir nenhum dos dois módulos caso a coluna real seja outra.
+     */
+    function criarGestorLista(cfg) {
+      var itens = [];
+      var campoActivo = cfg.campoActivo || 'ativo';
+
+      var loadingEl = document.getElementById(cfg.prefixo + '-loading');
+      var emptyEl = document.getElementById(cfg.prefixo + '-empty');
+      var tableEl = document.getElementById(cfg.prefixo + '-tabela');
+      var tbody = document.getElementById(cfg.prefixo + '-tbody');
+      var editingId = null;
+
+      var gestor = {
+        cfg: cfg,
+        getEditId: function () { return editingId; },
+        setEditId: function (v) { editingId = v; },
+        recarregar: function () { return carregar(); },
+        itens: function () { return itens; }
+      };
+
+      async function carregar() {
+        loadingEl.style.display = 'block';
+        emptyEl.style.display = 'none';
+        tableEl.style.display = 'none';
+
+        try {
+          var query = cfg.funcao
+            ? 'funcao=in.(' + cfg.funcao + ',ambos)&order=nome.asc'
+            : 'order=nome.asc';
+          itens = await db.query(cfg.tabela, query) || [];
+
+          /* Deteção defensiva do nome real da coluna de activo, só relevante
+             para 'departamentos' (tabela partilhada). */
+          if (cfg.detectarCampoActivo && itens.length > 0) {
+            campoActivo = itens[0].hasOwnProperty('active') ? 'active' : 'ativo';
+          }
+
+          loadingEl.style.display = 'none';
+          if (itens.length === 0) { emptyEl.style.display = 'block'; return; }
+
+          tbody.innerHTML = itens.map(function (item) {
+            var estaAtivo = item[campoActivo] !== false;
+            var estadoBadge = estaAtivo
+              ? '<span class="badge badge-sucesso">Activo</span>'
+              : '<span class="badge badge-secundario">Inactivo</span>';
+            var acaoTexto = estaAtivo ? 'Desactivar' : 'Reactivar';
+            return '<tr>' +
+              '<td>' + (item.nome || '—') + '</td>' +
+              '<td>' + estadoBadge + '</td>' +
+              '<td>' +
+                '<span class="link-action" data-action="editar" data-id="' + item.id + '">Editar</span>' +
+                '<span class="link-danger" data-action="alternar" data-id="' + item.id + '">' + acaoTexto + '</span>' +
+              '</td>' +
+            '</tr>';
+          }).join('');
+          tableEl.style.display = 'table';
+        } catch (err) {
+          console.error('Erro ao carregar ' + cfg.tabela + ':', err);
+          loadingEl.style.display = 'none';
+          emptyEl.style.display = 'block';
+          mostrarToast('Erro ao carregar ' + cfg.nomeSingular.toLowerCase() + 's.', 'erro');
+        }
+      }
+
+      tbody.addEventListener('click', async function (e) {
+        var link = e.target.closest('[data-action]');
+        if (!link) return;
+        var id = link.dataset.id;
+        var item = itens.find(function (i) { return i.id === id; });
+        if (!item) return;
+
+        if (link.dataset.action === 'editar') {
+          editingId = id;
+          modalAtual = gestor;
+          document.getElementById('modal-item-title').textContent = 'Editar ' + cfg.nomeSingular;
+          document.getElementById('item-nome').value = item.nome || '';
+          document.getElementById('modal-item').classList.add('open');
+        } else if (link.dataset.action === 'alternar') {
+          var novoEstado = item[campoActivo] === false;
+          var msg = novoEstado
+            ? 'Reactivar? Volta a aparecer nos formulários.'
+            : 'Desactivar? Deixa de aparecer nos formulários (os registos já criados mantêm-se).';
+          if (!confirmarAcao(msg)) return;
+          try {
+            var patch = {};
+            patch[campoActivo] = novoEstado;
+            if (cfg.funcao) { /* nada extra a enviar */ }
+            await db.update(cfg.tabela, id, patch);
+            mostrarToast((novoEstado ? 'Reactivado' : 'Desactivado') + ' com sucesso.', 'sucesso');
+            await carregar();
+          } catch (err) {
+            console.error('Erro ao alternar:', err);
+            mostrarToast('Erro ao actualizar.', 'erro');
+          }
+        }
+      });
+
+      document.getElementById(cfg.prefixo + '-btn-novo').addEventListener('click', function () {
+        editingId = null;
+        modalAtual = gestor;
+        document.getElementById('modal-item-title').textContent = 'Novo ' + cfg.nomeSingular;
+        document.getElementById('item-nome').value = '';
+        document.getElementById('modal-item').classList.add('open');
+      });
+
+      carregar();
+      return gestor;
+    }
+
+    var modalAtual = null;
+
+    document.getElementById('item-btn-fechar-x').addEventListener('click', fecharModalItem);
+    document.getElementById('item-btn-cancelar').addEventListener('click', fecharModalItem);
+    document.getElementById('modal-item').addEventListener('click', function (e) { if (e.target === this) fecharModalItem(); });
+
+    function fecharModalItem() {
+      document.getElementById('modal-item').classList.remove('open');
+    }
+
+    document.getElementById('item-btn-guardar').addEventListener('click', async function () {
+      if (!modalAtual) return;
+      var nome = document.getElementById('item-nome').value.trim();
+      if (!nome) { mostrarToast('Preencha o nome.', 'erro'); return; }
+
+      var editId = modalAtual.getEditId();
+      var duplicado = modalAtual.itens().some(function (i) {
+        return (i.nome || '').toLowerCase() === nome.toLowerCase() && i.id !== editId;
+      });
+      if (duplicado) { mostrarToast('Já existe um registo com este nome.', 'erro'); return; }
+
+      try {
+        if (editId) {
+          await db.update(modalAtual.cfg.tabela, editId, { nome: nome });
+          mostrarToast(modalAtual.cfg.nomeSingular + ' actualizado com sucesso.', 'sucesso');
+        } else {
+          var novo = { nome: nome, ativo: true };
+          if (modalAtual.cfg.funcao) novo.funcao = modalAtual.cfg.funcao;
+          await db.insert(modalAtual.cfg.tabela, novo);
+          mostrarToast(modalAtual.cfg.nomeSingular + ' criado com sucesso.', 'sucesso');
+        }
+        fecharModalItem();
+        modalAtual.setEditId(null);
+        await modalAtual.recarregar();
+      } catch (err) {
+        console.error('Erro ao guardar:', err);
+        mostrarToast('Erro ao guardar.', 'erro');
+      }
+    });
+
+    /* ── Instanciar cada gestor ── */
+    criarGestorLista({ prefixo: 'forn', tabela: 'fornecedores', nomeSingular: 'Fornecedor' });
+    criarGestorLista({ prefixo: 'dep', tabela: 'departamentos', nomeSingular: 'Departamento', detectarCampoActivo: true });
+    criarGestorLista({ prefixo: 'final', tabela: 'finalidades', nomeSingular: 'Finalidade' });
+    criarGestorLista({ prefixo: 'cat', tabela: 'categorias_material', nomeSingular: 'Categoria' });
+    criarGestorLista({ prefixo: 'comp', tabela: 'responsaveis', nomeSingular: 'Comprador', funcao: 'comprador' });
+    criarGestorLista({ prefixo: 'recp', tabela: 'responsaveis', nomeSingular: 'Receptor', funcao: 'receptor' });
+  </script>
+</body>
+</html>

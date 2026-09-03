@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saídas — Gestão de Stock — Danmo Hub</title>
+  <link rel="stylesheet" href="../shared/style.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <h1 class="pagina-titulo">Saídas de Material</h1>
+    <p class="pagina-subtitulo">Registe o levantamento de material do armazém</p>
+
+    <div class="card">
+      <div class="form-label" style="font-size:1.1rem; margin-bottom:16px;">➕ Registar Saída</div>
+      <div class="form-grid">
+        <div class="form-grupo">
+          <label class="form-label">Material *</label>
+          <select class="form-select" id="f-material" onchange="mostrarStock()"></select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Stock Disponível</label>
+          <input class="form-input" type="text" id="f-stock" readonly placeholder="—">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Quantidade *</label>
+          <input class="form-input" type="number" id="f-qtd" min="0.01" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Colaborador que Levanta *</label>
+          <select class="form-select" id="f-colaborador"></select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Finalidade</label>
+          <select class="form-select" id="f-finalidade"></select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Nº Requisição</label>
+          <input class="form-input" type="text" id="f-requisicao" placeholder="Ex: REQ-2026-001">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Data</label>
+          <input class="form-input" type="date" id="f-data">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Observações</label>
+          <input class="form-input" type="text" id="f-obs" placeholder="Opcional">
+        </div>
+      </div>
+      <div style="margin-top:20px; display:flex; gap:10px;">
+        <button class="btn btn-primario" onclick="guardarSaida()">💾 Registar Saída</button>
+        <button class="btn btn-secundario" onclick="limparForm()">✖ Limpar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="form-label" style="font-size:1.1rem; margin-bottom:16px;">📋 Histórico de Saídas</div>
+      <div style="margin-bottom:16px;">
+        <input class="form-input" type="text" id="pesquisa" placeholder="🔍 Pesquisar material ou colaborador..." style="max-width:320px;" oninput="filtrar()">
+      </div>
+      <div class="tabela-container">
+        <div id="sai-loading" class="spinner" style="padding:32px; text-align:center;">A carregar...</div>
+        <div id="sai-empty" class="tabela-vazia" style="display:none;">Nenhuma saída registada.</div>
+        <table class="tabela" id="sai-tabela" style="display:none;">
+          <thead>
+            <tr>
+              <th>Data</th><th>Material</th><th>Qtd</th><th>Unid.</th>
+              <th>Colaborador</th><th>Finalidade</th>
+              <th>Nº Req.</th><th>Obs.</th><th>Acções</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-saidas"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+    document.getElementById('f-data').value = dataHojeISO();
+
+    var materiais = [], colaboradores = [], finalidades = [];
+    var saidas = [], stockCalc = {};
+
+    function preencherSelect(id, lista, labelFn, valueFn, placeholder) {
+      var sel = document.getElementById(id);
+      sel.innerHTML = '';
+      if (placeholder) {
+        var o = document.createElement('option');
+        o.value = ''; o.textContent = placeholder;
+        sel.appendChild(o);
+      }
+      lista.forEach(function (item) {
+        var o = document.createElement('option');
+        o.value = valueFn(item);
+        o.textContent = labelFn(item);
+        sel.appendChild(o);
+      });
+    }
+
+    async function init() {
+      try {
+        var resultados = await Promise.all([
+          db.query('materiais', 'ativo=eq.true&order=nome.asc'),
+          db.query('collaborators', 'active=eq.true&order=name.asc'),
+          db.query('finalidades', 'ativo=eq.true&order=nome.asc')
+        ]);
+
+        materiais = resultados[0];
+        colaboradores = resultados[1];
+        finalidades = resultados[2];
+
+        preencherSelect('f-material', materiais, function (m) { return m.referencia + ' — ' + m.nome; }, function (m) { return m.id; }, '-- Seleccione --');
+        preencherSelect('f-colaborador', colaboradores, function (c) { return c.code + ' — ' + c.name; }, function (c) { return c.name; }, '-- Seleccione --');
+        preencherSelect('f-finalidade', finalidades, function (f) { return f.nome; }, function (f) { return f.nome; }, '-- Seleccione --');
+
+        await calcularStock();
+        await carregarSaidas();
+      } catch (err) {
+        console.error('Erro ao inicializar Saídas:', err);
+        mostrarToast('Erro ao carregar dados. Verifica a ligação.', 'erro');
+      }
+    }
+
+    async function calcularStock() {
+      var movs = await db.query('stock_movimentos', 'estado=eq.confirmado');
+      stockCalc = {};
+      movs.forEach(function (m) {
+        if (!stockCalc[m.material_id]) stockCalc[m.material_id] = 0;
+        if (m.tipo === 'entrada') stockCalc[m.material_id] += Number(m.quantidade);
+        if (m.tipo === 'saida') stockCalc[m.material_id] -= Number(m.quantidade);
+      });
+    }
+
+    function mostrarStock() {
+      var matId = document.getElementById('f-material').value;
+      var mat = materiais.find(function (x) { return x.id === matId; });
+      var stock = stockCalc[matId] || 0;
+      var campo = document.getElementById('f-stock');
+      if (!mat) { campo.value = ''; campo.style.color = ''; return; }
+      campo.value = fmtNum(stock) + ' ' + mat.unidade;
+      campo.style.color = stock <= (mat.stock_minimo || 0) ? 'var(--cor-erro)' : 'var(--cor-sucesso)';
+    }
+
+    async function carregarSaidas() {
+      var todos = await db.query('stock_movimentos', 'tipo=eq.saida&estado=eq.confirmado&order=criado_em.desc');
+      saidas = todos.map(function (m) {
+        var mat = materiais.find(function (x) { return x.id === m.material_id; });
+        m._mat = mat ? (mat.referencia + ' — ' + mat.nome) : '—';
+        m._unid = mat ? mat.unidade : '';
+        return m;
+      });
+      renderSaidas();
+    }
+
+    function renderSaidas(filtro) {
+      filtro = filtro || '';
+      document.getElementById('sai-loading').style.display = 'none';
+      var lista = filtro
+        ? saidas.filter(function (m) {
+            return m._mat.toLowerCase().indexOf(filtro.toLowerCase()) !== -1 ||
+                   (m.colaborador_nome || '').toLowerCase().indexOf(filtro.toLowerCase()) !== -1;
+          })
+        : saidas;
+
+      if (lista.length === 0) {
+        document.getElementById('sai-empty').style.display = 'block';
+        document.getElementById('sai-tabela').style.display = 'none';
+        return;
+      }
+      document.getElementById('sai-empty').style.display = 'none';
+      document.getElementById('sai-tabela').style.display = 'table';
+
+      document.getElementById('tbody-saidas').innerHTML = lista.map(function (m) {
+        return '<tr>' +
+          '<td>' + formataData(m.data_movimento) + '</td>' +
+          '<td><strong>' + m._mat + '</strong></td>' +
+          '<td style="color:var(--cor-erro); font-weight:700;">-' + fmtNum(m.quantidade) + '</td>' +
+          '<td>' + m._unid + '</td>' +
+          '<td>' + (m.colaborador_nome || '—') + '</td>' +
+          '<td>' + (m.finalidade || '—') + '</td>' +
+          '<td>' + (m.numero_requisicao || '—') + '</td>' +
+          '<td>' + (m.observacoes || '—') + '</td>' +
+          '<td><button class="btn btn-secundario btn-sm" onclick="eliminar(\'' + m.id + '\')">🗑</button></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function filtrar() {
+      renderSaidas(document.getElementById('pesquisa').value);
+    }
+
+    async function guardarSaida() {
+      var matId = document.getElementById('f-material').value;
+      var qtd = parseFloat(document.getElementById('f-qtd').value);
+      var col = document.getElementById('f-colaborador').value;
+      var final = document.getElementById('f-finalidade').value;
+      var req = document.getElementById('f-requisicao').value.trim();
+      var data = document.getElementById('f-data').value;
+      var obs = document.getElementById('f-obs').value.trim();
+
+      if (!matId) { mostrarToast('Selecciona um material!', 'aviso'); return; }
+      if (!qtd || qtd <= 0) { mostrarToast('Quantidade inválida!', 'aviso'); return; }
+      if (!col) { mostrarToast('Selecciona o colaborador!', 'aviso'); return; }
+
+      var stockDisp = stockCalc[matId] || 0;
+      if (qtd > stockDisp) {
+        mostrarToast('Stock insuficiente! Disponível: ' + fmtNum(stockDisp), 'erro');
+        return;
+      }
+
+      var user = obterUtilizador();
+      try {
+        var res = await db.insert('stock_movimentos', {
+          tipo: 'saida', estado: 'confirmado',
+          material_id: matId, quantidade: qtd,
+          data_movimento: data || dataHojeISO(),
+          data_confirmacao: data || dataHojeISO(),
+          colaborador_nome: col,
+          finalidade: final,
+          numero_requisicao: req,
+          observacoes: obs,
+          colaborador_id: user ? user.id : null
+        });
+
+        if (res && res.length > 0) {
+          mostrarToast('Saída registada com sucesso! ✅', 'sucesso');
+          limparForm();
+          await calcularStock();
+          await carregarSaidas();
+        } else {
+          mostrarToast('Erro ao registar. Tenta novamente.', 'erro');
+        }
+      } catch (err) {
+        console.error('Erro ao registar saída:', err);
+        mostrarToast('Erro ao registar. Tenta novamente.', 'erro');
+      }
+    }
+
+    function limparForm() {
+      ['f-material', 'f-qtd', 'f-colaborador', 'f-finalidade', 'f-requisicao', 'f-obs'].forEach(function (id) {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('f-data').value = dataHojeISO();
+      document.getElementById('f-stock').value = '';
+      document.getElementById('f-stock').style.color = '';
+    }
+
+    async function eliminar(id) {
+      if (!confirmarAcao('Eliminar este registo de saída?')) return;
+      await db.delete('stock_movimentos', id);
+      mostrarToast('Registo eliminado.', 'info');
+      await calcularStock();
+      await carregarSaidas();
+    }
+
+    init();
+  </script>
+</body>
+</html>

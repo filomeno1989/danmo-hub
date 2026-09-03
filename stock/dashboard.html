@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel — Gestão de Stock — Danmo Hub</title>
+
+  <!-- CSS Global do Danmo Hub -->
+  <link rel="stylesheet" href="../shared/style.css" />
+
+  <style>
+    .mt-32 { margin-top: 32px; }
+  </style>
+</head>
+<body>
+  <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
+  <div id="navbar"></div>
+
+  <main class="main">
+    <h1 class="pagina-titulo">Painel Principal — Gestão de Stock</h1>
+    <p class="pagina-subtitulo" id="data-hoje"></p>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card azul">
+        <div class="kpi-label">Total de Materiais</div>
+        <div class="kpi-valor" id="kpi-total-mat">—</div>
+      </div>
+      <div class="kpi-card verde">
+        <div class="kpi-label">Entradas este Mês</div>
+        <div class="kpi-valor" id="kpi-entradas-mes">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Saídas este Mês</div>
+        <div class="kpi-valor" id="kpi-saidas-mes">—</div>
+      </div>
+      <div class="kpi-card vermelho">
+        <div class="kpi-label">Alertas de Stock</div>
+        <div class="kpi-valor" id="kpi-alertas">—</div>
+      </div>
+      <div class="kpi-card amarelo">
+        <div class="kpi-label">Pedidos Pendentes</div>
+        <div class="kpi-valor" id="kpi-pendentes">—</div>
+      </div>
+    </div>
+
+    <!-- Alertas de stock -->
+    <div id="card-alertas" class="card" style="display:none;">
+      <div class="form-label" style="font-size:1.1rem; margin-bottom:16px;">⚠️ Materiais em Alerta</div>
+      <div id="lista-alertas"></div>
+    </div>
+
+    <!-- Pendentes -->
+    <div id="card-pendentes" class="card" style="display:none;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <div class="form-label" style="font-size:1.1rem; margin:0;">⏳ Pedidos Pendentes de Confirmação</div>
+        <a href="entradas.html" class="btn btn-secundario btn-sm">Ver todos →</a>
+      </div>
+      <div class="tabela-container">
+        <table class="tabela">
+          <thead>
+            <tr><th>Data</th><th>Material</th><th>Qtd</th><th>Fornecedor</th><th>Departamento</th><th>Acção</th></tr>
+          </thead>
+          <tbody id="tbody-pendentes"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+      <div class="card" style="margin-bottom:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+          <div class="form-label" style="font-size:1.1rem; margin:0;">📥 Últimas Entradas</div>
+          <a href="entradas.html" class="btn btn-secundario btn-sm">Ver todas →</a>
+        </div>
+        <div class="tabela-container">
+          <table class="tabela">
+            <thead><tr><th>Data</th><th>Material</th><th>Qtd</th><th>Fornecedor</th></tr></thead>
+            <tbody id="tbody-entradas"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+          <div class="form-label" style="font-size:1.1rem; margin:0;">📤 Últimas Saídas</div>
+          <a href="saidas.html" class="btn btn-secundario btn-sm">Ver todas →</a>
+        </div>
+        <div class="tabela-container">
+          <table class="tabela">
+            <thead><tr><th>Data</th><th>Material</th><th>Qtd</th><th>Colaborador</th></tr></thead>
+            <tbody id="tbody-saidas"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-32">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <div class="form-label" style="font-size:1.1rem; margin:0;">📦 Stock Actual — Todos os Materiais</div>
+        <a href="relatorios.html" class="btn btn-secundario btn-sm">Ver relatório →</a>
+      </div>
+      <div class="tabela-container">
+        <table class="tabela">
+          <thead>
+            <tr>
+              <th>Referência</th><th>Material</th><th>Categoria</th>
+              <th>Unid.</th><th>Stock Mín.</th><th>Stock Actual</th>
+              <th>Estado</th><th>Localização</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-stock"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Scripts Unificados do Danmo Hub -->
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+    var agora = new Date();
+    document.getElementById('data-hoje').textContent = agora.toLocaleDateString('pt-MZ', {
+      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
+    });
+
+    (async function init() {
+      var resultados = await Promise.allSettled([
+        db.query('materiais', 'ativo=eq.true&order=referencia.asc'),
+        db.query('stock_movimentos', 'order=criado_em.desc')
+      ]);
+
+      var materiais = resultados[0].status === 'fulfilled' ? resultados[0].value : [];
+      var movimentos = resultados[1].status === 'fulfilled' ? resultados[1].value : [];
+
+      if (resultados[0].status === 'rejected' || resultados[1].status === 'rejected') {
+        mostrarToast('Alguns dados não puderam ser carregados.', 'erro');
+      }
+
+      var stockCalc = {};
+      movimentos.forEach(function (m) {
+        if (!stockCalc[m.material_id]) stockCalc[m.material_id] = 0;
+        if (m.estado === 'confirmado') {
+          if (m.tipo === 'entrada') stockCalc[m.material_id] += Number(m.quantidade);
+          if (m.tipo === 'saida')   stockCalc[m.material_id] -= Number(m.quantidade);
+        }
+      });
+
+      function nomeMat(id) {
+        var m = materiais.find(function (x) { return x.id === id; });
+        return m ? (m.referencia + ' — ' + m.nome) : '—';
+      }
+      function unidMat(id) {
+        var m = materiais.find(function (x) { return x.id === id; });
+        return m ? m.unidade : '';
+      }
+
+      var mesAtual = agora.getMonth();
+      var anoAtual = agora.getFullYear();
+      function destesMes(m) {
+        var d = new Date(m.criado_em);
+        return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
+      }
+
+      var pendentes = movimentos.filter(function (m) { return m.estado === 'pendente'; });
+      var confirmedEntradas = movimentos.filter(function (m) { return m.tipo === 'entrada' && m.estado === 'confirmado'; });
+      var confirmedSaidas = movimentos.filter(function (m) { return m.tipo === 'saida' && m.estado === 'confirmado'; });
+      var alertas = materiais.filter(function (m) { return (stockCalc[m.id] || 0) <= (m.stock_minimo || 0); });
+
+      document.getElementById('kpi-total-mat').textContent = materiais.length;
+      document.getElementById('kpi-entradas-mes').textContent = confirmedEntradas.filter(destesMes).length;
+      document.getElementById('kpi-saidas-mes').textContent = confirmedSaidas.filter(destesMes).length;
+      document.getElementById('kpi-alertas').textContent = alertas.length;
+      document.getElementById('kpi-pendentes').textContent = pendentes.length;
+
+      if (alertas.length > 0) {
+        document.getElementById('card-alertas').style.display = 'block';
+        document.getElementById('lista-alertas').innerHTML = alertas.map(function (m) {
+          var stock = stockCalc[m.id] || 0;
+          var badge = stock <= 0
+            ? '<span class="badge badge-erro">Esgotado</span>'
+            : '<span class="badge badge-aviso">Stock Baixo</span>';
+          return '<div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--cor-borda);">' +
+            badge +
+            '<strong>' + m.referencia + ' — ' + m.nome + '</strong>' +
+            '<span style="color:var(--cor-texto-sec); font-size:var(--tamanho-sm);">Stock: ' + fmtNum(stock) + ' ' + m.unidade + ' &nbsp;|&nbsp; Mínimo: ' + fmtNum(m.stock_minimo) + ' ' + m.unidade + '</span>' +
+            '<a href="entradas.html" style="margin-left:auto; font-weight:600;">+ Registar Entrada →</a>' +
+          '</div>';
+        }).join('');
+      }
+
+      if (pendentes.length > 0) {
+        document.getElementById('card-pendentes').style.display = 'block';
+        document.getElementById('tbody-pendentes').innerHTML = pendentes.slice(0, 5).map(function (m) {
+          return '<tr>' +
+            '<td>' + formataData(m.data_movimento) + '</td>' +
+            '<td><strong>' + nomeMat(m.material_id) + '</strong></td>' +
+            '<td>' + fmtNum(m.quantidade) + ' ' + unidMat(m.material_id) + '</td>' +
+            '<td>' + (m.fornecedor || '—') + '</td>' +
+            '<td>' + (m.departamento || '—') + '</td>' +
+            '<td><a href="entradas.html" class="btn btn-verde btn-sm">✅ Confirmar</a></td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      document.getElementById('tbody-entradas').innerHTML = confirmedEntradas.slice(0, 6).map(function (m) {
+        return '<tr>' +
+          '<td>' + formataData(m.data_confirmacao || m.data_movimento) + '</td>' +
+          '<td>' + nomeMat(m.material_id) + '</td>' +
+          '<td style="color:var(--cor-sucesso); font-weight:700;">+' + fmtNum(m.quantidade) + ' ' + unidMat(m.material_id) + '</td>' +
+          '<td>' + (m.fornecedor || '—') + '</td>' +
+        '</tr>';
+      }).join('') || '<tr><td colspan="4" class="tabela-vazia">Sem entradas</td></tr>';
+
+      document.getElementById('tbody-saidas').innerHTML = confirmedSaidas.slice(0, 6).map(function (m) {
+        return '<tr>' +
+          '<td>' + formataData(m.data_movimento) + '</td>' +
+          '<td>' + nomeMat(m.material_id) + '</td>' +
+          '<td style="color:var(--cor-erro); font-weight:700;">-' + fmtNum(m.quantidade) + ' ' + unidMat(m.material_id) + '</td>' +
+          '<td>' + (m.colaborador_nome || '—') + '</td>' +
+        '</tr>';
+      }).join('') || '<tr><td colspan="4" class="tabela-vazia">Sem saídas</td></tr>';
+
+      document.getElementById('tbody-stock').innerHTML = materiais.map(function (m) {
+        var stock = stockCalc[m.id] || 0;
+        var minimo = m.stock_minimo || 0;
+        var badge, cor;
+        if (stock <= 0) { badge = '<span class="badge badge-erro">Esgotado</span>'; cor = 'var(--cor-erro)'; }
+        else if (stock <= minimo) { badge = '<span class="badge badge-aviso">Stock Baixo</span>'; cor = 'var(--cor-aviso)'; }
+        else { badge = '<span class="badge badge-sucesso">OK</span>'; cor = 'var(--cor-sucesso)'; }
+        return '<tr>' +
+          '<td><code style="color:var(--cor-ambar);">' + m.referencia + '</code></td>' +
+          '<td><strong>' + m.nome + '</strong></td>' +
+          '<td>' + (m.categoria || '—') + '</td>' +
+          '<td>' + m.unidade + '</td>' +
+          '<td>' + fmtNum(minimo) + '</td>' +
+          '<td style="color:' + cor + '; font-weight:700;">' + fmtNum(stock) + '</td>' +
+          '<td>' + badge + '</td>' +
+          '<td>' + (m.localizacao || '—') + '</td>' +
+        '</tr>';
+      }).join('');
+    })();
+  </script>
+</body>
+</html>

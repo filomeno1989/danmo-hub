@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatórios — Gestão de Stock — Danmo Hub</title>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <style>
+    .tabs { display:flex; gap:4px; margin-bottom:24px; border-bottom:1px solid var(--cor-borda); }
+    .tab-btn {
+      padding:10px 20px; border:none; background:transparent;
+      color:var(--cor-texto-sec); cursor:pointer; font-family:var(--fonte-principal);
+      font-size:var(--tamanho-sm); font-weight:600; border-bottom:2px solid transparent;
+      margin-bottom:-1px; transition:all var(--transicao);
+    }
+    .tab-btn:hover { color:var(--cor-ambar); }
+    .tab-btn.ativo { color:var(--cor-ambar); border-bottom-color:var(--cor-ambar); }
+    .tab-content { display:none; }
+    .tab-content.ativo { display:block; }
+
+    @media print {
+      .topbar, .sidebar, .tabs, .no-print { display:none !important; }
+      .layout { display:block !important; }
+      .main { padding:0 !important; max-width:100% !important; margin:0 !important; }
+      body { background:white; color:black; }
+      .card { border:1px solid #ccc; box-shadow:none; background:white; }
+      .tabela { font-size:12px; }
+      .tabela thead th { background:#f0f0f0 !important; color:black !important; }
+      .print-header { display:block !important; }
+    }
+    .print-header {
+      display:none; text-align:center; margin-bottom:24px;
+      border-bottom:2px solid #333; padding-bottom:12px;
+    }
+    .print-header h1 { font-size:20px; margin-bottom:4px; }
+    .print-header p { font-size:13px; color:#555; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="main">
+    <h1 class="pagina-titulo">Relatórios</h1>
+    <p class="pagina-subtitulo">Inventário, movimentos por período e resumo de compras</p>
+
+    <div class="tabs no-print">
+      <button class="tab-btn ativo" data-tab="inventario" onclick="mudarTab('inventario')">📦 Inventário Actual</button>
+      <button class="tab-btn" data-tab="movimentos" onclick="mudarTab('movimentos')">🔄 Movimentos por Período</button>
+      <button class="tab-btn" data-tab="compras" onclick="mudarTab('compras')">💰 Resumo de Compras</button>
+    </div>
+
+    <!-- TAB 1: INVENTÁRIO -->
+    <div id="tab-inventario" class="tab-content ativo">
+      <div class="print-header">
+        <h1>DANMO Service System, Lda — Inventário de Stock</h1>
+        <p id="print-data-inv"></p>
+      </div>
+
+      <div class="card no-print">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div class="form-label" style="font-size:1.1rem; margin:0;">📦 Inventário Actual</div>
+          <div style="display:flex; gap:8px;">
+            <select class="form-select" id="inv-filtro-cat" onchange="renderInventario()" style="max-width:180px;">
+              <option value="">Todas as categorias</option>
+            </select>
+            <select class="form-select" id="inv-filtro-estado" onchange="renderInventario()" style="max-width:160px;">
+              <option value="">Todos os estados</option>
+              <option value="ok">OK</option>
+              <option value="baixo">Stock Baixo</option>
+              <option value="esgotado">Esgotado</option>
+            </select>
+            <button class="btn btn-secundario btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-grid no-print" style="margin-bottom:20px;">
+        <div class="kpi-card azul"><div class="kpi-label">Total Materiais</div><div class="kpi-valor" id="inv-total">—</div></div>
+        <div class="kpi-card verde"><div class="kpi-label">Stock OK</div><div class="kpi-valor" id="inv-ok">—</div></div>
+        <div class="kpi-card amarelo"><div class="kpi-label">Stock Baixo</div><div class="kpi-valor" id="inv-baixo">—</div></div>
+        <div class="kpi-card vermelho"><div class="kpi-label">Esgotados</div><div class="kpi-valor" id="inv-esgotado">—</div></div>
+      </div>
+
+      <div class="card">
+        <div class="tabela-container">
+          <table class="tabela" id="tabela-inventario">
+            <thead>
+              <tr>
+                <th>Referência</th><th>Material</th><th>Categoria</th>
+                <th>Unid.</th><th>Localização</th>
+                <th>Stock Mín.</th><th>Stock Actual</th><th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-inventario"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: MOVIMENTOS -->
+    <div id="tab-movimentos" class="tab-content">
+      <div class="print-header">
+        <h1>DANMO Service System, Lda — Movimentos de Stock</h1>
+        <p id="print-data-mov"></p>
+      </div>
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between;" class="no-print">
+          <div class="form-label" style="font-size:1.1rem; margin:0 0 16px;">🔄 Movimentos por Período</div>
+          <button class="btn btn-secundario btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+        </div>
+        <div class="form-grid no-print" style="margin-bottom:16px;">
+          <div class="form-grupo">
+            <label class="form-label">Data De</label>
+            <input class="form-input" type="date" id="mov-de">
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Data Até</label>
+            <input class="form-input" type="date" id="mov-ate">
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Tipo</label>
+            <select class="form-select" id="mov-tipo">
+              <option value="">Todos</option>
+              <option value="entrada">Entradas</option>
+              <option value="saida">Saídas</option>
+            </select>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Material</label>
+            <select class="form-select" id="mov-material">
+              <option value="">Todos</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primario no-print" onclick="carregarMovimentos()" style="margin-bottom:20px;">🔍 Pesquisar</button>
+
+        <div class="kpi-grid no-print" style="margin-bottom:20px; display:none;" id="kpi-movimentos">
+          <div class="kpi-card verde"><div class="kpi-label">Total Entradas</div><div class="kpi-valor" id="mov-total-entradas">—</div></div>
+          <div class="kpi-card vermelho"><div class="kpi-label">Total Saídas</div><div class="kpi-valor" id="mov-total-saidas">—</div></div>
+          <div class="kpi-card azul"><div class="kpi-label">Qtd Total Entrada</div><div class="kpi-valor" id="mov-qtd-entradas">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Qtd Total Saída</div><div class="kpi-valor" id="mov-qtd-saidas">—</div></div>
+        </div>
+
+        <div class="tabela-container">
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th>Data</th><th>Tipo</th><th>Material</th>
+                <th>Qtd</th><th>Unid.</th><th>Fornecedor / Colaborador</th>
+                <th>Departamento</th><th>Obs.</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-movimentos">
+              <tr><td colspan="8" class="tabela-vazia">Selecciona o período e clica Pesquisar</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: COMPRAS -->
+    <div id="tab-compras" class="tab-content">
+      <div class="print-header">
+        <h1>DANMO Service System, Lda — Resumo de Compras</h1>
+        <p id="print-data-comp"></p>
+      </div>
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between;" class="no-print">
+          <div class="form-label" style="font-size:1.1rem; margin:0 0 16px;">💰 Resumo de Compras</div>
+          <button class="btn btn-secundario btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+        </div>
+        <div class="form-grid no-print" style="margin-bottom:16px;">
+          <div class="form-grupo">
+            <label class="form-label">Data De</label>
+            <input class="form-input" type="date" id="comp-de">
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Data Até</label>
+            <input class="form-input" type="date" id="comp-ate">
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Fornecedor</label>
+            <select class="form-select" id="comp-fornecedor">
+              <option value="">Todos</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primario no-print" onclick="carregarCompras()" style="margin-bottom:20px;">🔍 Pesquisar</button>
+
+        <div class="kpi-grid no-print" style="margin-bottom:20px;">
+          <div class="kpi-card azul"><div class="kpi-label">Total Compras</div><div class="kpi-valor" id="comp-total-movs">—</div></div>
+          <div class="kpi-card verde"><div class="kpi-label">Total Gasto (MZN)</div><div class="kpi-valor" id="comp-total-mzn">—</div></div>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <div class="form-label" style="margin-bottom:12px; color:var(--cor-ambar);">Por Fornecedor</div>
+          <div class="tabela-container">
+            <table class="tabela">
+              <thead><tr><th>Fornecedor</th><th>Nº Compras</th><th>Total (MZN)</th></tr></thead>
+              <tbody id="tbody-por-fornecedor">
+                <tr><td colspan="3" class="tabela-vazia">Selecciona o período e clica Pesquisar</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="form-label" style="margin-bottom:12px; color:var(--cor-ambar);">Detalhe das Compras</div>
+        <div class="tabela-container">
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th>Data</th><th>Material</th><th>Qtd</th><th>Unid.</th>
+                <th>Preço Unit.</th><th>Total</th>
+                <th>Fornecedor</th><th>Pro-forma/Cot.</th><th>Comprador</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-compras">
+              <tr><td colspan="9" class="tabela-vazia">Selecciona o período e clica Pesquisar</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+
+  <script>
+    function mudarTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(function (b) {
+        b.classList.toggle('ativo', b.dataset.tab === tab);
+      });
+      document.querySelectorAll('.tab-content').forEach(function (c) { c.classList.remove('ativo'); });
+      document.getElementById('tab-' + tab).classList.add('ativo');
+    }
+
+    var materiais = [], stockCalc = {}, fornecedores = [];
+
+    async function init() {
+      try {
+        var resultados = await Promise.all([
+          db.query('materiais', 'ativo=eq.true&order=referencia.asc'),
+          db.query('stock_movimentos', 'estado=eq.confirmado'),
+          db.query('fornecedores', 'ativo=eq.true&order=nome.asc')
+        ]);
+
+        materiais = resultados[0];
+        var movs = resultados[1];
+        fornecedores = resultados[2];
+
+        movs.forEach(function (m) {
+          if (!stockCalc[m.material_id]) stockCalc[m.material_id] = 0;
+          if (m.tipo === 'entrada') stockCalc[m.material_id] += Number(m.quantidade);
+          if (m.tipo === 'saida') stockCalc[m.material_id] -= Number(m.quantidade);
+        });
+
+        var cats = materiais.map(function (m) { return m.categoria; }).filter(Boolean);
+        cats = cats.filter(function (c, i) { return cats.indexOf(c) === i; });
+        var selCat = document.getElementById('inv-filtro-cat');
+        cats.forEach(function (c) {
+          var o = document.createElement('option');
+          o.value = c; o.textContent = c;
+          selCat.appendChild(o);
+        });
+
+        var selMat = document.getElementById('mov-material');
+        materiais.forEach(function (m) {
+          var o = document.createElement('option');
+          o.value = m.id; o.textContent = m.referencia + ' — ' + m.nome;
+          selMat.appendChild(o);
+        });
+
+        var selForn = document.getElementById('comp-fornecedor');
+        fornecedores.forEach(function (f) {
+          var o = document.createElement('option');
+          o.value = f.nome; o.textContent = f.nome;
+          selForn.appendChild(o);
+        });
+
+        var hoje = new Date();
+        var prim = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        function form(d) { return d.toISOString().split('T')[0]; }
+        document.getElementById('mov-de').value = form(prim);
+        document.getElementById('mov-ate').value = form(hoje);
+        document.getElementById('comp-de').value = form(prim);
+        document.getElementById('comp-ate').value = form(hoje);
+
+        var dataTxt = 'Gerado em: ' + hoje.toLocaleDateString('pt-MZ', { day: '2-digit', month: 'long', year: 'numeric' });
+        document.getElementById('print-data-inv').textContent = dataTxt;
+        document.getElementById('print-data-mov').textContent = dataTxt;
+        document.getElementById('print-data-comp').textContent = dataTxt;
+
+        renderInventario();
+      } catch (err) {
+        console.error('Erro ao inicializar Relatórios:', err);
+        mostrarToast('Erro ao carregar dados. Verifica a ligação.', 'erro');
+      }
+    }
+
+    /* ── INVENTÁRIO ── */
+    function renderInventario() {
+      var catFiltro = document.getElementById('inv-filtro-cat').value;
+      var estadoFiltro = document.getElementById('inv-filtro-estado').value;
+
+      var lista = materiais;
+      if (catFiltro) lista = lista.filter(function (m) { return m.categoria === catFiltro; });
+
+      var comEstado = lista.map(function (m) {
+        var stock = stockCalc[m.id] || 0;
+        var minimo = m.stock_minimo || 0;
+        var estado;
+        if (stock <= 0) estado = 'esgotado';
+        else if (stock <= minimo) estado = 'baixo';
+        else estado = 'ok';
+        var copia = Object.assign({}, m);
+        copia._stock = stock; copia._estado = estado;
+        return copia;
+      });
+
+      var filtrada = estadoFiltro ? comEstado.filter(function (m) { return m._estado === estadoFiltro; }) : comEstado;
+
+      document.getElementById('inv-total').textContent = comEstado.length;
+      document.getElementById('inv-ok').textContent = comEstado.filter(function (m) { return m._estado === 'ok'; }).length;
+      document.getElementById('inv-baixo').textContent = comEstado.filter(function (m) { return m._estado === 'baixo'; }).length;
+      document.getElementById('inv-esgotado').textContent = comEstado.filter(function (m) { return m._estado === 'esgotado'; }).length;
+
+      var tb = document.getElementById('tbody-inventario');
+      if (filtrada.length === 0) {
+        tb.innerHTML = '<tr><td colspan="8" class="tabela-vazia">Nenhum material encontrado</td></tr>';
+        return;
+      }
+
+      tb.innerHTML = filtrada.map(function (m) {
+        var badge, cor;
+        if (m._estado === 'esgotado') { badge = '<span class="badge badge-erro">Esgotado</span>'; cor = 'var(--cor-erro)'; }
+        else if (m._estado === 'baixo') { badge = '<span class="badge badge-aviso">Stock Baixo</span>'; cor = 'var(--cor-aviso)'; }
+        else { badge = '<span class="badge badge-sucesso">OK</span>'; cor = 'var(--cor-sucesso)'; }
+        return '<tr>' +
+          '<td><code style="color:var(--cor-ambar);">' + m.referencia + '</code></td>' +
+          '<td><strong>' + m.nome + '</strong></td>' +
+          '<td>' + (m.categoria || '—') + '</td>' +
+          '<td>' + m.unidade + '</td>' +
+          '<td>' + (m.localizacao || '—') + '</td>' +
+          '<td>' + fmtNum(m.stock_minimo || 0) + '</td>' +
+          '<td style="color:' + cor + '; font-weight:700;">' + fmtNum(m._stock) + '</td>' +
+          '<td>' + badge + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    /* ── MOVIMENTOS ── */
+    async function carregarMovimentos() {
+      var de = document.getElementById('mov-de').value;
+      var ate = document.getElementById('mov-ate').value;
+      var tipo = document.getElementById('mov-tipo').value;
+      var matId = document.getElementById('mov-material').value;
+
+      if (!de || !ate) { mostrarToast('Selecciona o período!', 'aviso'); return; }
+
+      var params = 'estado=eq.confirmado&data_movimento=gte.' + de + '&data_movimento=lte.' + ate + '&order=data_movimento.desc';
+      if (tipo) params += '&tipo=eq.' + tipo;
+      if (matId) params += '&material_id=eq.' + matId;
+
+      var movs = await db.query('stock_movimentos', params);
+
+      var entradas = movs.filter(function (m) { return m.tipo === 'entrada'; });
+      var saidas = movs.filter(function (m) { return m.tipo === 'saida'; });
+      var qtdEnt = entradas.reduce(function (s, m) { return s + Number(m.quantidade); }, 0);
+      var qtdSai = saidas.reduce(function (s, m) { return s + Number(m.quantidade); }, 0);
+
+      document.getElementById('kpi-movimentos').style.display = 'grid';
+      document.getElementById('mov-total-entradas').textContent = entradas.length;
+      document.getElementById('mov-total-saidas').textContent = saidas.length;
+      document.getElementById('mov-qtd-entradas').textContent = fmtNum(qtdEnt);
+      document.getElementById('mov-qtd-saidas').textContent = fmtNum(qtdSai);
+
+      var tb = document.getElementById('tbody-movimentos');
+      if (movs.length === 0) {
+        tb.innerHTML = '<tr><td colspan="8" class="tabela-vazia">Nenhum movimento encontrado neste período</td></tr>';
+        return;
+      }
+
+      tb.innerHTML = movs.map(function (m) {
+        var mat = materiais.find(function (x) { return x.id === m.material_id; });
+        var nome = mat ? (mat.referencia + ' — ' + mat.nome) : '—';
+        var unid = mat ? mat.unidade : '';
+        var tipoBadge = m.tipo === 'entrada'
+          ? '<span class="badge badge-sucesso">Entrada</span>'
+          : '<span class="badge badge-erro">Saída</span>';
+        var quem = m.tipo === 'entrada' ? (m.fornecedor || '—') : (m.colaborador_nome || '—');
+        var cor = m.tipo === 'entrada' ? 'var(--cor-sucesso)' : 'var(--cor-erro)';
+        var sinal = m.tipo === 'entrada' ? '+' : '−';
+        return '<tr>' +
+          '<td>' + formataData(m.data_movimento) + '</td>' +
+          '<td>' + tipoBadge + '</td>' +
+          '<td><strong>' + nome + '</strong></td>' +
+          '<td style="font-weight:700; color:' + cor + ';">' + sinal + fmtNum(m.quantidade) + '</td>' +
+          '<td>' + unid + '</td>' +
+          '<td>' + quem + '</td>' +
+          '<td>' + (m.departamento || '—') + '</td>' +
+          '<td>' + (m.observacoes || '—') + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    /* ── COMPRAS ── */
+    async function carregarCompras() {
+      var de = document.getElementById('comp-de').value;
+      var ate = document.getElementById('comp-ate').value;
+      var forn = document.getElementById('comp-fornecedor').value;
+
+      if (!de || !ate) { mostrarToast('Selecciona o período!', 'aviso'); return; }
+
+      var params = 'tipo=eq.entrada&estado=eq.confirmado&data_movimento=gte.' + de + '&data_movimento=lte.' + ate + '&order=data_movimento.desc';
+      if (forn) params += '&fornecedor=eq.' + encodeURIComponent(forn);
+
+      var compras = await db.query('stock_movimentos', params);
+
+      var totalGasto = compras.reduce(function (s, m) { return s + ((m.preco_unitario || 0) * m.quantidade); }, 0);
+
+      document.getElementById('comp-total-movs').textContent = compras.length;
+      document.getElementById('comp-total-mzn').textContent = fmtNum(totalGasto);
+
+      var porForn = {};
+      compras.forEach(function (m) {
+        var f = m.fornecedor || 'Sem fornecedor';
+        if (!porForn[f]) porForn[f] = { count: 0, total: 0 };
+        porForn[f].count++;
+        porForn[f].total += (m.preco_unitario || 0) * m.quantidade;
+      });
+
+      var linhasForn = Object.keys(porForn)
+        .sort(function (a, b) { return porForn[b].total - porForn[a].total; })
+        .map(function (f) {
+          return '<tr><td><strong>' + f + '</strong></td><td>' + porForn[f].count + '</td>' +
+            '<td style="color:var(--cor-ambar); font-weight:700;">' + fmtNum(porForn[f].total) + ' MZN</td></tr>';
+        }).join('');
+      document.getElementById('tbody-por-fornecedor').innerHTML =
+        linhasForn || '<tr><td colspan="3" class="tabela-vazia">Nenhuma compra encontrada</td></tr>';
+
+      var linhasDetalhe = compras.map(function (m) {
+        var mat = materiais.find(function (x) { return x.id === m.material_id; });
+        var nome = mat ? (mat.referencia + ' — ' + mat.nome) : '—';
+        var unid = mat ? mat.unidade : '';
+        var total = (m.preco_unitario || 0) * m.quantidade;
+        return '<tr>' +
+          '<td>' + formataData(m.data_movimento) + '</td>' +
+          '<td><strong>' + nome + '</strong></td>' +
+          '<td>' + fmtNum(m.quantidade) + '</td>' +
+          '<td>' + unid + '</td>' +
+          '<td>' + (m.preco_unitario ? fmtNum(m.preco_unitario) + ' MZN' : '—') + '</td>' +
+          '<td style="color:var(--cor-ambar); font-weight:700;">' + (total ? fmtNum(total) + ' MZN' : '—') + '</td>' +
+          '<td>' + (m.fornecedor || '—') + '</td>' +
+          '<td>' + (m.numero_po || '—') + '</td>' +
+          '<td>' + (m.comprador_nome || '—') + '</td>' +
+        '</tr>';
+      }).join('');
+      document.getElementById('tbody-compras').innerHTML =
+        linhasDetalhe || '<tr><td colspan="9" class="tabela-vazia">Nenhuma compra encontrada</td></tr>';
+    }
+
+    init();
+  </script>
+</body>
+</html>
