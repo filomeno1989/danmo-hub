@@ -942,6 +942,7 @@
       renderChipsTecnicos();
     });
 
+    // CORREÇÃO: Função carregarIntervencoes refeita para não estoirar o limite de paginação da API.
     async function carregarIntervencoes() {
       const records = await db.query('records', `select=*&os_id=eq.${osId}&order=shift_date.asc,time_start.asc`);
       const tbody = document.getElementById('tbody-intervencoes');
@@ -953,7 +954,10 @@
         return;
       }
 
-      const relacoes = await db.query('record_collaborators','select=*');
+      // CORREÇÃO: Em vez de pedir tudo, pedimos só as relações dos IDs desta OS
+      const recordIds = records.map(r => r.id).join(',');
+      const relacoes = await db.query('record_collaborators', `select=*&record_id=in.(${recordIds})`);
+      
       let totalHorasIntervencoes = 0;
       let totalHorasTecnicos = 0;
 
