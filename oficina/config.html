@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configurações — Danmo Oficina</title>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <link rel="stylesheet" href="../shared/oficina.css" />
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      align-items: center; justify-content: center; z-index: 200;
+    }
+    .modal-overlay.aberto { display: flex; }
+    .modal-box {
+      background: var(--navy2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 24px; width: 100%; max-width: 420px; box-shadow: var(--shadow);
+    }
+    .duas-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 800px) { .duas-colunas { grid-template-columns: 1fr; } }
+    .linha-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .linha-item:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <div id="navbar" class="navbar"></div>
+
+  <main class="main">
+    <h1 class="page-title">Configurações</h1>
+    <p class="page-sub">Categorias, grupos de equipamento e níveis de acesso</p>
+
+    <div class="duas-colunas">
+      <!-- Categorias -->
+      <div class="card">
+        <div class="flex-between">
+          <div class="card-title" style="margin-bottom:0">Categorias de Equipamento</div>
+          <button class="btn btn-primary btn-sm" id="btn-nova-categoria">+ Nova</button>
+        </div>
+        <div id="lista-categorias" class="mt-16">A carregar...</div>
+      </div>
+
+      <!-- Grupos -->
+      <div class="card">
+        <div class="flex-between">
+          <div class="card-title" style="margin-bottom:0">Grupos de Equipamento</div>
+          <button class="btn btn-primary btn-sm" id="btn-novo-grupo">+ Novo</button>
+        </div>
+        <div id="lista-grupos" class="mt-16">A carregar...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Níveis de Acesso</div>
+      <p class="text-muted mt-16">Os utilizadores e os seus níveis (Admin / Gestor / Operador) são geridos de forma centralizada e partilhada com os outros módulos Danmo.</p>
+      <div class="table-wrap mt-16">
+        <table>
+          <thead>
+            <tr><th>Utilizador</th><th>Nome</th><th>Nível</th><th>Ativo</th><th></th></tr>
+          </thead>
+          <tbody id="tbody-utilizadores">
+            <tr><td colspan="5">A carregar...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Categoria -->
+  <div class="modal-overlay" id="modal-categoria">
+    <div class="modal-box">
+      <div class="card-title" id="titulo-modal-categoria">Nova Categoria</div>
+      <form id="form-categoria">
+        <input type="hidden" id="c-id" />
+        <div class="form-group mt-16">
+          <label>Nome</label>
+          <input type="text" id="c-nome" required placeholder="Ex: Reachstacker" />
+        </div>
+        <div class="form-group mt-16">
+          <label>Ativo</label>
+          <select id="c-ativo">
+            <option value="true">Sim</option>
+            <option value="false">Não</option>
+          </select>
+        </div>
+        <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
+          <button type="button" class="btn btn-ghost" id="btn-cancelar-categoria">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Grupo -->
+  <div class="modal-overlay" id="modal-grupo">
+    <div class="modal-box">
+      <div class="card-title" id="titulo-modal-grupo">Novo Grupo</div>
+      <form id="form-grupo">
+        <input type="hidden" id="g-id" />
+        <div class="form-group mt-16">
+          <label>Categoria</label>
+          <select id="g-categoria" required></select>
+        </div>
+        <div class="form-group mt-16">
+          <label>Nome do Grupo</label>
+          <input type="text" id="g-nome" required placeholder="Ex: RST 45T" />
+        </div>
+        <div class="form-group mt-16">
+          <label>Ativo</label>
+          <select id="g-ativo">
+            <option value="true">Sim</option>
+            <option value="false">Não</option>
+          </select>
+        </div>
+        <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
+          <button type="button" class="btn btn-ghost" id="btn-cancelar-grupo">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+    let categorias = [];
+    let grupos = [];
+
+    async function carregarCategorias() {
+      categorias = await db.query('categorias_equipamento', 'select=*&order=nome.asc');
+      const div = document.getElementById('lista-categorias');
+      if (categorias.length === 0) {
+        div.innerHTML = '<p class="text-muted">Sem categorias registadas.</p>';
+        return;
+      }
+      div.innerHTML = categorias
+        .map(
+          (c) => `
+        <div class="linha-item">
+          <span>${c.nome} ${!c.ativo ? '<span class="badge badge-gray">inativo</span>' : ''}</span>
+          <button class="btn btn-ghost btn-sm" onclick="editarCategoria(${c.id})">Editar</button>
+        </div>`
+        )
+        .join('');
+
+      const selGrupo = document.getElementById('g-categoria');
+      selGrupo.innerHTML = categorias
+        .filter((c) => c.ativo)
+        .map((c) => `<option value="${c.id}">${c.nome}</option>`)
+        .join('');
+    }
+
+    async function carregarGrupos() {
+      grupos = await db.query('grupos_equipamento', 'select=*&order=nome.asc');
+      const div = document.getElementById('lista-grupos');
+      if (grupos.length === 0) {
+        div.innerHTML = '<p class="text-muted">Sem grupos registados.</p>';
+        return;
+      }
+      div.innerHTML = grupos
+        .map((g) => {
+          const cat = categorias.find((c) => c.id === g.categoria_id);
+          return `
+          <div class="linha-item">
+            <span>${g.nome} <span class="text-muted">— ${cat ? cat.nome : '—'}</span> ${!g.ativo ? '<span class="badge badge-gray">inativo</span>' : ''}</span>
+            <button class="btn btn-ghost btn-sm" onclick="editarGrupo(${g.id})">Editar</button>
+          </div>`;
+        })
+        .join('');
+    }
+
+    async function carregarUtilizadores() {
+      const lista = await db.query('utilizadores', 'select=*&order=nome.asc');
+      const tbody = document.getElementById('tbody-utilizadores');
+      if (lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5">Sem utilizadores registados.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = lista
+        .map(
+          (u) => `
+        <tr>
+          <td>${u.usuario || '—'}</td>
+          <td>${u.nome || '—'}</td>
+          <td>
+            <select onchange="mudarNivel(${u.id}, this.value)">
+              <option value="admin" ${u.nivel === 'admin' ? 'selected' : ''}>Admin</option>
+              <option value="gestor" ${u.nivel === 'gestor' ? 'selected' : ''}>Gestor</option>
+              <option value="operador" ${u.nivel === 'operador' ? 'selected' : ''}>Operador</option>
+            </select>
+          </td>
+          <td><span class="badge ${u.ativo ? 'badge-green' : 'badge-gray'}">${u.ativo ? 'Sim' : 'Não'}</span></td>
+          <td><button class="btn btn-ghost btn-sm" onclick="alternarAtivoUtilizador(${u.id}, ${u.ativo})">${u.ativo ? 'Desativar' : 'Ativar'}</button></td>
+        </tr>`
+        )
+        .join('');
+    }
+
+    async function mudarNivel(id, nivel) {
+      await db.update('utilizadores', id, { nivel });
+    }
+
+    async function alternarAtivoUtilizador(id, ativoAtual) {
+      await db.update('utilizadores', id, { ativo: !ativoAtual });
+      await carregarUtilizadores();
+    }
+
+    // Categoria — modal
+    const modalCategoria = document.getElementById('modal-categoria');
+    document.getElementById('btn-nova-categoria').addEventListener('click', () => {
+      document.getElementById('form-categoria').reset();
+      document.getElementById('c-id').value = '';
+      document.getElementById('titulo-modal-categoria').textContent = 'Nova Categoria';
+      modalCategoria.classList.add('aberto');
+    });
+    document.getElementById('btn-cancelar-categoria').addEventListener('click', () => modalCategoria.classList.remove('aberto'));
+
+    function editarCategoria(id) {
+      const c = categorias.find((x) => x.id === id);
+      if (!c) return;
+      document.getElementById('c-id').value = c.id;
+      document.getElementById('c-nome').value = c.nome;
+      document.getElementById('c-ativo').value = String(c.ativo);
+      document.getElementById('titulo-modal-categoria').textContent = `Editar — ${c.nome}`;
+      modalCategoria.classList.add('aberto');
+    }
+
+    document.getElementById('form-categoria').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const id = document.getElementById('c-id').value;
+      const payload = {
+        nome: document.getElementById('c-nome').value.trim(),
+        ativo: document.getElementById('c-ativo').value === 'true',
+      };
+      try {
+        if (id) await db.update('categorias_equipamento', id, payload);
+        else await db.insert('categorias_equipamento', payload);
+        modalCategoria.classList.remove('aberto');
+        await carregarCategorias();
+        await carregarGrupos();
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao guardar categoria (pode já existir uma com este nome).');
+      }
+    });
+
+    // Grupo — modal
+    const modalGrupo = document.getElementById('modal-grupo');
+    document.getElementById('btn-novo-grupo').addEventListener('click', () => {
+      document.getElementById('form-grupo').reset();
+      document.getElementById('g-id').value = '';
+      document.getElementById('titulo-modal-grupo').textContent = 'Novo Grupo';
+      modalGrupo.classList.add('aberto');
+    });
+    document.getElementById('btn-cancelar-grupo').addEventListener('click', () => modalGrupo.classList.remove('aberto'));
+
+    function editarGrupo(id) {
+      const g = grupos.find((x) => x.id === id);
+      if (!g) return;
+      document.getElementById('g-id').value = g.id;
+      document.getElementById('g-categoria').value = g.categoria_id;
+      document.getElementById('g-nome').value = g.nome;
+      document.getElementById('g-ativo').value = String(g.ativo);
+      document.getElementById('titulo-modal-grupo').textContent = `Editar — ${g.nome}`;
+      modalGrupo.classList.add('aberto');
+    }
+
+    document.getElementById('form-grupo').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const id = document.getElementById('g-id').value;
+      const payload = {
+        categoria_id: document.getElementById('g-categoria').value,
+        nome: document.getElementById('g-nome').value.trim(),
+        ativo: document.getElementById('g-ativo').value === 'true',
+      };
+      try {
+        if (id) await db.update('grupos_equipamento', id, payload);
+        else await db.insert('grupos_equipamento', payload);
+        modalGrupo.classList.remove('aberto');
+        await carregarGrupos();
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao guardar grupo (pode já existir um com este nome nesta categoria).');
+      }
+    });
+
+    (async function init() {
+      await carregarCategorias();
+      await carregarGrupos();
+      await carregarUtilizadores();
+    })();
+  </script>
+</body>
+</html>
