@@ -190,17 +190,14 @@
         var resultados = await Promise.all([
           db.query('materiais', 'ativo=eq.true&order=nome.asc'),
           db.query('fornecedores', 'ativo=eq.true&order=nome.asc'),
-          /* NOTA: 'departamentos' é tabela partilhada com a Ferramentaria — lê-se
-             sem filtro no servidor e filtra-se aqui aceitando 'ativo' OU 'active',
-             conforme qual coluna existir de facto na tabela. */
-          db.query('departamentos', 'order=nome.asc'),
+          db.query('departamentos', 'active=eq.true&order=nome.asc'),
           db.query('responsaveis', 'ativo=eq.true&funcao=in.(comprador,ambos)&order=nome.asc'),
           db.query('responsaveis', 'ativo=eq.true&funcao=in.(receptor,ambos)&order=nome.asc')
         ]);
 
         materiais = resultados[0];
         fornecedores = resultados[1];
-        departamentos = resultados[2].filter(function (d) { return d.ativo !== false && d.active !== false; });
+        departamentos = resultados[2];
         compradores = resultados[3];
         receptores = resultados[4];
 

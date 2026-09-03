@@ -311,7 +311,7 @@
 
     /* ── Instanciar cada gestor ── */
     criarGestorLista({ prefixo: 'forn', tabela: 'fornecedores', nomeSingular: 'Fornecedor' });
-    criarGestorLista({ prefixo: 'dep', tabela: 'departamentos', nomeSingular: 'Departamento', detectarCampoActivo: true });
+    criarGestorLista({ prefixo: 'dep', tabela: 'departamentos', nomeSingular: 'Departamento', campoActivo: 'active' });
     criarGestorLista({ prefixo: 'final', tabela: 'finalidades', nomeSingular: 'Finalidade' });
     criarGestorLista({ prefixo: 'cat', tabela: 'categorias_material', nomeSingular: 'Categoria' });
     criarGestorLista({ prefixo: 'comp', tabela: 'responsaveis', nomeSingular: 'Comprador', funcao: 'comprador' });

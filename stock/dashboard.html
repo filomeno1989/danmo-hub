@@ -39,8 +39,12 @@
         <div class="kpi-valor" id="kpi-alertas">—</div>
       </div>
       <div class="kpi-card amarelo">
-        <div class="kpi-label">Pedidos Pendentes</div>
+        <div class="kpi-label">Compras Pendentes</div>
         <div class="kpi-valor" id="kpi-pendentes">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Saídas Pendentes (Oficina)</div>
+        <div class="kpi-valor" id="kpi-pendentes-oficina">—</div>
       </div>
     </div>
 
@@ -50,10 +54,10 @@
       <div id="lista-alertas"></div>
     </div>
 
-    <!-- Pendentes -->
+    <!-- Pendentes — Compras -->
     <div id="card-pendentes" class="card" style="display:none;">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
-        <div class="form-label" style="font-size:1.1rem; margin:0;">⏳ Pedidos Pendentes de Confirmação</div>
+        <div class="form-label" style="font-size:1.1rem; margin:0;">⏳ Pedidos de Compra Pendentes de Confirmação</div>
         <a href="entradas.html" class="btn btn-secundario btn-sm">Ver todos →</a>
       </div>
       <div class="tabela-container">
@@ -62,6 +66,22 @@
             <tr><th>Data</th><th>Material</th><th>Qtd</th><th>Fornecedor</th><th>Departamento</th><th>Acção</th></tr>
           </thead>
           <tbody id="tbody-pendentes"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pendentes — Oficina -->
+    <div id="card-pendentes-oficina" class="card" style="display:none;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <div class="form-label" style="font-size:1.1rem; margin:0;">🔧 Saídas Pendentes — Vindas da Oficina</div>
+        <a href="saidas.html" class="btn btn-secundario btn-sm">Ver todas →</a>
+      </div>
+      <div class="tabela-container">
+        <table class="tabela">
+          <thead>
+            <tr><th>Data</th><th>Material</th><th>Qtd</th><th>Obra / Equipamento</th><th>Colaborador</th><th>Acção</th></tr>
+          </thead>
+          <tbody id="tbody-pendentes-oficina"></tbody>
         </table>
       </div>
     </div>
@@ -164,7 +184,8 @@
         return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
       }
 
-      var pendentes = movimentos.filter(function (m) { return m.estado === 'pendente'; });
+      var pendentesCompra = movimentos.filter(function (m) { return m.estado === 'pendente' && m.tipo === 'entrada'; });
+      var pendentesOficina = movimentos.filter(function (m) { return m.estado === 'pendente' && m.tipo === 'saida'; });
       var confirmedEntradas = movimentos.filter(function (m) { return m.tipo === 'entrada' && m.estado === 'confirmado'; });
       var confirmedSaidas = movimentos.filter(function (m) { return m.tipo === 'saida' && m.estado === 'confirmado'; });
       var alertas = materiais.filter(function (m) { return (stockCalc[m.id] || 0) <= (m.stock_minimo || 0); });
@@ -173,7 +194,8 @@
       document.getElementById('kpi-entradas-mes').textContent = confirmedEntradas.filter(destesMes).length;
       document.getElementById('kpi-saidas-mes').textContent = confirmedSaidas.filter(destesMes).length;
       document.getElementById('kpi-alertas').textContent = alertas.length;
-      document.getElementById('kpi-pendentes').textContent = pendentes.length;
+      document.getElementById('kpi-pendentes').textContent = pendentesCompra.length;
+      document.getElementById('kpi-pendentes-oficina').textContent = pendentesOficina.length;
 
       if (alertas.length > 0) {
         document.getElementById('card-alertas').style.display = 'block';
@@ -191,9 +213,9 @@
         }).join('');
       }
 
-      if (pendentes.length > 0) {
+      if (pendentesCompra.length > 0) {
         document.getElementById('card-pendentes').style.display = 'block';
-        document.getElementById('tbody-pendentes').innerHTML = pendentes.slice(0, 5).map(function (m) {
+        document.getElementById('tbody-pendentes').innerHTML = pendentesCompra.slice(0, 5).map(function (m) {
           return '<tr>' +
             '<td>' + formataData(m.data_movimento) + '</td>' +
             '<td><strong>' + nomeMat(m.material_id) + '</strong></td>' +
@@ -201,6 +223,20 @@
             '<td>' + (m.fornecedor || '—') + '</td>' +
             '<td>' + (m.departamento || '—') + '</td>' +
             '<td><a href="entradas.html" class="btn btn-verde btn-sm">✅ Confirmar</a></td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      if (pendentesOficina.length > 0) {
+        document.getElementById('card-pendentes-oficina').style.display = 'block';
+        document.getElementById('tbody-pendentes-oficina').innerHTML = pendentesOficina.slice(0, 5).map(function (m) {
+          return '<tr>' +
+            '<td>' + formataData(m.data_movimento) + '</td>' +
+            '<td><strong>' + nomeMat(m.material_id) + '</strong></td>' +
+            '<td>' + fmtNum(m.quantidade) + ' ' + unidMat(m.material_id) + '</td>' +
+            '<td>' + (m.finalidade || '—') + '</td>' +
+            '<td>' + (m.colaborador_nome || '—') + '</td>' +
+            '<td><a href="saidas.html" class="btn btn-verde btn-sm">✅ Confirmar</a></td>' +
           '</tr>';
         }).join('');
       }

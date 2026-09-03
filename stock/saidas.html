@@ -55,6 +55,25 @@
       </div>
     </div>
 
+    <div class="card" id="card-pendentes-oficina" style="display:none;">
+      <div class="form-label" style="font-size:1.1rem; margin-bottom:6px;">🔧 Saídas Pendentes — Vindas da Oficina</div>
+      <p style="font-size:var(--tamanho-sm); color:var(--cor-texto-sec); margin-bottom:16px;">
+        Material marcado como "Danmo (retirar do Stock)" numa Ordem de Serviço. Ao confirmar, o stock é abatido directamente.
+      </p>
+      <div class="tabela-container">
+        <table class="tabela">
+          <thead>
+            <tr>
+              <th>Data</th><th>Material</th><th>Qtd</th>
+              <th>Stock Disp.</th><th>Obra / Equipamento</th>
+              <th>Colaborador</th><th>Origem</th><th>Acções</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-pendentes-oficina"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="card">
       <div class="form-label" style="font-size:1.1rem; margin-bottom:16px;">📋 Histórico de Saídas</div>
       <div style="margin-bottom:16px;">
@@ -122,11 +141,85 @@
         preencherSelect('f-finalidade', finalidades, function (f) { return f.nome; }, function (f) { return f.nome; }, '-- Seleccione --');
 
         await calcularStock();
+        await carregarPendentesOficina();
         await carregarSaidas();
       } catch (err) {
         console.error('Erro ao inicializar Saídas:', err);
         mostrarToast('Erro ao carregar dados. Verifica a ligação.', 'erro');
       }
+    }
+
+    var pendentesOficina = [];
+
+    async function carregarPendentesOficina() {
+      var pend = await db.query('stock_movimentos', 'tipo=eq.saida&estado=eq.pendente&order=criado_em.desc');
+      pendentesOficina = pend.map(function (m) {
+        var mat = materiais.find(function (x) { return x.id === m.material_id; });
+        m._mat = mat ? (mat.referencia + ' — ' + mat.nome) : '—';
+        m._unid = mat ? mat.unidade : '';
+        return m;
+      });
+      renderPendentesOficina();
+    }
+
+    function renderPendentesOficina() {
+      var card = document.getElementById('card-pendentes-oficina');
+      if (pendentesOficina.length === 0) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+
+      document.getElementById('tbody-pendentes-oficina').innerHTML = pendentesOficina.map(function (m) {
+        var disp = stockCalc[m.material_id] || 0;
+        var insuficiente = Number(m.quantidade) > disp;
+        return '<tr>' +
+          '<td>' + formataData(m.data_movimento) + '</td>' +
+          '<td><strong>' + m._mat + '</strong></td>' +
+          '<td>' + fmtNum(m.quantidade) + ' ' + m._unid + '</td>' +
+          '<td style="color:' + (insuficiente ? 'var(--cor-erro)' : 'var(--cor-sucesso)') + '; font-weight:700;">' + fmtNum(disp) + ' ' + m._unid + '</td>' +
+          '<td>' + (m.finalidade || '—') + '</td>' +
+          '<td>' + (m.colaborador_nome || '—') + '</td>' +
+          '<td><span class="badge badge-info">Oficina</span></td>' +
+          '<td><div style="display:flex; gap:6px;">' +
+            '<button class="btn btn-verde btn-sm" onclick="confirmarPendenteOficina(\'' + m.id + '\')">✅ Confirmar</button>' +
+            '<button class="btn btn-secundario btn-sm" onclick="rejeitarPendenteOficina(\'' + m.id + '\')">✖ Rejeitar</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    async function confirmarPendenteOficina(id) {
+      var m = pendentesOficina.find(function (x) { return x.id === id; });
+      if (!m) return;
+      var disp = stockCalc[m.material_id] || 0;
+      if (Number(m.quantidade) > disp) {
+        if (!confirmarAcao('Stock insuficiente (disponível: ' + fmtNum(disp) + '). Confirmar mesmo assim?')) return;
+      } else {
+        if (!confirmarAcao('Confirmar esta saída de material para a Oficina? O stock será abatido directamente.')) return;
+      }
+
+      try {
+        var res = await db.update('stock_movimentos', id, {
+          estado: 'confirmado',
+          data_confirmacao: dataHojeISO()
+        });
+        if (res && res.length > 0) {
+          mostrarToast('Saída confirmada e stock abatido! ✅', 'sucesso');
+          await calcularStock();
+          await carregarPendentesOficina();
+          await carregarSaidas();
+        } else {
+          mostrarToast('Erro ao confirmar. Tenta novamente.', 'erro');
+        }
+      } catch (err) {
+        console.error('Erro ao confirmar saída da Oficina:', err);
+        mostrarToast('Erro ao confirmar. Tenta novamente.', 'erro');
+      }
+    }
+
+    async function rejeitarPendenteOficina(id) {
+      if (!confirmarAcao('Rejeitar este pedido de saída? A peça associada na OS não será eliminada.')) return;
+      await db.delete('stock_movimentos', id);
+      mostrarToast('Pedido rejeitado.', 'info');
+      await carregarPendentesOficina();
     }
 
     async function calcularStock() {
