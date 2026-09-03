@@ -501,7 +501,14 @@
     if (os.tipo_intervencao) os.tipo_intervencao.forEach(t => { if (mapaTipo[t]) marcar(mapaTipo[t]); });
 
     const records  = await db.query('records', `select=*&os_id=eq.${osId}&order=shift_date.asc,time_start.asc`);
-    const relacoes = await db.query('record_collaborators', 'select=*');
+    
+    // CORREÇÃO: Limite de paginação resolvido. Vai buscar apenas as relações destas intervenções.
+    let relacoes = [];
+    if (records.length > 0) {
+      const recordIds = records.map(r => r.id).join(',');
+      relacoes = await db.query('record_collaborators', `select=*&record_id=in.(${recordIds})`);
+    }
+
     const colabs   = await db.query('collaborators', 'select=id,name,code,setor&active=eq.true');
 
     const mapaFuncao = {
