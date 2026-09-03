@@ -20,7 +20,8 @@
         { label: 'Visão Geral',        href: 'oficina/dashboard.html' },
         { label: 'Ordens de Serviço',  href: 'oficina/ordens.html' },
         { label: 'Checklist',          href: 'oficina/checklist_gestao.html' },
-        { label: 'Equipamentos',       href: 'oficina/equipamentos.html' }
+        { label: 'Equipamentos',       href: 'oficina/equipamentos.html' },
+        { label: 'Configurações',      href: 'oficina/config.html' }
       ] },
 
     { id: 'disponibilidade', label: 'Disponibilidade Equip.', icon: '&#128666;', href: '#', dev: true },
