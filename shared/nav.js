@@ -44,7 +44,15 @@
           ] }
       ] },
 
-    { id: 'stock', label: 'Gestão de Stock', icon: '&#128230;', href: 'stock/index.html', pasta: 'stock' },
+    { id: 'stock', label: 'Gestão de Stock', icon: '&#128230;', pasta: 'stock',
+      sub: [
+        { label: 'Painel',          href: 'stock/dashboard.html' },
+        { label: 'Entradas',        href: 'stock/entradas.html' },
+        { label: 'Saídas',          href: 'stock/saidas.html' },
+        { label: 'Materiais',       href: 'stock/materiais.html' },
+        { label: 'Relatórios',      href: 'stock/relatorios.html' },
+        { label: 'Configurações',   href: 'stock/configuracoes.html' }
+      ] },
 
     { id: 'hst', label: 'Portal HST', icon: '&#9888;', pasta: 'hst',
       sub: [
