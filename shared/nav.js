@@ -26,7 +26,7 @@
 
     { id: 'disponibilidade', label: 'Disponibilidade Equip.', icon: '&#128666;', href: '#', dev: true },
 
-    { id: 'admin', label: 'Admin. Oficinal', icon: '&#128188;', pasta: 'rh|avaliacao-desempenho|aquisicao',
+    { id: 'admin', label: 'Admin. Oficinal', icon: '&#128188;', pasta: 'rh|avaliacao-desempenho|aquisicao|ferias',
       sub: [
         { label: 'RH & Quadro de Pessoal',   href: 'rh/index.html' },
         { label: 'Avaliação de Desempenho',  id: 'aval-desempenho',
@@ -42,6 +42,17 @@
             { label: 'Novo Pedido',   href: 'aquisicao/novo.html' },
             { label: 'Histórico',     href: 'aquisicao/lista.html' },
             { label: 'Configurações', href: 'aquisicao/configuracoes.html' }
+          ] },
+        { label: 'Plano de Férias',          id: 'ferias-grupo',
+          itens: [
+            { label: 'Painel',                   href: 'ferias/index.html' },
+            { label: 'Plano Anual',              href: 'ferias/plano.html' },
+            { label: 'Folha do RH (Mensal)',     href: 'ferias/rh-mensal.html' },
+            { label: 'Calendário Visual',        href: 'ferias/calendario.html' },
+            { label: 'Adiamentos / Antecipações', href: 'ferias/alteracoes.html' },
+            { label: 'Relatórios',               href: 'ferias/relatorios.html' },
+            { label: 'Configurações',            href: 'ferias/configuracao.html' },
+            { label: 'O Meu Plano (consulta)',   href: 'ferias/minhas-ferias.html' }
           ] }
       ] },
 
