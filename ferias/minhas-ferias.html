@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt" data-tema="claro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>O Meu Plano de Férias — Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script>
+    if (!verificarSessao()) {
+      localStorage.setItem('dss_user', JSON.stringify({
+        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
+        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
+      }));
+    }
+  </script>
+  <style>
+    .escolha { max-width: 520px; margin: 0 auto 24px; text-align: center; }
+    .escolha .form-select { text-align: center; font-size: var(--tamanho-lg); padding: 12px; }
+    .cartao-ano { border: 2px solid var(--cor-borda); border-radius: var(--raio-lg);
+      padding: 22px; margin-bottom: 18px; background: var(--cor-superficie); position: relative; }
+    .cartao-ano .ano-tag { position: absolute; top: -14px; left: 20px; background: var(--cor-navy);
+      color: #fff; border-radius: var(--raio-sm); padding: 3px 14px; font-weight: 800; font-size: 0.85rem; }
+    .mes-grande { font-size: 1.9rem; font-weight: 800; color: var(--cor-ambar); margin: 6px 0 2px; }
+    .linhas-detalhe { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    @media (max-width: 560px) { .linhas-detalhe { grid-template-columns: 1fr; } }
+    .det-lbl { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--cor-texto-sec); }
+    .det-val { font-weight: 700; }
+    .colegas-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .colega-chip { border: 1px solid var(--cor-borda); border-radius: var(--raio-sm);
+      padding: 4px 10px; font-size: 0.78rem; background: var(--cor-fundo); }
+    .colega-chip strong { color: var(--cor-ambar); }
+    @media print {
+      .topbar, .sidebar, .btn, .no-print, #toast-container { display: none !important; }
+      .main { margin: 0 !important; padding: 0 !important; }
+      body { background: #fff !important; }
+      .cartao-ano { break-inside: avoid; border-color: #bbb; }
+      .titulo-impressao { display: block !important; font-weight: 800; font-size: 1.1rem; margin-bottom: 10px; text-align: center; }
+    }
+    .titulo-impressao { display: none; }
+  </style>
+  <style>
+    /* Utilitários pequenos (mesmo conjunto usado no módulo RH) */
+    .bold { font-weight: 700; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .flex-wrap { flex-wrap: wrap; }
+    .gap-1 { gap: 4px; } .gap-2 { gap: 8px; }
+    .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="main">
+
+    <div style="margin-bottom:20px;" class="no-print">
+      <h1 class="pagina-titulo">🙋 O Meu Plano de Férias</h1>
+      <p class="pagina-subtitulo">Consulta sempre aberta — escolha o seu nome e veja o seu mês de férias</p>
+    </div>
+
+    <div class="titulo-impressao" id="titulo-impressao">Plano de Férias — Consulta Individual</div>
+
+    <div class="escolha no-print">
+      <label class="form-label" style="margin-bottom:8px;display:block;">O meu nome:</label>
+      <select id="sel-colab" class="form-select" onchange="mostrar()"></select>
+    </div>
+
+    <div id="resultado" style="max-width:760px;margin:0 auto;">
+      <div class="cartao-ano" style="text-align:center;">
+        <p class="text-muted">Escolha o seu nome na lista acima para ver as suas férias.</p>
+      </div>
+    </div>
+
+    <div id="colegas-bloco" style="max-width:760px;margin:0 auto 24px;display:none;" class="card">
+      <h3 style="margin-bottom:4px;">👔 Férias do meu setor (<span id="colegas-ano">—</span>)</h3>
+      <p class="text-muted" style="font-size:var(--tamanho-sm);">Todos do meu setor com mês já marcado:</p>
+      <div class="colegas-chips" id="colegas-chips"></div>
+    </div>
+
+  </main>
+
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+    const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    let colaboradores = [], planos = {}, feriados = [], mapaCol = {};
+
+    function setorDe(c) { return (c && c.setor && c.setor.trim()) ? c.setor.trim() : 'Sem setor'; }
+    function hojeISO() { return dataHojeISO(); }
+
+    async function init() {
+      try {
+        colaboradores = (await db.query('collaborators', 'select=*&order=name.asc') || []).filter(c => c.active !== false);
+        colaboradores.forEach(c => mapaCol[c.id] = c);
+        feriados = await db.query('ferias_feriados', 'select=*') || [];
+
+        const sel = document.getElementById('sel-colab');
+        sel.innerHTML = '<option value="">— escolher —</option>';
+        colaboradores.forEach(c => {
+          sel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${escaparHTML(c.name || '')}${c.code ? ' (' + escaparHTML(c.code) + ')' : ''}</option>`);
+        });
+
+        const agora = new Date();
+        const anos = [agora.getFullYear(), agora.getFullYear() + 1];
+        for (const a of anos) {
+          planos[a] = await db.query('ferias_plano', 'select=*&ano=eq.' + a) || [];
+        }
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao carregar os dados.', 'erro');
+      }
+    }
+
+    function estadoDoRegisto(r) {
+      if (!r || !r.mes_previsto) return { badge: '<span class="badge badge-secundario">sem plano</span>' };
+      if (r.data_fim && r.data_fim < hojeISO()) return { badge: '<span class="badge badge-secundario">✔ férias já gozadas</span>' };
+      if (r.data_inicio && r.data_fim && r.data_inicio <= hojeISO() && hojeISO() <= r.data_fim) return { badge: '<span class="badge badge-sucesso">🏖 de férias agora!</span>' };
+      if (r.status === 'Confirmado') return { badge: '<span class="badge badge-sucesso">● confirmado</span>' };
+      if (r.status === 'Aguarda RH') return { badge: '<span class="badge badge-aviso">⏳ a confirmar dias com o RH</span>' };
+      return { badge: '<span class="badge badge-info">· planeado</span>' };
+    }
+
+    function proximosFeriados(n = 4) {
+      const ano = new Date().getFullYear();
+      const lista = [];
+      feriados.forEach(f => {
+        if (!f.data) return;
+        const d = f.data.slice(0, 10);
+        const dataReal = f.recorrente ? (ano + d.slice(4)) : d;
+        if (dataReal >= hojeISO()) lista.push({ data: dataReal, descricao: f.descricao });
+      });
+      return lista.sort((a, b) => a.data.localeCompare(b.data)).slice(0, n);
+    }
+
+    function mostrar() {
+      const id = parseInt(document.getElementById('sel-colab').value, 10);
+      const res = document.getElementById('resultado');
+      const blocoColegas = document.getElementById('colegas-bloco');
+      document.getElementById('titulo-impressao').textContent = 'Plano de Férias — Consulta Individual';
+
+      if (!id || !mapaCol[id]) {
+        res.innerHTML = '<div class="cartao-ano" style="text-align:center;"><p class="text-muted">Escolha o seu nome na lista acima para ver as suas férias.</p></div>';
+        blocoColegas.style.display = 'none';
+        return;
+      }
+
+      const c = mapaCol[id];
+      document.getElementById('titulo-impressao').textContent = 'Férias de ' + (c.name || '') + ' — Danmo Services';
+      const agora = new Date();
+      const anos = [agora.getFullYear(), agora.getFullYear() + 1];
+      let html = '';
+
+      for (const a of anos) {
+        const r = (planos[a] || []).find(x => x.collaborator_id === id);
+        const est = estadoDoRegisto(r);
+        let corpo;
+        if (!r || !r.mes_previsto) {
+          corpo = `
+            <div class="mes-grande" style="color:var(--cor-texto-sec)">Ainda sem mês marcado</div>
+            <p class="text-muted" style="font-size:var(--tamanho-sm)">O seu mês de férias de ${a} ainda não foi definido na folha da administração. Fale com a Administração Oficinal ou aguarde a próxima afixação do plano.</p>`;
+        } else {
+          const detalhe = (lbl, val) => `<div><div class="det-lbl">${lbl}</div><div class="det-val">${val}</div></div>`;
+          corpo = `
+            <div class="mes-grande">${MESES_PT[r.mes_previsto - 1]}</div>
+            ${est.badge}
+            <div class="linhas-detalhe">
+              ${detalhe('Dias de direito', r.dias_rh ? r.dias_rh + ' dias' : 'a confirmar pelo RH')}
+              ${detalhe('Início', r.data_inicio ? formatarData(r.data_inicio) : 'a marcar')}
+              ${detalhe('Fim', r.data_fim ? formatarData(r.data_fim) : (r.dias_rh && r.data_inicio ? formatarData(new Date(new Date(r.data_inicio + 'T12:00:00').setDate(new Date(r.data_inicio + 'T12:00:00').getDate() + r.dias_rh - 1)).toISOString().slice(0, 10)) : 'a marcar'))}
+              ${detalhe('Ano do plano', a)}
+            </div>
+            <p class="text-muted" style="font-size:0.72rem;margin-top:12px;">Sábados e domingos contam para os dias de férias.</p>`;
+        }
+        html += `<div class="cartao-ano"><span class="ano-tag">${a}</span>${corpo}</div>`;
+      }
+
+      // próximos feriados
+      const fer = proximosFeriados();
+      if (fer.length) {
+        html += `<div class="cartao-ano" style="border-style:dashed;">
+          <div class="det-lbl">Próximos feriados</div>
+          <div class="colegas-chips">
+            ${fer.map(f => `<span class="colega-chip"><strong>${formatarData(f.data)}</strong> · ${escaparHTML(f.descricao)}</span>`).join('')}
+          </div></div>`;
+      }
+
+      res.innerHTML = html;
+
+      // colegas do mesmo setor (ano actual)
+      const colegas = (planos[agora.getFullYear()] || [])
+        .filter(x => x.mes_previsto && x.collaborator_id !== id && mapaCol[x.collaborator_id] && setorDe(mapaCol[x.collaborator_id]) === setorDe(c))
+        .sort((a, b) => a.mes_previsto - b.mes_previsto);
+      if (colegas.length) {
+        document.getElementById('colegas-ano').textContent = agora.getFullYear();
+        document.getElementById('colegas-chips').innerHTML = colegas.map(x =>
+          `<span class="colega-chip">${escaparHTML(mapaCol[x.collaborator_id].name || '?')} → <strong>${MESES_PT[x.mes_previsto - 1]}</strong></span>`).join('');
+        blocoColegas.style.display = 'block';
+      } else {
+        blocoColegas.style.display = 'none';
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

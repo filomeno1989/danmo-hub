@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt" data-tema="claro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel do Plano de Férias — Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script>
+    if (!verificarSessao()) {
+      localStorage.setItem('dss_user', JSON.stringify({
+        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
+        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
+      }));
+    }
+  </script>
+  <style>
+    .alerta-caixa { border-left: 4px solid var(--cor-info); background: var(--cor-info-bg);
+      border-radius: var(--raio-md); padding: 14px 16px; margin-bottom: 12px; display: flex;
+      gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+    .alerta-caixa.vermelho { border-left-color: var(--cor-erro); background: var(--cor-erro-bg); }
+    .alerta-caixa.verde   { border-left-color: var(--cor-sucesso); background: var(--cor-sucesso-bg); }
+    .alerta-caixa.ambar   { border-left-color: var(--cor-aviso); background: var(--cor-aviso-bg); }
+    .alerta-titulo { font-weight: 700; margin-bottom: 2px; }
+    .alerta-texto  { font-size: var(--tamanho-sm); }
+    .progresso { height: 8px; background: var(--cor-borda); border-radius: 6px; overflow: hidden; margin-top: 8px; max-width: 420px; }
+    .progresso > div { height: 100%; background: var(--cor-ambar); }
+    .atalhos { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+    .atalho { display: block; background: var(--cor-superficie); border: 1px solid var(--cor-borda);
+      border-radius: var(--raio-md); padding: 16px; text-decoration: none; color: var(--cor-texto);
+      transition: all var(--transicao); border-top: 3px solid var(--cor-ambar); }
+    .atalho:hover { box-shadow: var(--sombra-md); transform: translateY(-2px); }
+    .atalho .ic { font-size: 1.5rem; } .atalho .tt { font-weight: 700; margin: 6px 0 2px; }
+    .atalho .ds { font-size: var(--tamanho-xs); color: var(--cor-texto-sec); }
+    .lista-excedentes li { margin-bottom: 4px; }
+  </style>
+  <style>
+    /* Utilitários pequenos (mesmo conjunto usado no módulo RH) */
+    .bold { font-weight: 700; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .flex-wrap { flex-wrap: wrap; }
+    .gap-1 { gap: 4px; } .gap-2 { gap: 8px; }
+    .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="main">
+
+    <div style="margin-bottom:20px;">
+      <h1 class="pagina-titulo">🗓️ Plano de Férias</h1>
+      <p class="pagina-subtitulo">Folha anual de Outubro · extração mensal para o RH central · afixação e consulta</p>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;" class="no-print">
+      <label class="form-label" style="margin:0;">Ano do plano:</label>
+      <select id="sel-ano" class="form-select" style="width:auto;" onchange="carregarTudo()"></select>
+    </div>
+
+    <!-- ── KPIs ── -->
+    <div class="kpi-grid" id="kpis">
+      <div class="kpi-card"><div class="kpi-icone">👥</div><div class="kpi-valor" id="kpi-activos">—</div><div class="kpi-label">Colaboradores activos</div></div>
+      <div class="kpi-card azul"><div class="kpi-icone">📋</div><div class="kpi-valor" id="kpi-planeados">—</div><div class="kpi-label">Com mês marcado no plano</div></div>
+      <div class="kpi-card amarelo"><div class="kpi-icone">🏖️</div><div class="kpi-valor" id="kpi-mes-actual">—</div><div class="kpi-label" id="kpi-mes-actual-label">De férias no mês actual</div></div>
+      <div class="kpi-card verde"><div class="kpi-icone">📅</div><div class="kpi-valor" id="kpi-dias">—</div><div class="kpi-label">Dias confirmados pelo RH</div></div>
+    </div>
+
+    <div style="height:20px;"></div>
+
+    <!-- ── Alertas do ciclo real ── -->
+    <div class="card" style="margin-bottom:20px;">
+      <h3 style="margin-bottom:12px;">Estado do ciclo</h3>
+      <div id="alertas"><p class="text-muted">A carregar...</p></div>
+    </div>
+
+    <!-- ── Atalhos ── -->
+    <h3 style="margin-bottom:12px;">Ir para</h3>
+    <div class="atalhos no-print" style="margin-bottom:20px;">
+      <a class="atalho" href="plano.html"><div class="ic">📋</div><div class="tt">Plano Anual</div><div class="ds">A folha de Outubro — marcar o mês de cada colaborador</div></a>
+      <a class="atalho" href="rh-mensal.html"><div class="ic">✉️</div><div class="tt">Folha do RH</div><div class="ds">Extração mensal, lançar dias devolvidos e afixar</div></a>
+      <a class="atalho" href="calendario.html"><div class="ic">🗓️</div><div class="tt">Calendário Visual</div><div class="ds">Quem está ausente em cada mês, por setor</div></a>
+      <a class="atalho" href="alteracoes.html"><div class="ic">🔁</div><div class="tt">Adiamentos / Antecipações</div><div class="ds">Mudanças ao plano com aviso prévio de 30 dias</div></a>
+      <a class="atalho" href="relatorios.html"><div class="ic">📊</div><div class="tt">Relatórios</div><div class="ds">Plano completo, ocupação por setor, exportações</div></a>
+      <a class="atalho" href="minhas-ferias.html"><div class="ic">🙋</div><div class="tt">O Meu Plano</div><div class="ds">Consulta do colaborador — o meu mês de férias</div></a>
+    </div>
+
+  </main>
+
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+    const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    let CONFIG = { limite_departamento: 2, permitir_excedente: true, dias_aviso_alteracao: 30, dias_antes_envio_rh: 10, mes_planeamento: 10 };
+    let colaboradores = [], plano = [], mapaCol = {};
+
+    const HOJE = new Date();
+    const ANO_ACTUAL = HOJE.getFullYear();
+    const MES_ACTUAL = HOJE.getMonth() + 1;
+    function hojeISO() { return HOJE.toISOString().slice(0, 10); }
+    function addDias(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+    function diasEntre(a, b) { return Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000); }
+    function setorDe(c) { return (c && c.setor && c.setor.trim()) ? c.setor.trim() : 'Sem setor'; }
+
+    async function carregarTudo() {
+      const ano = parseInt(document.getElementById('sel-ano').value, 10);
+      try {
+        await carregarConfig();
+        if (!colaboradores.length) {
+          colaboradores = (await db.query('collaborators', 'select=*&order=name.asc') || []).filter(c => c.active !== false);
+          colaboradores.forEach(c => mapaCol[c.id] = c);
+        }
+        plano = await db.query('ferias_plano', 'select=*&ano=eq.' + ano) || [];
+        renderKPIs(ano);
+        await renderAlertas(ano);
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao carregar dados do plano de férias.', 'erro');
+      }
+    }
+
+    async function carregarConfig() {
+      try { const c = await db.getOne('ferias_config', { id: 1 }); if (c) CONFIG = { ...CONFIG, ...c }; } catch (e) {}
+    }
+
+    function renderKPIs(ano) {
+      document.getElementById('kpi-activos').textContent = colaboradores.length;
+      const comMes = plano.filter(r => r.mes_previsto);
+      document.getElementById('kpi-planeados').textContent = comMes.length;
+      document.getElementById('kpi-mes-actual-label').textContent =
+        'De férias em ' + MESES_PT[MES_ACTUAL - 1] + (ano === ANO_ACTUAL ? '' : ' (' + ano + ')');
+      const noMes = comMes.filter(r => r.mes_previsto === MES_ACTUAL).length;
+      document.getElementById('kpi-mes-actual').textContent = noMes;
+      const dias = plano.reduce((s, r) => s + (r.dias_rh || 0), 0);
+      document.getElementById('kpi-dias').textContent = dias;
+    }
+
+    async function renderAlertas(ano) {
+      const box = document.getElementById('alertas');
+      let html = '';
+
+      // 1) Planeamento do ano seguinte (folha de Outubro)
+      const anoSeguinte = ANO_ACTUAL + 1;
+      let planoSeg = [];
+      try { planoSeg = await db.query('ferias_plano', 'select=*&ano=eq.' + anoSeguinte) || []; } catch (e) {}
+      const comMesSeg = planoSeg.filter(r => r.mes_previsto).length;
+      const pct = colaboradores.length ? Math.round(comMesSeg / colaboradores.length * 100) : 0;
+      const emEpoca = MES_ACTUAL >= CONFIG.mes_planeamento;
+      html += `
+        <div class="alerta-caixa ${emEpoca && pct < 100 ? 'ambar' : ''}">
+          <div>
+            <div class="alerta-titulo">🍂 Folha de Outubro — Plano ${anoSeguinte}</div>
+            <div class="alerta-texto">
+              ${comMesSeg} de ${colaboradores.length} colaboradores já com mês marcado para ${anoSeguinte}.
+              ${emEpoca ? (pct < 100 ? 'Estamos na época de planeamento — complete a folha.' : 'Folha completa! ✔') : 'A época de planeamento começa em ' + MESES_PT[CONFIG.mes_planeamento - 1] + '.'}
+            </div>
+            <div class="progresso"><div style="width:${pct}%"></div></div>
+          </div>
+          <a class="btn btn-primario btn-sm" href="plano.html?ano=${anoSeguinte}" style="align-self:center;">Abrir Plano ${anoSeguinte} →</a>
+        </div>`;
+
+      // 2) Envio mensal ao RH central (10 dias antes de cada mês)
+      const mesAlvo = MES_ACTUAL === 12 ? 1 : MES_ACTUAL + 1;
+      const anoAlvo = MES_ACTUAL === 12 ? ANO_ACTUAL + 1 : ANO_ACTUAL;
+      const doMes = planoSeg.concat(plano).filter(r =>
+        (r.ano === anoAlvo && r.mes_previsto === mesAlvo));
+      if (!doMes.length) {
+        html += `
+        <div class="alerta-caixa">
+          <div>
+            <div class="alerta-titulo">✉️ Extração de ${MESES_PT[mesAlvo - 1]} ${anoAlvo}</div>
+            <div class="alerta-texto">Sem colaboradores planeados para este mês. Quando o plano estiver feito, a extração aparece aqui.</div>
+          </div>
+        </div>`;
+      } else {
+        const inicioMes = `${anoAlvo}-${String(mesAlvo).padStart(2, '0')}-01`;
+        const diasParaMes = diasEntre(hojeISO(), inicioMes);
+        const porEnviar = doMes.filter(r => !r.enviado_rh_em);
+        const enviado = doMes.find(r => r.enviado_rh_em);
+        if (porEnviar.length === 0 && enviado) {
+          html += `
+          <div class="alerta-caixa verde">
+            <div>
+              <div class="alerta-titulo">✉️ ${MESES_PT[mesAlvo - 1]} ${anoAlvo} — lista já enviada ao RH</div>
+              <div class="alerta-texto">${doMes.length} colaborador(es) · enviada em ${enviado.enviado_rh_em ? formatarData(enviado.enviado_rh_em) : '—'} por ${escaparHTML(enviado.enviado_rh_por || '—')}. Falta lançar a resposta do RH nos que ainda não têm dias.</div>
+            </div>
+            <a class="btn btn-secundario btn-sm" href="rh-mensal.html?ano=${anoAlvo}&mes=${mesAlvo}" style="align-self:center;">Abrir Folha do RH →</a>
+          </div>`;
+        } else if (diasParaMes <= CONFIG.dias_antes_envio_rh) {
+          html += `
+          <div class="alerta-caixa vermelho">
+            <div>
+              <div class="alerta-titulo">⚠️ ${MESES_PT[mesAlvo - 1]} ${anoAlvo} — enviar lista ao RH!</div>
+              <div class="alerta-texto">Faltam <strong>${diasParaMes} dia(s)</strong> para começar o mês e ainda há <strong>${porEnviar.length}</strong> colaborador(es) por enviar ao RH central (prazo: ${CONFIG.dias_antes_envio_rh} dias antes).</div>
+            </div>
+            <a class="btn btn-vermelho btn-sm" href="rh-mensal.html?ano=${anoAlvo}&mes=${mesAlvo}" style="align-self:center;">Fazer Extração Agora →</a>
+          </div>`;
+        } else {
+          html += `
+          <div class="alerta-caixa">
+            <div>
+              <div class="alerta-titulo">✉️ Extração de ${MESES_PT[mesAlvo - 1]} ${anoAlvo}</div>
+              <div class="alerta-texto">${doMes.length} colaborador(es) planeado(s). Envio ao RH a partir de ${formatarData(addDias(inicioMes, -CONFIG.dias_antes_envio_rh))} (${CONFIG.dias_antes_envio_rh} dias antes do mês).</div>
+            </div>
+            <a class="btn btn-secundario btn-sm" href="rh-mensal.html?ano=${anoAlvo}&mes=${mesAlvo}" style="align-self:center;">Ver Folha do RH →</a>
+          </div>`;
+        }
+      }
+
+      // 3) Excedentes de limite por setor/mês (do ano seleccionado)
+      const contas = {};
+      plano.forEach(r => {
+        if (!r.mes_previsto) return;
+        const c = mapaCol[r.collaborator_id];
+        if (!c) return;
+        const k = setorDe(c) + '||' + r.mes_previsto;
+        contas[k] = (contas[k] || 0) + 1;
+      });
+      const excedentes = Object.entries(contas).filter(([, n]) => n > CONFIG.limite_departamento);
+      if (excedentes.length) {
+        html += `
+        <div class="alerta-caixa ambar">
+          <div>
+            <div class="alerta-titulo">⚠️ Limite ultrapassado em ${excedentes.length} setor(es)/mês(es)</div>
+            <ul class="alerta-texto lista-excedentes" style="margin:4px 0 0 18px;">
+              ${excedentes.map(([k, n]) => { const [s, m] = k.split('||'); return `<li><strong>${escaparHTML(s)}</strong> — ${MESES_PT[m - 1]}: ${n} colaboradores (limite ${CONFIG.limite_departamento})</li>`; }).join('')}
+            </ul>
+            <div class="alerta-texto" style="margin-top:4px;">${CONFIG.permitir_excedente ? 'A exceção é permitida, mas fica sempre assinalada como aviso.' : 'Nas regras actuais o limite BLOQUEIA novas marcações.'}</div>
+          </div>
+          <a class="btn btn-secundario btn-sm" href="calendario.html?ano=${ano}" style="align-self:center;">Ver Calendário →</a>
+        </div>`;
+      }
+
+      // 4) Alterações recentes
+      try {
+        const alter = await db.query('ferias_alteracoes', 'select=*&order=criado_em.desc&limit=5') || [];
+        if (alter.length) {
+          html += `
+          <div class="alerta-caixa" style="display:block;">
+            <div class="alerta-titulo">🔁 Últimas alterações ao plano</div>
+            <ul class="alerta-texto" style="margin:6px 0 0 18px;">
+              ${alter.map(a => {
+                const c = mapaCol[a.collaborator_id];
+                const nome = c ? c.name : '(colaborador #' + a.collaborator_id + ')';
+                return `<li>${formatarData(a.criado_em, true)} — <strong>${escaparHTML(nome)}</strong>: ${escaparHTML(a.tipo)} de ${a.mes_anterior ? MESES_PT[a.mes_anterior - 1] : '—'} para ${a.mes_novo ? MESES_PT[a.mes_novo - 1] : '—'} ${a.aviso_ok ? '' : '<span class="badge badge-aviso">aviso insuficiente</span>'}</li>`;
+              }).join('')}
+            </ul>
+          </div>`;
+        }
+      } catch (e) {}
+
+      box.innerHTML = html;
+    }
+
+    // ── Init ──
+    (function init() {
+      const sel = document.getElementById('sel-ano');
+      for (let a = ANO_ACTUAL - 1; a <= ANO_ACTUAL + 2; a++) {
+        sel.insertAdjacentHTML('beforeend', `<option value="${a}"${a === ANO_ACTUAL ? ' selected' : ''}>${a}</option>`);
+      }
+      carregarTudo();
+    })();
+  </script>
+</body>
+</html>

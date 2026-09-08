@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt" data-tema="claro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatórios de Férias — Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script>
+    if (!verificarSessao()) {
+      localStorage.setItem('dss_user', JSON.stringify({
+        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
+        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
+      }));
+    }
+  </script>
+  <style>
+    .barra-rel { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+    .matriz td, .matriz th { text-align: center; font-size: 0.8rem; }
+    .matriz td.setor { text-align: left; font-weight: 600; white-space: nowrap; }
+    .matriz td.excede { background: var(--cor-erro-bg); color: var(--cor-erro); font-weight: 800; }
+    .rodape-totais { font-size: var(--tamanho-sm); color: var(--cor-texto-sec); margin-top: 8px; }
+    @media print {
+      .topbar, .sidebar, .btn, .no-print, #toast-container { display: none !important; }
+      .main { margin: 0 !important; padding: 0 !important; }
+      body { background: #fff !important; }
+      .card, .painel { box-shadow: none !important; border: 1px solid #ddd; }
+      .titulo-impressao { display: block !important; font-size: 1.2rem; font-weight: 800; margin-bottom: 6px; }
+    }
+    .titulo-impressao { display: none; }
+  </style>
+  <style>
+    /* Utilitários pequenos (mesmo conjunto usado no módulo RH) */
+    .bold { font-weight: 700; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .flex-wrap { flex-wrap: wrap; }
+    .gap-1 { gap: 4px; } .gap-2 { gap: 8px; }
+    .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="main">
+
+    <div style="margin-bottom:20px;">
+      <h1 class="pagina-titulo">📊 Relatórios de Férias</h1>
+      <p class="pagina-subtitulo">Plano completo, ocupação e taxa de ausência por setor — para imprimir ou exportar</p>
+    </div>
+
+    <div class="titulo-impressao" id="titulo-impressao"></div>
+
+    <div class="barra-rel no-print">
+      <label class="form-label" style="margin:0;">Ano:</label>
+      <select id="sel-ano" class="form-select" style="width:auto;" onchange="carregar()"></select>
+      <label class="form-label" style="margin:0 0 0 10px;">Relatório:</label>
+      <select id="sel-rel" class="form-select" style="width:auto;min-width:300px;" onchange="render()">
+        <option value="plano">1 · Plano completo do ano</option>
+        <option value="semplano">2 · Colaboradores sem mês marcado</option>
+        <option value="dias">3 · Dias por colaborador (gozados / pendentes)</option>
+        <option value="ocupacao">4 · Ocupação por setor × mês</option>
+        <option value="ausencia">5 · Taxa de ausência por setor × mês (%)</option>
+        <option value="feriados">6 · Feriados do ano</option>
+      </select>
+      <button class="btn btn-secundario" onclick="exportarActual()">⬇ CSV</button>
+      <button class="btn btn-primario" onclick="window.print()">🖨 Imprimir</button>
+      <button class="btn btn-secundario" onclick="backupJSON()">💾 Backup do ano (JSON)</button>
+    </div>
+
+    <div class="card">
+      <div id="area-relatorio"><p class="text-muted">A carregar...</p></div>
+    </div>
+
+  </main>
+
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+    const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const MESES_AB = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    let CONFIG = { limite_departamento: 2, permitir_excedente: true, dias_aviso_alteracao: 30, dias_antes_envio_rh: 10, mes_planeamento: 10 };
+    let ano = new Date().getFullYear();
+    let colaboradores = [], plano = [], feriados = [], alteracoes = [], mapaCol = {};
+
+    function setorDe(c) { return (c && c.setor && c.setor.trim()) ? c.setor.trim() : 'Sem setor'; }
+    function hojeISO() { return dataHojeISO(); }
+
+    async function carregar() {
+      ano = parseInt(document.getElementById('sel-ano').value, 10);
+      try {
+        await carregarConfig();
+        if (!colaboradores.length) {
+          colaboradores = (await db.query('collaborators', 'select=*&order=name.asc') || []).filter(c => c.active !== false);
+          colaboradores.forEach(c => mapaCol[c.id] = c);
+        }
+        plano = await db.query('ferias_plano', 'select=*&ano=eq.' + ano) || [];
+        feriados = await db.query('ferias_feriados', 'select=*') || [];
+        try { alteracoes = await db.query('ferias_alteracoes', 'select=*&ano=eq.' + ano + '&order=criado_em.desc') || []; } catch (e) { alteracoes = []; }
+        render();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao carregar os relatórios.', 'erro');
+      }
+    }
+
+    async function carregarConfig() {
+      try { const c = await db.getOne('ferias_config', { id: 1 }); if (c) CONFIG = { ...CONFIG, ...c }; } catch (e) {}
+    }
+
+    function nomeDe(r) { const c = mapaCol[r.collaborator_id]; return c ? (c.name || '—') : '(#' + r.collaborator_id + ')'; }
+
+    let dadosActual = { titulo: '', cab: [], linhas: [] }; // para CSV
+
+    function render() {
+      const tipo = document.getElementById('sel-rel').value;
+      const area = document.getElementById('area-relatorio');
+      const hoje = hojeISO();
+
+      if (tipo === 'plano') {
+        const linhas = plano.filter(r => mapaCol[r.collaborator_id]).sort((a, b) =>
+          (setorDe(mapaCol[a.collaborator_id]) + nomeDe(a)).localeCompare(setorDe(mapaCol[b.collaborator_id]) + nomeDe(b)));
+        dadosActual = {
+          titulo: 'Plano de Férias ' + ano,
+          cab: ['Código', 'Nome', 'Setor', 'Mês', 'Dias (RH)', 'Início', 'Fim', 'Status', 'Observações'],
+          linhas: linhas.map(r => {
+            const c = mapaCol[r.collaborator_id];
+            return [c.code || '', c.name || '', setorDe(c), r.mes_previsto ? MESES_PT[r.mes_previsto - 1] : '',
+              r.dias_rh ?? '', r.data_inicio || '', r.data_fim || '', r.status || '', r.obs_rh || ''];
+          })
+        };
+        area.innerHTML = `<div class="tabela-container"><table>
+          <thead><tr><th>Colaborador</th><th>Setor</th><th>Mês</th><th>Dias</th><th>Início → Fim</th><th>Status</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas.map(r => {
+            const c = mapaCol[r.collaborator_id];
+            return `<tr><td class="bold">${escaparHTML(c.name || '')}<div style="font-size:0.72rem;color:var(--cor-texto-sec)">${escaparHTML(c.code || '')}</div></td>
+              <td style="font-size:0.8rem">${escaparHTML(setorDe(c))}</td>
+              <td>${r.mes_previsto ? MESES_PT[r.mes_previsto - 1] : '<span class="text-muted">sem mês</span>'}</td>
+              <td>${r.dias_rh ?? '—'}</td>
+              <td style="white-space:nowrap;font-size:0.8rem">${r.data_inicio ? formatarData(r.data_inicio) + (r.data_fim ? ' → ' + formatarData(r.data_fim) : '') : '—'}</td>
+              <td>${escaparHTML(r.status || '—')}</td>
+              <td style="font-size:0.75rem;max-width:200px">${escaparHTML(r.obs_rh || '')}</td></tr>`;
+          }).join('')}</tbody></table></div>
+          <p class="rodape-totais">${linhas.length} registo(s) no plano de ${ano}.</p>`;
+
+      } else if (tipo === 'semplano') {
+        const comPlano = new Set(plano.filter(r => r.mes_previsto).map(r => r.collaborator_id));
+        const faltam = colaboradores.filter(c => !comPlano.has(c.id));
+        dadosActual = {
+          titulo: 'Sem mês de férias marcado — ' + ano,
+          cab: ['Código', 'Nome', 'Setor', 'Categoria'],
+          linhas: faltam.map(c => [c.code || '', c.name || '', setorDe(c), c.categoria || ''])
+        };
+        area.innerHTML = `<div class="tabela-container"><table>
+          <thead><tr><th>Colaborador</th><th>Setor</th><th>Categoria</th></tr></thead>
+          <tbody>${faltam.map(c => `<tr><td class="bold">${escaparHTML(c.name || '')}<div style="font-size:0.72rem;color:var(--cor-texto-sec)">${escaparHTML(c.code || '')}</div></td>
+            <td style="font-size:0.8rem">${escaparHTML(setorDe(c))}</td><td>${escaparHTML(c.categoria || '—')}</td></tr>`).join('') || '<tr><td colspan="3" class="text-muted">Todos têm mês marcado. ✔</td></tr>'}</tbody></table></div>
+          <p class="rodape-totais">${faltam.length} de ${colaboradores.length} colaboradores sem mês marcado em ${ano}.</p>`;
+
+      } else if (tipo === 'dias') {
+        const linhas = plano.filter(r => r.mes_previsto && mapaCol[r.collaborator_id])
+          .sort((a, b) => nomeDe(a).localeCompare(nomeDe(b)));
+        let gozados = 0, emCurso = 0, pendentes = 0, semDias = 0;
+        const corpo = linhas.map(r => {
+          let estado = 'Confirmado', cls = 'badge-info';
+          if (r.data_fim && r.data_fim < hoje) { estado = 'Gozadas'; cls = 'badge-secundario'; gozados += r.dias_rh || 0; }
+          else if (r.data_inicio && r.data_fim && r.data_inicio <= hoje && hoje <= r.data_fim) { estado = 'Em curso'; cls = 'badge-sucesso'; emCurso += r.dias_rh || 0; }
+          else if (r.dias_rh) { pendentes += r.dias_rh; }
+          else { semDias++; }
+          return `<tr><td class="bold">${escaparHTML(nomeDe(r))}</td>
+            <td style="font-size:0.8rem">${escaparHTML(setorDe(mapaCol[r.collaborator_id]))}</td>
+            <td>${MESES_PT[r.mes_previsto - 1]}</td>
+            <td>${r.dias_rh ?? '<span class="text-muted">—</span>'}</td>
+            <td style="white-space:nowrap;font-size:0.8rem">${r.data_inicio ? formatarData(r.data_inicio) + (r.data_fim ? ' → ' + formatarData(r.data_fim) : '') : '—'}</td>
+            <td><span class="badge ${cls}" style="font-size:0.7rem">${estado}</span></td></tr>`;
+        }).join('');
+        dadosActual = {
+          titulo: 'Dias de férias por colaborador — ' + ano,
+          cab: ['Nome', 'Setor', 'Mês', 'Dias', 'Período', 'Estado'],
+          linhas: linhas.map(r => {
+            let estado = 'Confirmado';
+            if (r.data_fim && r.data_fim < hoje) estado = 'Gozadas';
+            else if (r.data_inicio && r.data_fim && r.data_inicio <= hoje && hoje <= r.data_fim) estado = 'Em curso';
+            else if (!r.dias_rh) estado = 'Sem dias lançados';
+            return [nomeDe(r), setorDe(mapaCol[r.collaborator_id]), MESES_PT[r.mes_previsto - 1], r.dias_rh ?? '',
+              r.data_inicio ? (r.data_inicio + (r.data_fim ? ' a ' + r.data_fim : '')) : '', estado];
+          })
+        };
+        area.innerHTML = `<div class="tabela-container"><table>
+          <thead><tr><th>Colaborador</th><th>Setor</th><th>Mês</th><th>Dias (RH)</th><th>Período</th><th>Estado</th></tr></thead>
+          <tbody>${corpo}</tbody></table></div>
+          <p class="rodape-totais">Totais de dias: <strong>gozados ${gozados}</strong> · <strong>em curso ${emCurso}</strong> · <strong>pendentes ${pendentes}</strong> · ${semDias} registo(s) ainda sem dias do RH. <br><span style="font-size:0.75rem">Os dias são os informados pelo RH central — o sistema não calcula direitos nem abatimentos (dados de faltas/atrasos são do RH).</span></p>`;
+
+      } else if (tipo === 'ocupacao' || tipo === 'ausencia') {
+        const setores = [...new Set(colaboradores.map(setorDe))].sort();
+        const totalPorSetor = {};
+        setores.forEach(s => totalPorSetor[s] = colaboradores.filter(c => setorDe(c) === s).length);
+        const contas = {};
+        plano.forEach(r => {
+          if (!r.mes_previsto) return;
+          const c = mapaCol[r.collaborator_id];
+          if (!c) return;
+          const k = setorDe(c) + '||' + r.mes_previsto;
+          contas[k] = (contas[k] || 0) + 1;
+        });
+        const cel = (s, m) => {
+          const n = contas[s + '||' + m] || 0;
+          if (tipo === 'ocupacao') {
+            const excede = n > CONFIG.limite_departamento;
+            return `<td class="${excede ? 'excede' : ''}">${n || '·'}</td>`;
+          }
+          const pct = totalPorSetor[s] ? Math.round(n / totalPorSetor[s] * 100) : 0;
+          return `<td class="${pct > 40 ? 'excede' : ''}">${totalPorSetor[s] ? pct + '%' : '·'}</td>`;
+        };
+        dadosActual = {
+          titulo: (tipo === 'ocupacao' ? 'Ocupação de férias por setor' : 'Taxa de ausência por setor (%)') + ' — ' + ano,
+          cab: ['Setor', ...MESES_AB],
+          linhas: setores.map(s => [s, ...Array.from({ length: 12 }, (_, i) => {
+            const n = contas[s + '||' + (i + 1)] || 0;
+            return tipo === 'ocupacao' ? n : (totalPorSetor[s] ? Math.round(n / totalPorSetor[s] * 100) + '%' : '');
+          })])
+        };
+        area.innerHTML = `<div class="tabela-container"><table class="matriz">
+          <thead><tr><th style="text-align:left">Setor</th>${MESES_AB.map(m => `<th>${m}</th>`).join('')}<th>Pessoas</th></tr></thead>
+          <tbody>${setores.map(s => `<tr><td class="setor">${escaparHTML(s)}</td>${Array.from({ length: 12 }, (_, i) => cel(s, i + 1)).join('')}<td>${totalPorSetor[s]}</td></tr>`).join('')}</tbody></table></div>
+          <p class="rodape-totais">${tipo === 'ocupacao'
+            ? `Célula vermelha = acima do limite de ${CONFIG.limite_departamento} por setor/mês${CONFIG.permitir_excedente ? ' (exceção permitida, aviso mantido)' : ''}.`
+            : `Percentagem = colaboradores de férias no mês ÷ total de pessoas do setor. Vermelho = acima de 40%.`}</p>`;
+
+      } else if (tipo === 'feriados') {
+        const doAno = [];
+        feriados.forEach(f => {
+          if (!f.data) return;
+          const d = f.data.slice(0, 10);
+          if (f.recorrente) {
+            doAno.push({ dia: ano + d.slice(4), descricao: f.descricao, rec: true });
+          } else if (d.slice(0, 4) === String(ano)) {
+            doAno.push({ dia: d, descricao: f.descricao, rec: false });
+          }
+        });
+        doAno.sort((a, b) => a.dia.localeCompare(b.dia));
+        dadosActual = {
+          titulo: 'Feriados — ' + ano,
+          cab: ['Data', 'Descrição', 'Tipo'],
+          linhas: doAno.map(f => [f.dia, f.descricao, f.rec ? 'Fixo (todos os anos)' : 'Pontual'])
+        };
+        area.innerHTML = `<div class="tabela-container"><table>
+          <thead><tr><th>Data</th><th>Feriado</th><th>Tipo</th></tr></thead>
+          <tbody>${doAno.map(f => `<tr><td>${formatarData(f.dia)}</td><td class="bold">${escaparHTML(f.descricao)}</td><td>${f.rec ? '<span class="badge badge-info" style="font-size:0.7rem">fixo</span>' : '<span class="badge badge-secundario" style="font-size:0.7rem">pontual</span>'}</td></tr>`).join('')}</tbody></table></div>
+          <p class="rodape-totais">Os feriados móveis (Eid) acrescentam-se em Configurações → Feriados.</p>`;
+      }
+
+      document.getElementById('titulo-impressao').textContent = dadosActual.titulo;
+    }
+
+    function exportarActual() {
+      const linhasCsv = [dadosActual.cab, ...dadosActual.linhas];
+      const nome = 'ferias-' + document.getElementById('sel-rel').value + '-' + ano + '.csv';
+      descarregarCSV(nome, linhasCsv);
+      mostrarToast('CSV descarregado.', 'sucesso');
+    }
+
+    async function backupJSON() {
+      try {
+        const dados = {
+          exportado_em: new Date().toISOString(),
+          ano, config: CONFIG, plano, feriados, alteracoes
+        };
+        const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `backup-ferias-${ano}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        mostrarToast('Backup do ano descarregado.', 'sucesso');
+      } catch (e) { console.error(e); mostrarToast('Erro ao gerar o backup.', 'erro'); }
+    }
+
+    function descarregarCSV(nome, linhas) {
+      const csv = linhas.map(l => l.map(v => {
+        const s = (v ?? '').toString().replace(/"/g, '""');
+        return /[;"\n]/.test(s) ? `"${s}"` : s;
+      }).join(';')).join('\r\n');
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = nome;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    (function init() {
+      const sel = document.getElementById('sel-ano');
+      const agora = new Date();
+      for (let a = agora.getFullYear() - 1; a <= agora.getFullYear() + 2; a++) {
+        sel.insertAdjacentHTML('beforeend', `<option value="${a}"${a === ano ? ' selected' : ''}>${a}</option>`);
+      }
+      carregar();
+    })();
+  </script>
+</body>
+</html>

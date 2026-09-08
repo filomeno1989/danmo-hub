@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt" data-tema="claro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alterações ao Plano de Férias — Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script>
+    if (!verificarSessao()) {
+      localStorage.setItem('dss_user', JSON.stringify({
+        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
+        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
+      }));
+    }
+  </script>
+  <style>
+    .caixa-info { border-left: 4px solid var(--cor-info); background: var(--cor-info-bg);
+      border-radius: var(--raio-md); padding: 10px 14px; margin: 10px 0; font-size: var(--tamanho-sm); }
+    .caixa-info.ok { border-left-color: var(--cor-sucesso); background: var(--cor-sucesso-bg); }
+    .caixa-info.ruim { border-left-color: var(--cor-erro); background: var(--cor-erro-bg); font-weight: 600; }
+    .tabela-hist td { vertical-align: top; }
+  </style>
+  <style>
+    /* Utilitários pequenos (mesmo conjunto usado no módulo RH) */
+    .bold { font-weight: 700; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .flex-wrap { flex-wrap: wrap; }
+    .gap-1 { gap: 4px; } .gap-2 { gap: 8px; }
+    .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="main">
+
+    <div style="margin-bottom:20px;">
+      <h1 class="pagina-titulo">🔁 Adiamentos &amp; Antecipações</h1>
+      <p class="pagina-subtitulo">Mudanças ao mês já marcado — com aviso prévio mínimo e histórico permanente</p>
+    </div>
+
+    <!-- ── Nova alteração ── -->
+    <div class="card" style="margin-bottom:20px;max-width:760px;">
+      <h3 style="margin-bottom:12px;">Registar uma alteração ao plano</h3>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;" class="no-print">
+        <label class="form-label" style="margin:0;">Ano:</label>
+        <select id="sel-ano" class="form-select" style="width:auto;" onchange="carregar()"></select>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="form-grid">
+        <div class="form-grupo">
+          <label class="form-label">Colaborador (com mês marcado) *</label>
+          <select id="sel-colab" class="form-select" onchange="aoEscolherColab()"></select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Tipo de alteração *</label>
+          <select id="sel-tipo" class="form-select">
+            <option value="Adiamento">⏩ Adiamento (para mês posterior)</option>
+            <option value="Antecipação">⏪ Antecipação (para mês anterior)</option>
+          </select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Novo mês de férias *</label>
+          <select id="sel-novo-mes" class="form-select">
+            <option value="">— escolher mês —</option>
+            <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+            <option value="3">Março</option><option value="4">Abril</option>
+            <option value="5">Maio</option><option value="6">Junho</option>
+            <option value="7">Julho</option><option value="8">Agosto</option>
+            <option value="9">Setembro</option><option value="10">Outubro</option>
+            <option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Nova data de início (opcional)</label>
+          <input type="date" id="f-nova-inicio" class="form-input" />
+        </div>
+      </div>
+
+      <div id="caixa-aviso"></div>
+
+      <div class="form-grupo">
+        <label class="form-label">Motivo da alteração * <span class="text-muted" style="font-weight:400">(obrigatório — fica no histórico)</span></label>
+        <textarea id="f-motivo" class="form-textarea" placeholder="Ex.: pedido do colaborador por motivo familiar / antecipado a pedido do chefe de oficina..."></textarea>
+      </div>
+
+      <div class="flex gap-2">
+        <button class="btn btn-primario" onclick="registarAlteracao()">💾 Registar alteração</button>
+        <span class="text-muted" style="align-self:center;font-size:var(--tamanho-sm);" id="info-colab"></span>
+      </div>
+    </div>
+
+    <!-- ── Histórico ── -->
+    <div class="card">
+      <h3 style="margin-bottom:12px;">📜 Histórico de alterações (<span id="hist-ano">—</span>)</h3>
+      <div class="tabela-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Colaborador</th>
+              <th>Tipo</th>
+              <th>Mudança</th>
+              <th>Motivo</th>
+              <th>Aviso prévio</th>
+              <th>Registado por</th>
+            </tr>
+          </thead>
+          <tbody id="hist-corpo" class="tabela-hist"></tbody>
+        </table>
+      </div>
+      <div id="hist-vazia" class="tabela-vazia" style="display:none;">Sem alterações registadas neste ano.</div>
+    </div>
+
+  </main>
+
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+    const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    let CONFIG = { limite_departamento: 2, permitir_excedente: true, dias_aviso_alteracao: 30, dias_antes_envio_rh: 10, mes_planeamento: 10 };
+    let ano = new Date().getFullYear();
+    let plano = [], mapaCol = {}, user = null;
+
+    function setorDe(c) { return (c && c.setor && c.setor.trim()) ? c.setor.trim() : 'Sem setor'; }
+    function primeiroDiaMes(a, m) { return `${a}-${String(m).padStart(2, '0')}-01`; }
+    function diasEntre(a, b) { return Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000); }
+    function hojeISO() { return dataHojeISO(); }
+
+    async function carregar() {
+      try {
+        await carregarConfig();
+        user = obterUtilizador();
+        if (!Object.keys(mapaCol).length) {
+          const todos = await db.query('collaborators', 'select=*&order=name.asc') || [];
+          todos.forEach(c => mapaCol[c.id] = c);
+        }
+        plano = (await db.query('ferias_plano', 'select=*&ano=eq.' + ano) || []).filter(r => r.mes_previsto);
+        preencherColabs();
+        await carregarHistorico();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao carregar alterações.', 'erro');
+      }
+    }
+
+    async function carregarConfig() {
+      try { const c = await db.getOne('ferias_config', { id: 1 }); if (c) CONFIG = { ...CONFIG, ...c }; } catch (e) {}
+    }
+
+    function preencherColabs() {
+      const sel = document.getElementById('sel-colab');
+      sel.innerHTML = '<option value="">— escolher colaborador —</option>';
+      plano.sort((a, b) => {
+        const na = mapaCol[a.collaborator_id] ? mapaCol[a.collaborator_id].name : '';
+        const nb = mapaCol[b.collaborator_id] ? mapaCol[b.collaborator_id].name : '';
+        return na.localeCompare(nb);
+      });
+      plano.forEach(r => {
+        const c = mapaCol[r.collaborator_id];
+        const nome = c ? c.name : '(#' + r.collaborator_id + ')';
+        sel.insertAdjacentHTML('beforeend',
+          `<option value="${r.id}">${escaparHTML(nome)} — ${MESES_PT[r.mes_previsto - 1]}${c ? ' (' + escaparHTML(setorDe(c)) + ')' : ''}</option>`);
+      });
+      document.getElementById('info-colab').textContent = '';
+      document.getElementById('caixa-aviso').innerHTML = '';
+    }
+
+    function linhaSeleccionada() {
+      const id = document.getElementById('sel-colab').value;
+      return plano.find(r => r.id === id) || null;
+    }
+
+    function aoEscolherColab() {
+      const r = linhaSeleccionada();
+      const caixa = document.getElementById('caixa-aviso');
+      const info = document.getElementById('info-colab');
+      if (!r) { caixa.innerHTML = ''; info.textContent = ''; return; }
+      const c = mapaCol[r.collaborator_id];
+      info.textContent = `Início previsto: ${r.data_inicio ? formatarData(r.data_inicio) : '1 de ' + MESES_PT[r.mes_previsto - 1]}`;
+      const base = r.data_inicio || primeiroDiaMes(ano, r.mes_previsto);
+      const aviso = diasEntre(hojeISO(), base);
+      if (aviso >= CONFIG.dias_aviso_alteracao) {
+        caixa.innerHTML = `<div class="caixa-info ok">✔ Aviso prévio OK — faltam <strong>${aviso} dias</strong> para o início previsto (mínimo: ${CONFIG.dias_aviso_alteracao}).</div>`;
+      } else if (aviso >= 0) {
+        caixa.innerHTML = `<div class="caixa-info ruim">⚠ Aviso prévio INSUFICIENTE — faltam <strong>${aviso} dias</strong> para o início previsto e o mínimo é <strong>${CONFIG.dias_aviso_alteracao}</strong>. Ainda pode registar, mas o histórico ficará com a marca de aviso insuficiente.</div>`;
+      } else {
+        caixa.innerHTML = `<div class="caixa-info ruim">⚠ As férias previstas já começaram/passaram (${Math.abs(aviso)} dia(s)). Registe só se faz sentido (ex.: interrupção e remarcação).</div>`;
+      }
+    }
+
+    async function registarAlteracao() {
+      const r = linhaSeleccionada();
+      if (!r) { mostrarToast('Escolha o colaborador.', 'aviso'); return; }
+      const tipo = document.getElementById('sel-tipo').value;
+      const novoMes = document.getElementById('sel-novo-mes').value ? parseInt(document.getElementById('sel-novo-mes').value, 10) : null;
+      const motivo = document.getElementById('f-motivo').value.trim();
+      const novaInicio = document.getElementById('f-nova-inicio').value || null;
+
+      if (!novoMes) { mostrarToast('Escolha o novo mês.', 'aviso'); return; }
+      if (novoMes === r.mes_previsto) { mostrarToast('O novo mês é igual ao actual — nada a alterar.', 'aviso'); return; }
+      if (tipo === 'Adiamento' && novoMes < r.mes_previsto) {
+        mostrarToast('Adiamento exige um mês POSTERIOR a ' + MESES_PT[r.mes_previsto - 1] + '. Para mês anterior use "Antecipação".', 'erro');
+        return;
+      }
+      if (tipo === 'Antecipação' && novoMes > r.mes_previsto) {
+        mostrarToast('Antecipação exige um mês ANTERIOR a ' + MESES_PT[r.mes_previsto - 1] + '. Para mês posterior use "Adiamento".', 'erro');
+        return;
+      }
+      if (!motivo) { mostrarToast('O motivo é obrigatório para ficar no histórico.', 'aviso'); return; }
+
+      // aviso prévio
+      const base = r.data_inicio || primeiroDiaMes(ano, r.mes_previsto);
+      const avisoDias = diasEntre(hojeISO(), base);
+      const avisoOk = avisoDias >= CONFIG.dias_aviso_alteracao;
+
+      if (!avisoOk) {
+        if (!window.confirm(`⚠ O aviso prévio é insuficiente (${avisoDias} dias de ${CONFIG.dias_aviso_alteracao}).\nRegistar a alteração mesmo assim? Ficará marcada no histórico.`)) return;
+      }
+
+      // limite no novo mês (alerta sempre, permite exceção)
+      const c = mapaCol[r.collaborator_id];
+      let limiteAviso = '';
+      try {
+        const todas = await db.query('ferias_plano', `select=*&ano=eq.${ano}&mes_previsto=eq.${novoMes}`) || [];
+        const mesmoSetor = todas.filter(x => c && x.collaborator_id !== r.collaborator_id && setorDe(mapaCol[x.collaborator_id] || {}) === setorDe(c));
+        if (c && mesmoSetor.length >= CONFIG.limite_departamento) {
+          limiteAviso = `\n\n⚠ O setor "${setorDe(c)}" já tem ${mesmoSetor.length} colaborador(es) de férias em ${MESES_PT[novoMes - 1]} (limite ${CONFIG.limite_departamento}). A exceção fica assinalada.`;
+          if (CONFIG.permitir_excedente) {
+            if (!window.confirm('Marcar a alteração mesmo assim?' + limiteAviso)) return;
+          } else {
+            mostrarToast('Bloqueado: limite do setor atingido em ' + MESES_PT[novoMes - 1] + '.', 'erro');
+            return;
+          }
+        }
+      } catch (e) { console.warn('Não foi possível verificar o limite:', e); }
+
+      try {
+        // 1) histórico
+        await db.insert('ferias_alteracoes', {
+          ano,
+          collaborator_id: r.collaborator_id,
+          tipo,
+          mes_anterior: r.mes_previsto,
+          mes_novo: novoMes,
+          data_inicio_anterior: r.data_inicio || null,
+          data_inicio_nova: novaInicio,
+          motivo,
+          aviso_dias: avisoDias,
+          aviso_ok: avisoOk,
+          registado_por: user ? user.nome : 'Administração'
+        });
+        // 2) actualizar o plano — o mês muda e o processo volta ao início
+        await db.update('ferias_plano', r.id, {
+          mes_previsto: novoMes,
+          data_inicio: novaInicio,
+          data_fim: null,
+          dias_rh: null,
+          obs_rh: null,
+          enviado_rh_em: null,
+          enviado_rh_por: null,
+          status: 'Planeado',
+          atualizado_em: new Date().toISOString()
+        });
+        mostrarToast('Alteração registada: ' + (c ? c.name : 'colaborador') + ' → ' + MESES_PT[novoMes - 1] + '. Lista do novo mês volta ao ciclo do RH.', 'sucesso');
+        // limpar formulário
+        document.getElementById('f-motivo').value = '';
+        document.getElementById('f-nova-inicio').value = '';
+        document.getElementById('sel-novo-mes').value = '';
+        await carregar();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao registar a alteração.', 'erro');
+      }
+    }
+
+    async function carregarHistorico() {
+      document.getElementById('hist-ano').textContent = ano;
+      const corpo = document.getElementById('hist-corpo');
+      try {
+        const hist = await db.query('ferias_alteracoes', `select=*&ano=eq.${ano}&order=criado_em.desc`) || [];
+        document.getElementById('hist-vazia').style.display = hist.length ? 'none' : 'block';
+        corpo.innerHTML = hist.map(a => {
+          const c = mapaCol[a.collaborator_id];
+          const nome = c ? c.name : '(#' + a.collaborator_id + ')';
+          const avisoBadge = a.aviso_ok
+            ? '<span class="badge badge-sucesso" style="font-size:0.7rem">✔ ' + (a.aviso_dias ?? '?') + ' dias</span>'
+            : '<span class="badge badge-aviso" style="font-size:0.7rem">⚠ ' + (a.aviso_dias ?? '?') + ' dias</span>';
+          return `<tr>
+            <td style="white-space:nowrap">${formatarData(a.criado_em, true)}</td>
+            <td class="bold">${escaparHTML(nome)}</td>
+            <td>${a.tipo === 'Adiamento' ? '⏩ Adiamento' : '⏪ Antecipação'}</td>
+            <td style="white-space:nowrap">${a.mes_anterior ? MESES_PT[a.mes_anterior - 1] : '—'} → <strong>${a.mes_novo ? MESES_PT[a.mes_novo - 1] : '—'}</strong></td>
+            <td style="max-width:280px">${escaparHTML(a.motivo || '—')}</td>
+            <td>${avisoBadge}</td>
+            <td>${escaparHTML(a.registado_por || '—')}</td>
+          </tr>`;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+        corpo.innerHTML = '';
+        mostrarToast('Erro ao carregar o histórico.', 'erro');
+      }
+    }
+
+    (function init() {
+      const sel = document.getElementById('sel-ano');
+      const agora = new Date();
+      for (let a = agora.getFullYear() - 1; a <= agora.getFullYear() + 2; a++) {
+        sel.insertAdjacentHTML('beforeend', `<option value="${a}"${a === ano ? ' selected' : ''}>${a}</option>`);
+      }
+      carregar();
+    })();
+  </script>
+</body>
+</html>

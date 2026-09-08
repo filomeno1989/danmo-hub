@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt" data-tema="claro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendário Visual de Férias — Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script>
+    if (!verificarSessao()) {
+      localStorage.setItem('dss_user', JSON.stringify({
+        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
+        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
+      }));
+    }
+  </script>
+  <style>
+    .grelha-meses { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+    .mes-card { background: var(--cor-superficie); border: 1px solid var(--cor-borda);
+      border-radius: var(--raio-md); padding: 14px 16px; box-shadow: var(--sombra-sm); }
+    .mes-card.excedido { border: 2px solid var(--cor-erro); }
+    .mes-cab { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .mes-titulo { font-weight: 800; font-size: var(--tamanho-lg); }
+    .mes-total { font-size: var(--tamanho-sm); color: var(--cor-texto-sec); }
+    .feriado-linha { font-size: 0.72rem; color: var(--cor-texto-sec); margin-bottom: 8px; }
+    .feriado-linha span { background: var(--cor-aviso-bg); color: var(--cor-aviso);
+      border-radius: var(--raio-sm); padding: 2px 8px; display: inline-block; margin: 2px 4px 2px 0; }
+    .setor-bloco { margin-top: 10px; }
+    .setor-nome { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--cor-texto-sec); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .setor-nome.excedido { color: var(--cor-erro); font-weight: 700; }
+    .pessoas { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pessoa { display: inline-flex; flex-direction: column; border-radius: var(--raio-sm);
+      padding: 5px 10px; font-size: 0.78rem; border: 1px solid var(--cor-borda);
+      background: var(--cor-fundo); line-height: 1.25; }
+    .pessoa .pnome { font-weight: 700; }
+    .pessoa .pdetalhe { font-size: 0.7rem; color: var(--cor-texto-sec); }
+    .pessoa.confirmado { background: var(--cor-sucesso-bg); border-color: var(--cor-sucesso); }
+    .pessoa.aguarda { background: var(--cor-aviso-bg); border-color: var(--cor-aviso); }
+    .pessoa.excedido { box-shadow: 0 0 0 2px var(--cor-erro); }
+    .legenda { display: flex; gap: 14px; flex-wrap: wrap; font-size: var(--tamanho-sm);
+      color: var(--cor-texto-sec); margin-bottom: 16px; }
+    .legenda .pessoa { cursor: default; }
+    .aviso-barra { background: var(--cor-erro-bg); color: var(--cor-erro); font-weight: 700;
+      border-radius: var(--raio-sm); padding: 6px 10px; font-size: 0.75rem; margin-bottom: 8px; }
+  </style>
+  <style>
+    @media print {
+      .topbar, .sidebar, .btn, .no-print, #toast-container { display: none !important; }
+      .main { margin: 0 !important; padding: 0 !important; }
+      body { background: #fff !important; }
+      .mes-card { box-shadow: none !important; border: 1px solid #ddd; break-inside: avoid; }
+      .titulo-impressao { display: block !important; font-size: 1.2rem; font-weight: 800; margin-bottom: 6px; }
+    }
+    .titulo-impressao { display: none; }
+  </style>
+  <style>
+    /* Utilitários pequenos (mesmo conjunto usado no módulo RH) */
+    .bold { font-weight: 700; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .flex-wrap { flex-wrap: wrap; }
+    .gap-1 { gap: 4px; } .gap-2 { gap: 8px; }
+    .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="main">
+
+    <div style="margin-bottom:16px;">
+      <h1 class="pagina-titulo">🗓️ Calendário Visual de Férias</h1>
+      <p class="pagina-subtitulo">Quem está ausente em cada mês — por setor. Os sectores que ultrapassam o limite ficam a vermelho.</p>
+    </div>
+
+    <div class="titulo-impressao" id="titulo-impressao">Calendário de Férias</div>
+
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;" class="no-print">
+      <label class="form-label" style="margin:0;">Ano:</label>
+      <select id="sel-ano" class="form-select" style="width:auto;" onchange="carregar()"></select>
+      <button class="btn btn-primario" onclick="window.print()">🖨 Imprimir calendário</button>
+    </div>
+
+    <div class="legenda no-print">
+      <span class="pessoa confirmado"><span class="pnome">Confirmado</span><span class="pdetalhe">dias lançados pelo RH</span></span>
+      <span class="pessoa aguarda"><span class="pnome">Aguarda RH</span><span class="pdetalhe">lista enviada</span></span>
+      <span class="pessoa"><span class="pnome">Planeado</span><span class="pdetalhe">só mês marcado</span></span>
+      <span class="pessoa excedido"><span class="pnome">Excedente</span><span class="pdetalhe">setor acima do limite</span></span>
+    </div>
+
+    <div class="grelha-meses" id="grelha">
+      <p class="text-muted">A carregar calendário...</p>
+    </div>
+
+  </main>
+
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+    const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    let CONFIG = { limite_departamento: 2, permitir_excedente: true, dias_aviso_alteracao: 30, dias_antes_envio_rh: 10, mes_planeamento: 10 };
+    let ano = new Date().getFullYear();
+    let colaboradores = [], plano = [], feriados = [], mapaCol = {};
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('ano')) ano = parseInt(params.get('ano'), 10) || ano;
+
+    function setorDe(c) { return (c && c.setor && c.setor.trim()) ? c.setor.trim() : 'Sem setor'; }
+    function hojeISO() { return dataHojeISO(); }
+
+    async function carregar() {
+      try {
+        await carregarConfig();
+        if (!colaboradores.length) {
+          colaboradores = (await db.query('collaborators', 'select=*&order=name.asc') || []).filter(c => c.active !== false);
+          colaboradores.forEach(c => mapaCol[c.id] = c);
+        }
+        plano = await db.query('ferias_plano', 'select=*&ano=eq.' + ano) || [];
+        feriados = await db.query('ferias_feriados', 'select=*') || [];
+        renderCalendario();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao carregar o calendário.', 'erro');
+      }
+    }
+
+    async function carregarConfig() {
+      try { const c = await db.getOne('ferias_config', { id: 1 }); if (c) CONFIG = { ...CONFIG, ...c }; } catch (e) {}
+    }
+
+    /** Feriados visíveis num dado ano/mês (recorrentes + pontuais) */
+    function feriadosDe(mes) {
+      const mm = String(mes).padStart(2, '0');
+      const lista = [];
+      feriados.forEach(f => {
+        if (!f.data) return;
+        const d = f.data.slice(0, 10);
+        if (f.recorrente) {
+          if (d.slice(5, 7) === mm) lista.push({ dia: parseInt(d.slice(8, 10), 10), descricao: f.descricao });
+        } else if (d.slice(0, 4) === String(ano) && d.slice(5, 7) === mm) {
+          lista.push({ dia: parseInt(d.slice(8, 10), 10), descricao: f.descricao });
+        }
+      });
+      return lista.sort((a, b) => a.dia - b.dia);
+    }
+
+    function renderCalendario() {
+      document.getElementById('titulo-impressao').textContent = `Calendário de Férias ${ano}`;
+      const grelha = document.getElementById('grelha');
+
+      const porMes = {};
+      plano.forEach(r => {
+        if (!r.mes_previsto) return;
+        const c = mapaCol[r.collaborator_id];
+        if (!c) return;
+        (porMes[r.mes_previsto] = porMes[r.mes_previsto] || []).push({ r, c });
+      });
+
+      let html = '';
+      for (let m = 1; m <= 12; m++) {
+        const pessoas = porMes[m] || [];
+        const fer = feriadosDe(m);
+
+        // agrupar por setor
+        const porSetor = {};
+        pessoas.forEach(p => { const s = setorDe(p.c); (porSetor[s] = porSetor[s] || []).push(p); });
+        const setoresOrd = Object.keys(porSetor).sort();
+
+        const temExcedente = setoresOrd.some(s => porSetor[s].length > CONFIG.limite_departamento);
+        const mesActual = (new Date().getFullYear() === ano && (new Date().getMonth() + 1) === m);
+
+        html += `
+          <div class="mes-card${temExcedente ? ' excedido' : ''}" id="mes-${m}">
+            <div class="mes-cab">
+              <span class="mes-titulo">${MESES_PT[m - 1]}${mesActual ? ' <span class="badge badge-aviso" style="font-size:0.6rem;vertical-align:middle;">mês actual</span>' : ''}</span>
+              <span class="mes-total">${pessoas.length ? pessoas.length + ' de férias' : 'sem férias'}</span>
+            </div>
+            ${temExcedente ? `<div class="aviso-barra">⚠ Setor acima do limite de ${CONFIG.limite_departamento} neste mês${CONFIG.permitir_excedente ? ' (exceção permitida)' : ''}</div>` : ''}
+            ${fer.length ? `<div class="feriado-linha">📌 ${fer.map(f => `<span>${String(f.dia).padStart(2, '0')} · ${escaparHTML(f.descricao)}</span>`).join('')}</div>` : ''}
+            ${pessoas.length ? setoresOrd.map(s => {
+              const grupo = porSetor[s];
+              const excede = grupo.length > CONFIG.limite_departamento;
+              const chips = grupo.sort((a, b) => (a.c.name || '').localeCompare(b.c.name || '')).map(p => {
+                const r = p.r;
+                let cls = '';
+                let detalhe = '';
+                if (r.dias_rh && r.data_inicio) {
+                  cls = 'confirmado';
+                  detalhe = `${formatarData(r.data_inicio)} → ${r.data_fim ? formatarData(r.data_fim) : '?'} · ${r.dias_rh} dias`;
+                } else if (r.status === 'Aguarda RH') {
+                  cls = 'aguarda';
+                  detalhe = r.dias_rh ? r.dias_rh + ' dias · falta início' : 'aguarda resposta do RH';
+                } else if (r.dias_rh) {
+                  cls = 'aguarda';
+                  detalhe = r.dias_rh + ' dias · falta início';
+                } else {
+                  detalhe = 'mês marcado';
+                }
+                return `<span class="pessoa ${cls}${excede ? ' excedido' : ''}">
+                          <span class="pnome">${escaparHTML(p.c.name || '?')}</span>
+                          <span class="pdetalhe">${escaparHTML(detalhe)}</span>
+                        </span>`;
+              }).join('');
+              return `
+                <div class="setor-bloco">
+                  <div class="setor-nome${excede ? ' excedido' : ''}">
+                    ${escaparHTML(s)} · ${grupo.length}${excede ? ' ⚠ limite ' + CONFIG.limite_departamento + ' ultrapassado' : ''}
+                  </div>
+                  <div class="pessoas">${chips}</div>
+                </div>`;
+            }).join('') : '<p style="font-size:0.82rem;color:var(--cor-texto-sec)">Nenhum colaborador planeado neste mês.</p>'}
+          </div>`;
+      }
+      grelha.innerHTML = html;
+    }
+
+    (function init() {
+      const sel = document.getElementById('sel-ano');
+      const agora = new Date();
+      for (let a = agora.getFullYear() - 1; a <= agora.getFullYear() + 2; a++) {
+        sel.insertAdjacentHTML('beforeend', `<option value="${a}"${a === ano ? ' selected' : ''}>${a}</option>`);
+      }
+      carregar();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt" data-tema="claro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configurações do Plano de Férias — Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script>
+    if (!verificarSessao()) {
+      localStorage.setItem('dss_user', JSON.stringify({
+        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
+        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
+      }));
+    }
+  </script>
+  <style>
+    .zona-perigo { border: 2px solid var(--cor-erro); border-radius: var(--raio-md); padding: 16px; margin-top: 20px; }
+    .zona-perigo h3 { color: var(--cor-erro); }
+    .feriado-form { display: grid; grid-template-columns: 170px 1fr auto auto; gap: 10px; align-items: end; margin-bottom: 14px; }
+    @media (max-width: 700px) { .feriado-form { grid-template-columns: 1fr; } }
+    .check-linha { display: flex; align-items: center; gap: 8px; font-size: var(--tamanho-sm); }
+  </style>
+  <style>
+    /* Utilitários pequenos (mesmo conjunto usado no módulo RH) */
+    .bold { font-weight: 700; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .flex-wrap { flex-wrap: wrap; }
+    .gap-1 { gap: 4px; } .gap-2 { gap: 8px; }
+    .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="main">
+
+    <div style="margin-bottom:20px;">
+      <h1 class="pagina-titulo">⚙️ Configurações — Plano de Férias</h1>
+      <p class="pagina-subtitulo">Regras gerais, feriados e manutenção do módulo</p>
+    </div>
+
+    <div id="acesso-negado" class="card" style="display:none;">
+      <p style="font-weight:700;">⛔ Acesso restrito</p>
+      <p class="text-muted">Só administradores e gestores podem alterar as configurações do plano de férias.</p>
+    </div>
+
+    <div id="conteudo-config">
+
+      <!-- ── Regras gerais ── -->
+      <div class="card" style="margin-bottom:20px;max-width:720px;">
+        <h3 style="margin-bottom:4px;">Regras gerais</h3>
+        <p class="text-muted" style="font-size:var(--tamanho-sm);margin-bottom:14px;">Estas regras valem para todos os anos do plano.</p>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Máx. colaboradores do mesmo setor no mesmo mês</label>
+            <input type="number" id="c-limite" class="form-input" min="1" max="50" />
+            <span class="text-muted" style="font-size:0.72rem;">Ex.: 2 técnicos por mês por área</span>
+          </div>
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Quando o limite é atingido</label>
+            <select id="c-excedente" class="form-select">
+              <option value="true">Alertar SEMPRE e deixar passar (exceção permitida)</option>
+              <option value="false">Bloquear a marcação</option>
+            </select>
+          </div>
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Aviso prévio mínimo para adiamento/antecipação (dias)</label>
+            <input type="number" id="c-aviso" class="form-input" min="0" max="120" />
+          </div>
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Dias antes do mês para extrair e enviar ao RH</label>
+            <input type="number" id="c-envio" class="form-input" min="1" max="60" />
+          </div>
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Mês da folha de planeamento do ano seguinte</label>
+            <select id="c-mes-plan" class="form-select">
+              <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+              <option value="3">Março</option><option value="4">Abril</option>
+              <option value="5">Maio</option><option value="6">Junho</option>
+              <option value="7">Julho</option><option value="8">Agosto</option>
+              <option value="9">Setembro</option><option value="10">Outubro</option>
+              <option value="11">Novembro</option><option value="12">Dezembro</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primario" onclick="guardarRegras()">💾 Guardar regras</button>
+        </div>
+      </div>
+
+      <!-- ── Feriados ── -->
+      <div class="card" style="margin-bottom:20px;">
+        <h3 style="margin-bottom:4px;">Feriados</h3>
+        <p class="text-muted" style="font-size:var(--tamanho-sm);margin-bottom:14px;">
+          Os feriados <strong>fixos</strong> (1 de Janeiro, 25 de Dezembro...) repetem todos os anos.
+          Os <strong>móveis</strong> (Eid al-Fitr, Eid al-Adha) devem ser acrescentados a cada ano com a data exacta.
+        </p>
+
+        <div class="feriado-form">
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Data</label>
+            <input type="date" id="f-data" class="form-input" />
+          </div>
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Descrição</label>
+            <input type="text" id="f-descricao" class="form-input" placeholder="Ex.: Eid al-Fitr" />
+          </div>
+          <div class="check-linha" style="padding-bottom:10px;">
+            <input type="checkbox" id="f-recorrente" />
+            <label for="f-recorrente">Repete todos os anos</label>
+          </div>
+          <div class="form-grupo" style="margin-bottom:0;">
+            <button class="btn btn-primario" onclick="adicionarFeriado()">➕ Adicionar</button>
+          </div>
+        </div>
+
+        <div class="tabela-container">
+          <table>
+            <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th></th></tr></thead>
+            <tbody id="feriados-corpo"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Manutenção ── -->
+      <div class="zona-perigo" id="zona-perigo">
+        <h3>⚠️ Zona de manutenção (apagar dados)</h3>
+        <p class="text-muted" style="font-size:var(--tamanho-sm);margin-bottom:12px;">
+          Cuidado: estas acções apagam dados a sério. Faça antes o backup (Relatórios → Backup do ano / CSV do plano).
+        </p>
+        <div class="flex gap-2 flex-wrap">
+          <select id="sel-ano-limpar" class="form-select" style="width:auto;"></select>
+          <button class="btn btn-vermelho" onclick="limparPlano()">🗑 Limpar plano do ano</button>
+          <button class="btn btn-vermelho" onclick="limparAlteracoes()">🗑 Limpar alterações do ano</button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+    const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    let feriados = [];
+
+    async function init() {
+      // permissão: admin/gestor
+      if (!temPermissao(['admin', 'gestor'])) {
+        document.getElementById('acesso-negado').style.display = 'block';
+        document.getElementById('conteudo-config').style.display = 'none';
+        return;
+      }
+      // anos para manutenção
+      const sel = document.getElementById('sel-ano-limpar');
+      const agora = new Date();
+      for (let a = agora.getFullYear() - 1; a <= agora.getFullYear() + 2; a++) {
+        sel.insertAdjacentHTML('beforeend', `<option value="${a}">${a}</option>`);
+      }
+      await carregarRegras();
+      await carregarFeriados();
+    }
+
+    async function carregarRegras() {
+      try {
+        const c = await db.getOne('ferias_config', { id: 1 });
+        if (c) {
+          setVal('c-limite', c.limite_departamento ?? 2);
+          setVal('c-excedente', c.permitir_excedente === false ? 'false' : 'true');
+          setVal('c-aviso', c.dias_aviso_alteracao ?? 30);
+          setVal('c-envio', c.dias_antes_envio_rh ?? 10);
+          setVal('c-mes-plan', c.mes_planeamento ?? 10);
+        }
+      } catch (e) {
+        console.warn('Config ainda não existe — serão usados os valores por omissão ao guardar.', e);
+      }
+    }
+
+    async function guardarRegras() {
+      const payload = {
+        limite_departamento: parseInt(getVal('c-limite'), 10) || 2,
+        permitir_excedente: getVal('c-excedente') === 'true',
+        dias_aviso_alteracao: parseInt(getVal('c-aviso'), 10) || 30,
+        dias_antes_envio_rh: parseInt(getVal('c-envio'), 10) || 10,
+        mes_planeamento: parseInt(getVal('c-mes-plan'), 10) || 10,
+        atualizado_em: new Date().toISOString()
+      };
+      try {
+        const existente = await db.getOne('ferias_config', { id: 1 });
+        if (existente) {
+          await db.update('ferias_config', 1, payload);
+        } else {
+          await db.insert('ferias_config', { id: 1, ...payload });
+        }
+        mostrarToast('Regras guardadas.', 'sucesso');
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao guardar as regras. Confirmou que o SQL das tabelas já foi corrido no Supabase?', 'erro');
+      }
+    }
+
+    async function carregarFeriados() {
+      try {
+        feriados = await db.query('ferias_feriados', 'select=*&order=data.asc') || [];
+        renderFeriados();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao carregar feriados (correu o SQL das tabelas?).', 'erro');
+      }
+    }
+
+    function renderFeriados() {
+      const corpo = document.getElementById('feriados-corpo');
+      corpo.innerHTML = feriados.map(f => {
+        const tipo = f.recorrente
+          ? '<span class="badge badge-info" style="font-size:0.7rem">fixo · todos os anos (' + f.data.slice(8, 10) + '/' + f.data.slice(5, 7) + ')</span>'
+          : '<span class="badge badge-secundario" style="font-size:0.7rem">pontual (' + formatarData(f.data) + ')</span>';
+        return `<tr>
+          <td>${formatarData(f.data)}</td>
+          <td class="bold">${escaparHTML(f.descricao)}</td>
+          <td>${tipo}</td>
+          <td><button class="btn btn-vermelho btn-sm" onclick="apagarFeriado('${f.id}')">🗑</button></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="4" class="text-muted">Sem feriados registados.</td></tr>';
+    }
+
+    async function adicionarFeriado() {
+      const data = getVal('f-data');
+      const descricao = getVal('f-descricao').trim();
+      const recorrente = document.getElementById('f-recorrente').checked;
+      if (!data || !descricao) { mostrarToast('Indique a data e a descrição.', 'aviso'); return; }
+      try {
+        await db.insert('ferias_feriados', { data, descricao, recorrente });
+        setVal('f-descricao', '');
+        document.getElementById('f-recorrente').checked = false;
+        mostrarToast('Feriado acrescentado.', 'sucesso');
+        await carregarFeriados();
+      } catch (e) { console.error(e); mostrarToast('Erro ao acrescentar o feriado.', 'erro'); }
+    }
+
+    async function apagarFeriado(id) {
+      const f = feriados.find(x => x.id === id);
+      if (!confirmarAcao(`Apagar o feriado "${f ? f.descricao : ''}"?`)) return;
+      try {
+        await db.delete('ferias_feriados', id);
+        mostrarToast('Feriado apagado.', 'sucesso');
+        await carregarFeriados();
+      } catch (e) { console.error(e); mostrarToast('Erro ao apagar.', 'erro'); }
+    }
+
+    async function limparPlano() {
+      const ano = parseInt(document.getElementById('sel-ano-limpar').value, 10);
+      if (!confirmarAcao(`⚠ Isto apaga TODAS as linhas do plano de ${ano} (meses, dias do RH, datas...).\nO histórico de alterações NÃO é apagado.\n\nContinuar?`)) return;
+      if (!confirmarAcao(`Confirmação final: apagar definitivamente o plano de ${ano}?`)) return;
+      try {
+        const linhas = await db.query('ferias_plano', 'select=id&ano=eq.' + ano) || [];
+        for (const l of linhas) await db.delete('ferias_plano', l.id);
+        mostrarToast(linhas.length + ' linha(s) do plano de ' + ano + ' apagada(s).', 'sucesso');
+      } catch (e) { console.error(e); mostrarToast('Erro ao limpar o plano.', 'erro'); }
+    }
+
+    async function limparAlteracoes() {
+      const ano = parseInt(document.getElementById('sel-ano-limpar').value, 10);
+      if (!confirmarAcao(`⚠ Isto apaga TODO o histórico de alterações de ${ano}.\nContinuar?`)) return;
+      if (!confirmarAcao(`Confirmação final: apagar o histórico de alterações de ${ano}?`)) return;
+      try {
+        const linhas = await db.query('ferias_alteracoes', 'select=id&ano=eq.' + ano) || [];
+        for (const l of linhas) await db.delete('ferias_alteracoes', l.id);
+        mostrarToast(linhas.length + ' alteração(ões) de ' + ano + ' apagada(s).', 'sucesso');
+      } catch (e) { console.error(e); mostrarToast('Erro ao limpar alterações.', 'erro'); }
+    }
+
+    init();
+  </script>
+</body>
+</html>

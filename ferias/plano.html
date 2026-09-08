@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt" data-tema="claro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plano Anual de Férias — Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script>
+    if (!verificarSessao()) {
+      localStorage.setItem('dss_user', JSON.stringify({
+        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
+        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
+      }));
+    }
+  </script>
+  <style>
+    .barra-filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .pesquisa-input { flex: 1; min-width: 200px; padding: 10px 14px; border: 1px solid var(--cor-borda);
+      border-radius: var(--raio-md); background: var(--cor-superficie); color: var(--cor-texto); font-size: var(--tamanho-base); }
+    .pesquisa-input:focus { outline: none; border-color: var(--cor-ambar); }
+
+    .cel-mes { display: inline-flex; align-items: center; justify-content: center; width: 100%;
+      min-height: 30px; border: 1px solid var(--cor-borda); border-radius: var(--raio-sm);
+      cursor: pointer; font-size: 0.7rem; font-weight: 700; color: var(--cor-texto-sec);
+      background: var(--cor-superficie); transition: all 0.15s; user-select: none; position: relative; }
+    .cel-mes:hover { border-color: var(--cor-ambar); color: var(--cor-ambar); }
+    .cel-mes.marcado { background: var(--cor-ambar); border-color: var(--cor-ambar); color: #000; }
+    .cel-mes.excedido { box-shadow: inset 0 0 0 2px var(--cor-erro); }
+    .cel-mes.excedido::after { content: '⚠'; position: absolute; top: -7px; right: -4px; font-size: 0.65rem; }
+    .cel-mes .m { padding: 0 4px; }
+    td.col-mes { padding: 4px !important; min-width: 52px; }
+    .cab-mes { font-size: 0.7rem !important; text-align: center; }
+
+    .nota-outubro { border-left: 4px solid var(--cor-ambar); background: var(--cor-ambar-claro);
+      border-radius: var(--raio-md); padding: 12px 16px; margin-bottom: 16px; font-size: var(--tamanho-sm); }
+    .badge-mini { font-size: 0.68rem; padding: 2px 8px; }
+  </style>
+  <style>
+    @media print {
+      .topbar, .sidebar, .btn, .no-print, #toast-container { display: none !important; }
+      .main { margin: 0 !important; padding: 0 !important; }
+      body { background: #fff !important; }
+      .card, .painel { box-shadow: none !important; border: 1px solid #ddd; }
+      .titulo-impressao { display: block !important; font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
+      .assinatura-linha { margin-top: 30px; font-size: 0.8rem; }
+    }
+    .titulo-impressao { display: none; }
+    .assinatura-linha { display: none; }
+  </style>
+  <style>
+    /* Utilitários pequenos (mesmo conjunto usado no módulo RH) */
+    .bold { font-weight: 700; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .flex-wrap { flex-wrap: wrap; }
+    .gap-1 { gap: 4px; } .gap-2 { gap: 8px; }
+    .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="main">
+
+    <div style="margin-bottom:20px;">
+      <h1 class="pagina-titulo">📋 Plano Anual de Férias</h1>
+      <p class="pagina-subtitulo">A folha que circula em Outubro — clique num mês para marcar as férias de cada colaborador</p>
+    </div>
+
+    <div class="titulo-impressao" id="titulo-impressao">Plano de Férias — Folha de Planeamento</div>
+
+    <div class="nota-outubro no-print">
+      <strong>Como funciona:</strong> marca o <u>mês</u> de férias de cada colaborador (clique no quadrado do mês;
+      clicar de novo retira). Se um setor já tiver o limite de férias naquele mês, o sistema <u>alerta sempre</u> —
+      e pode deixar passar como exceção. Os <strong>dias de direito</strong> chegam depois do RH central
+      (lançar em <a href="rh-mensal.html">Folha do RH</a>).
+    </div>
+
+    <div class="barra-filtros no-print">
+      <select id="sel-ano" class="form-select" style="width:auto;" onchange="mudarAno()"></select>
+      <input type="text" id="pesquisa" class="pesquisa-input" placeholder="🔍 Pesquisar por nome ou código..." oninput="renderTabela()" />
+      <select id="filtro-setor" class="form-select" style="width:auto;min-width:170px;" onchange="renderTabela()">
+        <option value="">Todos os setores</option>
+      </select>
+      <button class="btn btn-secundario" onclick="carregarTodos()">👥 Carregar todos</button>
+      <button class="btn btn-secundario" onclick="duplicarAnoAnterior()">⧉ Duplicar do ano anterior</button>
+      <button class="btn btn-secundario" onclick="exportarCSV()">⬇ CSV</button>
+      <button class="btn btn-primario" onclick="window.print()">🖨 Imprimir folha</button>
+    </div>
+
+    <div class="card">
+      <div class="tabela-container">
+        <table id="tabela-plano">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Colaborador</th>
+              <th>Setor</th>
+              <th class="cab-mes">Jan</th><th class="cab-mes">Fev</th><th class="cab-mes">Mar</th>
+              <th class="cab-mes">Abr</th><th class="cab-mes">Mai</th><th class="cab-mes">Jun</th>
+              <th class="cab-mes">Jul</th><th class="cab-mes">Ago</th><th class="cab-mes">Set</th>
+              <th class="cab-mes">Out</th><th class="cab-mes">Nov</th><th class="cab-mes">Dez</th>
+              <th>Dias</th>
+              <th>Período</th>
+              <th>Status</th>
+              <th class="no-print"></th>
+            </tr>
+          </thead>
+          <tbody id="tabela-corpo"></tbody>
+        </table>
+      </div>
+      <div id="sem-resultados" class="tabela-vazia" style="display:none;">Nenhum colaborador encontrado com os filtros actuais.</div>
+      <div style="padding:10px 16px;" class="assinatura-linha">
+        <div style="display:flex;justify-content:space-between;">
+          <span>Feito por: ______________________</span>
+          <span>Visto (Direcção): ______________________</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL — editar linha do plano (forçar alterações) -->
+  <div class="modal-fundo" id="modal-linha">
+    <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="modal-titulo">Editar registo do plano</span>
+        <button class="modal-fechar" onclick="fecharModal('modal-linha')">✕</button>
+      </div>
+      <div class="modal-corpo">
+        <input type="hidden" id="e-row-id" />
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Mês de férias</label>
+            <select id="e-mes" class="form-select">
+              <option value="">— Sem mês —</option>
+              <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+              <option value="3">Março</option><option value="4">Abril</option>
+              <option value="5">Maio</option><option value="6">Junho</option>
+              <option value="7">Julho</option><option value="8">Agosto</option>
+              <option value="9">Setembro</option><option value="10">Outubro</option>
+              <option value="11">Novembro</option><option value="12">Dezembro</option>
+            </select>
+          </div>
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Status</label>
+            <select id="e-status" class="form-select">
+              <option>Planeado</option>
+              <option>Aguarda RH</option>
+              <option>Confirmado</option>
+            </select>
+          </div>
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Dias de direito (RH)</label>
+            <input type="number" id="e-dias" class="form-input" min="0" max="60" onchange="autoFim()" />
+          </div>
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Início (se já marcado)</label>
+            <input type="date" id="e-inicio" class="form-input" onchange="autoFim()" />
+          </div>
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Fim (sáb/dom contam)</label>
+            <input type="date" id="e-fim" class="form-input" />
+          </div>
+          <div class="form-grupo" style="margin-bottom:0;">
+            <label class="form-label">Lista enviada ao RH em</label>
+            <input type="date" id="e-enviado" class="form-input" />
+          </div>
+        </div>
+        <div class="form-grupo" style="margin-top:12px;">
+          <label class="form-label">Observações do RH</label>
+          <textarea id="e-obs" class="form-textarea" placeholder="Ex.: RH descontou 2 dias por faltas injustificadas"></textarea>
+        </div>
+        <p style="font-size:var(--tamanho-xs);color:var(--cor-texto-sec);">
+          Este formulário serve para <strong>forçar/corrigir</strong> qualquer campo mesmo fora do fluxo normal
+          (ex.: o RH devolveu dias mas ainda sem data de início).</p>
+      </div>
+      <div class="modal-rodape">
+        <button class="btn btn-secundario" onclick="fecharModal('modal-linha')">Cancelar</button>
+        <button class="btn btn-primario" onclick="guardarLinha()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+    const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const MESES_AB = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    let CONFIG = { limite_departamento: 2, permitir_excedente: true, dias_aviso_alteracao: 30, dias_antes_envio_rh: 10, mes_planeamento: 10 };
+    let ano = new Date().getFullYear();
+    let colaboradores = [], plano = [], mapaCol = {}, mapaPlano = {};
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('ano')) ano = parseInt(params.get('ano'), 10) || ano;
+
+    function setorDe(c) { return (c && c.setor && c.setor.trim()) ? c.setor.trim() : 'Sem setor'; }
+    function addDias(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+    function dataFimDe(inicio, dias) { return (inicio && dias) ? addDias(inicio, dias - 1) : null; }
+    function hojeISO() { return dataHojeISO(); }
+
+    function contarPorSetorMes() {
+      const contas = {};
+      plano.forEach(r => {
+        if (!r.mes_previsto) return;
+        const c = mapaCol[r.collaborator_id];
+        if (!c) return;
+        const k = setorDe(c) + '||' + r.mes_previsto;
+        contas[k] = (contas[k] || 0) + 1;
+      });
+      return contas;
+    }
+
+    async function carregar() {
+      try {
+        await carregarConfig();
+        if (!colaboradores.length) {
+          colaboradores = (await db.query('collaborators', 'select=*&order=name.asc') || []).filter(c => c.active !== false);
+          colaboradores.forEach(c => mapaCol[c.id] = c);
+          preencherSetores();
+        }
+        plano = await db.query('ferias_plano', 'select=*&ano=eq.' + ano) || [];
+        mapaPlano = {};
+        plano.forEach(r => mapaPlano[r.collaborator_id] = r);
+        renderTabela();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao carregar o plano anual.', 'erro');
+      }
+    }
+
+    async function carregarConfig() {
+      try { const c = await db.getOne('ferias_config', { id: 1 }); if (c) CONFIG = { ...CONFIG, ...c }; } catch (e) {}
+    }
+
+    function preencherSetores() {
+      const setores = [...new Set(colaboradores.map(setorDe))].sort();
+      const sel = document.getElementById('filtro-setor');
+      setores.forEach(s => sel.insertAdjacentHTML('beforeend', `<option value="${escaparHTML(s)}">${escaparHTML(s)}</option>`));
+    }
+
+    function renderTabela() {
+      const termo = normalizarTexto(document.getElementById('pesquisa').value || '');
+      const setor = document.getElementById('filtro-setor').value;
+      const contas = contarPorSetorMes();
+      const lista = colaboradores.filter(c => {
+        const okTermo = !termo || normalizarTexto(c.name || '').includes(termo) || normalizarTexto(c.code || '').includes(termo);
+        const okSetor = !setor || setorDe(c) === setor;
+        return okTermo && okSetor;
+      });
+
+      const corpo = document.getElementById('tabela-corpo');
+      document.getElementById('sem-resultados').style.display = lista.length ? 'none' : 'block';
+      document.getElementById('titulo-impressao').textContent = `Plano de Férias ${ano} — Folha de Planeamento`;
+
+      corpo.innerHTML = lista.map((c, i) => {
+        const r = mapaPlano[c.id];
+        const celulas = MESES_AB.map((ab, idx) => {
+          const m = idx + 1;
+          const marcado = r && r.mes_previsto === m;
+          const k = setorDe(c) + '||' + m;
+          const excede = (contas[k] || 0) > CONFIG.limite_departamento;
+          return `<td class="col-mes">
+            <div class="cel-mes${marcado ? ' marcado' : ''}${excede ? ' excedido' : ''}"
+                 title="${escaparHTML(setorDe(c))} · ${ab} ${ano}${excede ? ' — limite ultrapassado!' : ''}"
+                 onclick="alternarMes(${c.id}, ${m})"><span class="m">${marcado ? '✔ ' + ab : ab}</span></div>
+          </td>`;
+        }).join('');
+
+        const periodo = (r && r.data_inicio)
+          ? `${formatarData(r.data_inicio)}${r.data_fim ? ' → ' + formatarData(r.data_fim) : ''}`
+          : '—';
+        const badge = estadoBadge(r);
+
+        return `
+          <tr>
+            <td class="text-muted">${i + 1}</td>
+            <td><div class="bold">${escaparHTML(c.name || '—')}</div><div style="font-size:0.75rem;color:var(--cor-texto-sec)">${escaparHTML(c.code || '')}${c.categoria ? ' · ' + escaparHTML(c.categoria) : ''}</div></td>
+            <td style="font-size:0.82rem">${escaparHTML(setorDe(c))}</td>
+            ${celulas}
+            <td>${r && r.dias_rh ? '<strong>' + r.dias_rh + '</strong>' : '<span class="text-muted">—</span>'}</td>
+            <td style="font-size:0.8rem;white-space:nowrap">${periodo}</td>
+            <td>${badge}</td>
+            <td class="no-print">
+              <button class="btn btn-secundario btn-sm" title="Forçar/corrigir registo" onclick="abrirModalLinha(${c.id})">✏️</button>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    function estadoBadge(r) {
+      if (!r || !r.mes_previsto) return '<span class="badge badge-secundario badge-mini">· Sem mês</span>';
+      if (r.data_fim && r.data_fim < hojeISO()) return '<span class="badge badge-secundario badge-mini">✔ Gozadas</span>';
+      if (r.status === 'Confirmado') return '<span class="badge badge-sucesso badge-mini">● Confirmado</span>';
+      if (r.status === 'Aguarda RH') return '<span class="badge badge-aviso badge-mini">⏳ Aguarda RH</span>';
+      return '<span class="badge badge-info badge-mini">· Planeado</span>';
+    }
+
+    // ── Marcar / desmarcar mês na folha ────────────────────────────
+    async function alternarMes(collabId, mes) {
+      const c = mapaCol[collabId];
+      const existente = mapaPlano[collabId];
+      try {
+        // Desmarcar
+        if (existente && existente.mes_previsto === mes) {
+          await db.update('ferias_plano', existente.id, { mes_previsto: null, atualizado_em: new Date().toISOString() });
+          mostrarToast('Mês retirado de ' + (c ? c.name : 'colaborador') + '.', 'info');
+        } else {
+          // Verificar limite do setor/mês (esta linha ainda não conta neste mês)
+          const contas = contarPorSetorMes();
+          const k = setorDe(c) + '||' + mes;
+          const noSetorMes = contas[k] || 0;
+          if (noSetorMes >= CONFIG.limite_departamento) {
+            const msg = `⚠️ ATENÇÃO\n\nO setor "${setorDe(c)}" já tem ${noSetorMes} colaborador(es) de férias em ${MESES_PT[mes - 1]} ${ano} (limite: ${CONFIG.limite_departamento}).\n\n${CONFIG.permitir_excedente ? 'Pode marcar como EXCEÇÃO — o aviso fica sempre assinalado no calendário e nos relatórios.' : 'Pela regra actual o limite BLOQUEIA esta marcação.'}\n\nMarcar mesmo assim?`;
+            if (CONFIG.permitir_excedente) {
+              if (!window.confirm(msg)) return;
+            } else {
+              mostrarToast('Bloqueado: limite de ' + CONFIG.limite_departamento + ' por setor/mês (configurável em Configurações).', 'erro');
+              return;
+            }
+          }
+          if (existente) {
+            await db.update('ferias_plano', existente.id, {
+              mes_previsto: mes,
+              atualizado_em: new Date().toISOString()
+            });
+          } else {
+            const nova = await db.insert('ferias_plano', {
+              ano, collaborator_id: collabId, mes_previsto: mes, status: 'Planeado'
+            });
+            mapaPlano[collabId] = Array.isArray(nova) ? nova[0] : nova;
+          }
+          mostrarToast((c ? c.name : 'Colaborador') + ' → ' + MESES_PT[mes - 1] + ' ' + ano, 'sucesso');
+        }
+        await carregar();
+      } catch (e) {
+        console.error(e);
+        mostrarToast('Erro ao gravar a marcação.', 'erro');
+      }
+    }
+
+    // ── Carregar todos os colaboradores para o plano ───────────────
+    async function carregarTodos() {
+      const faltam = colaboradores.filter(c => !mapaPlano[c.id]);
+      if (!faltam.length) { mostrarToast('Todos os colaboradores activos já estão na folha.', 'info'); return; }
+      if (!window.confirm(`Adicionar ${faltam.length} colaborador(es) à folha de ${ano} (sem mês marcado)?`)) return;
+      try {
+        const linhas = faltam.map(c => ({ ano, collaborator_id: c.id, mes_previsto: null, status: 'Planeado' }));
+        for (const l of linhas) await db.insert('ferias_plano', l);
+        mostrarToast(faltam.length + ' colaborador(es) adicionados à folha.', 'sucesso');
+        await carregar();
+      } catch (e) { console.error(e); mostrarToast('Erro ao adicionar (alguns podem já existir).', 'erro'); }
+    }
+
+    // ── Duplicar plano do ano anterior ─────────────────────────────
+    async function duplicarAnoAnterior() {
+      const base = ano - 1;
+      if (!window.confirm(`Copiar para ${ano} os meses marcados no plano de ${base}?\n(Registos já existentes em ${ano} não são alterados.)`)) return;
+      try {
+        const origem = await db.query('ferias_plano', 'select=*&ano=eq.' + base) || [];
+        const comMes = origem.filter(r => r.mes_previsto && mapaCol[r.collaborator_id] && !mapaPlano[r.collaborator_id]);
+        if (!comMes.length) { mostrarToast('Nada para copiar (ou já copiado).', 'info'); return; }
+        for (const r of comMes) {
+          await db.insert('ferias_plano', { ano, collaborator_id: r.collaborator_id, mes_previsto: r.mes_previsto, status: 'Planeado' });
+        }
+        mostrarToast(comMes.length + ' marcação(ões) copiada(s) de ' + base + ' para ' + ano + '.', 'sucesso');
+        await carregar();
+      } catch (e) { console.error(e); mostrarToast('Erro ao duplicar o plano.', 'erro'); }
+    }
+
+    // ── Modal de edição (forçar alterações) ────────────────────────
+    function abrirModalLinha(collabId) {
+      const r = mapaPlano[collabId];
+      const c = mapaCol[collabId];
+      document.getElementById('e-row-id').value = collabId;
+      document.getElementById('modal-titulo').textContent =
+        'Editar: ' + (c ? c.name : 'colaborador #' + collabId) + ' (' + ano + ')';
+      setVal('e-mes', r && r.mes_previsto ? String(r.mes_previsto) : '');
+      setVal('e-status', r && r.status ? r.status : 'Planeado');
+      setVal('e-dias', r && r.dias_rh ? r.dias_rh : '');
+      setVal('e-inicio', r && r.data_inicio ? r.data_inicio : '');
+      setVal('e-fim', r && r.data_fim ? r.data_fim : '');
+      setVal('e-enviado', r && r.enviado_rh_em ? r.enviado_rh_em : '');
+      setVal('e-obs', r && r.obs_rh ? r.obs_rh : '');
+      abrirModal('modal-linha');
+    }
+
+    function autoFim() {
+      const dias = parseInt(getVal('e-dias'), 10);
+      const inicio = getVal('e-inicio');
+      if (dias > 0 && inicio) setVal('e-fim', dataFimDe(inicio, dias));
+    }
+
+    async function guardarLinha() {
+      const collabId = parseInt(document.getElementById('e-row-id').value, 10);
+      const existente = mapaPlano[collabId];
+      const mes = getVal('e-mes') ? parseInt(getVal('e-mes'), 10) : null;
+      const dias = getVal('e-dias') ? parseInt(getVal('e-dias'), 10) : null;
+      const inicio = getVal('e-inicio') || null;
+      const fim = getVal('e-fim') || dataFimDe(inicio, dias);
+      const payload = {
+        mes_previsto: mes,
+        status: getVal('e-status') || 'Planeado',
+        dias_rh: dias,
+        data_inicio: inicio,
+        data_fim: fim,
+        enviado_rh_em: getVal('e-enviado') || null,
+        obs_rh: getVal('e-obs') || null,
+        atualizado_em: new Date().toISOString()
+      };
+      try {
+        if (existente) {
+          await db.update('ferias_plano', existente.id, payload);
+        } else {
+          await db.insert('ferias_plano', { ano, collaborator_id: collabId, ...payload });
+        }
+        fecharModal('modal-linha');
+        mostrarToast('Registo guardado.', 'sucesso');
+        await carregar();
+      } catch (e) { console.error(e); mostrarToast('Erro ao guardar o registo.', 'erro'); }
+    }
+
+    // ── Exportar CSV ───────────────────────────────────────────────
+    function exportarCSV() {
+      const linhas = [['Nº', 'Código', 'Nome', 'Setor', 'Mês', 'Dias (RH)', 'Início', 'Fim', 'Enviado ao RH', 'Status', 'Observações']];
+      colaboradores.forEach((c, i) => {
+        const r = mapaPlano[c.id];
+        linhas.push([
+          i + 1, c.code || '', c.name || '', setorDe(c),
+          r && r.mes_previsto ? MESES_PT[r.mes_previsto - 1] : '',
+          r && r.dias_rh ? r.dias_rh : '',
+          r && r.data_inicio ? r.data_inicio : '',
+          r && r.data_fim ? r.data_fim : '',
+          r && r.enviado_rh_em ? r.enviado_rh_em : '',
+          r ? r.status : 'Sem registo',
+          r && r.obs_rh ? r.obs_rh : ''
+        ]);
+      });
+      descarregarCSV(`plano-ferias-${ano}.csv`, linhas);
+      mostrarToast('CSV descarregado.', 'sucesso');
+    }
+
+    function descarregarCSV(nome, linhas) {
+      const csv = linhas.map(l => l.map(v => {
+        const s = (v ?? '').toString().replace(/"/g, '""');
+        return /[;"\n]/.test(s) ? `"${s}"` : s;
+      }).join(';')).join('\r\n');
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = nome;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // ── Ano ────────────────────────────────────────────────────────
+    function mudarAno() {
+      ano = parseInt(document.getElementById('sel-ano').value, 10);
+      carregar();
+    }
+
+    // ── Init ──
+    (function init() {
+      const sel = document.getElementById('sel-ano');
+      const agora = new Date();
+      for (let a = agora.getFullYear() - 1; a <= agora.getFullYear() + 2; a++) {
+        sel.insertAdjacentHTML('beforeend', `<option value="${a}"${a === ano ? ' selected' : ''}>${a}</option>`);
+      }
+      carregar();
+    })();
+  </script>
+</body>
+</html>
