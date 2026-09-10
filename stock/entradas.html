@@ -61,7 +61,7 @@
         </div>
       </div>
       <div style="margin-top:20px; display:flex; gap:10px;">
-        <button class="btn btn-primario" onclick="guardarEntrada()">💾 Guardar Pedido</button>
+        <button class="btn btn-primario" onclick="guardarEntrada()" data-dh="criar">💾 Guardar Pedido</button>
         <button class="btn btn-secundario" onclick="limparForm()">✖ Limpar</button>
       </div>
     </div>
@@ -271,7 +271,7 @@
           '<td>' + (m.observacoes || '-') + '</td>' +
           '<td><div style="display:flex; gap:6px;">' +
             '<button class="btn btn-verde btn-sm" onclick="abrirModal(\'' + m.id + '\')">✅ Confirmar</button>' +
-            '<button class="btn btn-secundario btn-sm" onclick="eliminarPendente(\'' + m.id + '\')">🗑</button>' +
+            '<button class="btn btn-secundario btn-sm" data-dh="apagar" onclick="eliminarPendente(\'' + m.id + '\')">🗑</button>' +
           '</div></td>' +
         '</tr>';
       }).join('');
@@ -415,7 +415,8 @@
     }
 
     async function eliminarPendente(id) {
-      if (!confirmarAcao('Eliminar este pedido pendente?')) return;
+      if (!(await dhConfirmar('Eliminar este pedido pendente?'))) return;
+      if (!(await dhPedirChaveAdmin('Eliminar um pedido de compra pendente precisa de autorizacao da administracao.'))) return;
       await db.delete('stock_movimentos', id);
       mostrarToast('Pedido eliminado.', 'info');
       await carregarMovimentos();

@@ -160,7 +160,7 @@
     var obs = document.getElementById(uid + '-obs').value.trim() || null;
 
     if (!codigo && !nome) {
-      if (!confirm('Não escolheste ninguém - isto vai deixar esta área SEM responsável. Confirmas?')) return;
+      if (!(await dhConfirmar('Não escolheste ninguém - isto vai deixar esta área SEM responsável. Confirmas?'))) return;
     } else if (!codigo || !nome) {
       mostrarToast('Escolha um colaborador da lista (clique numa sugestão) ou limpe tudo para deixar sem responsável.', 'erro');
       return;
@@ -182,7 +182,7 @@
   }
 
   async function removerArea(id) {
-    if (!confirm('Remover esta área? (não apaga colaboradores, só a área da lista)')) return;
+    if (!(await dhConfirmar('Remover esta área? (não apaga colaboradores, só a área da lista)'))) return;
     try {
       await db.delete('rh_responsaveis_area', id);
       mostrarToast('Área removida.', 'sucesso');

@@ -216,7 +216,7 @@
       const avisoOk = avisoDias >= CONFIG.dias_aviso_alteracao;
 
       if (!avisoOk) {
-        if (!window.confirm(`⚠ O aviso prévio é insuficiente (${avisoDias} dias de ${CONFIG.dias_aviso_alteracao}).\nRegistar a alteração mesmo assim? Ficará marcada no histórico.`)) return;
+        if (!(await dhConfirmar(`⚠ O aviso prévio é insuficiente (${avisoDias} dias de ${CONFIG.dias_aviso_alteracao}).\nRegistar a alteração mesmo assim? Ficará marcada no histórico.`))) return;
       }
 
       // limite no novo mês (alerta sempre, permite exceção)
@@ -228,7 +228,7 @@
         if (c && mesmoSetor.length >= CONFIG.limite_departamento) {
           limiteAviso = `\n\n⚠ O setor "${setorDe(c)}" já tem ${mesmoSetor.length} colaborador(es) de férias em ${MESES_PT[novoMes - 1]} (limite ${CONFIG.limite_departamento}). A exceção fica assinalada.`;
           if (CONFIG.permitir_excedente) {
-            if (!window.confirm('Marcar a alteração mesmo assim?' + limiteAviso)) return;
+            if (!(await dhConfirmar('Marcar a alteração mesmo assim?' + limiteAviso))) return;
           } else {
             mostrarToast('Bloqueado: limite do setor atingido em ' + MESES_PT[novoMes - 1] + '.', 'erro');
             return;

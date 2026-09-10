@@ -468,7 +468,7 @@
     window.apagarConta = async function (id) {
       var dados = utilizadoresCache.find(function (u) { return u.id === id; });
       if (!dados) return;
-      if (!confirmarAcao('Apagar definitivamente a conta ' + dados.usuario + ' (' + (dados.nome || '') + ')?')) return;
+      if (!(await dhConfirmar('Apagar definitivamente a conta ' + dados.usuario + ' (' + (dados.nome || '') + ')?'))) return;
 
       var chave = await obterChave();
       if (!chave) return;
@@ -630,7 +630,7 @@
     }
 
     async function alternarBloqueio(bloquear) {
-      if (bloquear && !confirmarAcao('Bloquear o sistema para todos, exceto administração?')) return;
+      if (bloquear && !(await dhConfirmar('Bloquear o sistema para todos, exceto administração?'))) return;
       var chave = await obterChave();
       if (!chave) return;
       try {

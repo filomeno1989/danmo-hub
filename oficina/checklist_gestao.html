@@ -297,7 +297,7 @@
         alert('Não é possível apagar: existem itens desta secção já respondidos em checklists preenchidos. Oculte os itens em vez de apagar.');
         return;
       }
-      if (!confirm('Apagar esta secção e todos os seus itens? Esta ação não pode ser desfeita.')) return;
+      if (!(await dhConfirmar('Apagar esta secção e todos os seus itens? Esta ação não pode ser desfeita.'))) return;
       await db.delete('checklist_template_secoes', secaoId);
       await carregarTemplateCompleto(templateAtual.id);
       mostrarToast('Secção apagada.');
@@ -323,7 +323,7 @@
         alert(`Este item já foi respondido em ${usos} checklist(s) preenchido(s). Para não perder esse histórico, desmarque "Visível" em vez de apagar.`);
         return;
       }
-      if (!confirm('Apagar este item definitivamente?')) return;
+      if (!(await dhConfirmar('Apagar este item definitivamente?'))) return;
       await db.delete('checklist_template_itens', itemId);
       await carregarTemplateCompleto(templateAtual.id);
       mostrarToast('Item apagado.');

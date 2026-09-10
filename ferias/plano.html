@@ -311,7 +311,7 @@
           if (noSetorMes >= CONFIG.limite_departamento) {
             const msg = `⚠️ ATENÇÃO\n\nO setor "${setorDe(c)}" já tem ${noSetorMes} colaborador(es) de férias em ${MESES_PT[mes - 1]} ${ano} (limite: ${CONFIG.limite_departamento}).\n\n${CONFIG.permitir_excedente ? 'Pode marcar como EXCEÇÃO - o aviso fica sempre assinalado no calendário e nos relatórios.' : 'Pela regra actual o limite BLOQUEIA esta marcação.'}\n\nMarcar mesmo assim?`;
             if (CONFIG.permitir_excedente) {
-              if (!window.confirm(msg)) return;
+              if (!(await dhConfirmar(msg))) return;
             } else {
               mostrarToast('Bloqueado: limite de ' + CONFIG.limite_departamento + ' por setor/mês (configurável em Configurações).', 'erro');
               return;
@@ -341,7 +341,7 @@
     async function carregarTodos() {
       const faltam = colaboradores.filter(c => !mapaPlano[c.id]);
       if (!faltam.length) { mostrarToast('Todos os colaboradores activos já estão na folha.', 'info'); return; }
-      if (!window.confirm(`Adicionar ${faltam.length} colaborador(es) à folha de ${ano} (sem mês marcado)?`)) return;
+      if (!(await dhConfirmar(`Adicionar ${faltam.length} colaborador(es) à folha de ${ano} (sem mês marcado)?`))) return;
       try {
         const linhas = faltam.map(c => ({ ano, collaborator_id: c.id, mes_previsto: null, status: 'Planeado' }));
         for (const l of linhas) await db.insert('ferias_plano', l);
@@ -353,7 +353,7 @@
     // ── Duplicar plano do ano anterior ─────────────────────────────
     async function duplicarAnoAnterior() {
       const base = ano - 1;
-      if (!window.confirm(`Copiar para ${ano} os meses marcados no plano de ${base}?\n(Registos já existentes em ${ano} não são alterados.)`)) return;
+      if (!(await dhConfirmar(`Copiar para ${ano} os meses marcados no plano de ${base}?\n(Registos já existentes em ${ano} não são alterados.)`))) return;
       try {
         const origem = await db.query('ferias_plano', 'select=*&ano=eq.' + base) || [];
         const comMes = origem.filter(r => r.mes_previsto && mapaCol[r.collaborator_id] && !mapaPlano[r.collaborator_id]);

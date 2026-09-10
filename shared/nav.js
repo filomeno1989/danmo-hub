@@ -195,6 +195,7 @@
           </button>
         </li>
       </ul>
+      <div class="sidebar-versao">danmo-hub v2.1 - Danmo Service System, Lda</div>
     </nav>`;
 
   const topbarHtml = `

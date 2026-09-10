@@ -750,7 +750,7 @@
               </div>
               <div style="display:flex;gap:4px;flex-shrink:0">
                 <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="editarResponsavelLog(${ev.id},'${(ev.responsavel||'').replace(/'/g,"\\'")}')">Editar</button>
-                <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:11px" onclick="apagarLogEstado(${ev.id})">Apagar</button>
+                <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:11px" data-dh="apagar" onclick="apagarLogEstado(${ev.id})">Apagar</button>
               </div>
             </div>
           </li>`).join('');
@@ -776,7 +776,7 @@
     }
 
     async function apagarLogEstado(logId) {
-      if (!confirm('Apagar este registo do histórico? Use isto só para corrigir um erro de lançamento.')) return;
+      if (!(await dhConfirmar('Apagar este registo do histórico? Use isto só para corrigir um erro de lançamento.'))) return;
       await db.delete('os_status_log', logId);
       await carregarTimeline();
       mostrarToast('Registo apagado.');
@@ -991,7 +991,7 @@
           <td><span class="badge ${r.status==='concluida'?'badge-green':'badge-amber'}">${r.status==='concluida'?'Concluída':'Em curso'}</span></td>
           <td>
             <button class="btn btn-ghost btn-sm" onclick="editarIntervencao(${r.id})" style="margin-right:4px">Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="eliminarIntervencao(${r.id})">Apagar</button>
+            <button class="btn btn-danger btn-sm" data-dh="apagar" onclick="eliminarIntervencao(${r.id})">Apagar</button>
           </td>
         </tr>`;
       }).join('');
@@ -1012,18 +1012,18 @@
         <td>${p.colaborador||'-'}</td>
         <td>
           <button class="btn btn-ghost btn-sm" onclick="editarPeca(${p.id})" style="margin-right:4px">Editar</button>
-          <button class="btn btn-danger btn-sm" onclick="eliminarPeca(${p.id})">Apagar</button>
+          <button class="btn btn-danger btn-sm" data-dh="apagar" onclick="eliminarPeca(${p.id})">Apagar</button>
         </td>
       </tr>`).join('');
     }
 
     async function eliminarIntervencao(id) {
-      if (!confirm('Apagar esta intervenção?')) return;
+      if (!(await dhConfirmar('Apagar esta intervenção?'))) return;
       await db.delete('records', id);
       await carregarIntervencoes();
     }
     async function eliminarPeca(id) {
-      if (!confirm('Apagar esta peça?')) return;
+      if (!(await dhConfirmar('Apagar esta peça?'))) return;
       await db.delete('os_pecas', id);
       await carregarPecas();
     }

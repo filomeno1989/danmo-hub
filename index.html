@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Portal Danmo Service System, Lda</title>
+  <meta name="description" content="Portal interno da Danmo Service System, Lda - oficina, stock, HST, ferramentaria, RH, avaliações, aquisições e férias num só lugar.">
+  <meta property="og:title" content="Portal Danmo Service System, Lda">
+  <meta property="og:description" content="O sistema de gestão da Danmo: oficina, stock, HST, ferramentaria, RH e mais, num só portal.">
+  <meta property="og:image" content="shared/logos/danmo-logo.png">
+  <meta property="og:type" content="website">
   <link rel="icon" href="shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="shared/style.css">
   <script src="shared/supabase.js"></script>
@@ -68,6 +73,21 @@
       </div>
     </div>
 
+    <!-- Gráficos do painel -->
+    <div class="painel">
+      <h2 class="painel-titulo">Panorama Operacional</h2>
+      <div style="display:flex; flex-wrap:wrap; gap:28px;">
+        <div class="grafico-caixa" style="flex:1; min-width:280px;">
+          <div class="grafico-titulo">Movimentos de Stock - últimos 6 meses</div>
+          <div id="grafico-stock"><div class="tabela-vazia">A carregar...</div></div>
+        </div>
+        <div class="grafico-caixa" style="flex:1; min-width:280px;">
+          <div class="grafico-titulo">Obras por Estado</div>
+          <div id="grafico-os"><div class="tabela-vazia">A carregar...</div></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Atividade Recente -->
     <div class="painel">
       <h2 class="painel-titulo">Atividade Recente</h2>
@@ -75,10 +95,10 @@
         <table class="tabela">
           <thead>
             <tr>
-              <th>Módulo</th>
-              <th>Ação</th>
-              <th>Descrição</th>
               <th>Data</th>
+              <th>Utilizador</th>
+              <th>Acção</th>
+              <th>Detalhe</th>
             </tr>
           </thead>
           <tbody id="tabela-atividade">
@@ -153,6 +173,125 @@
       });
     }
   })();
+  </script>
+  <script>
+    /* Gráficos do painel e atividade recente: cada bloco falha sozinho, sem derrubar a página. */
+    (function () {
+      'use strict';
+
+      function barra(rotulo, valor, max, cor) {
+        var pct = max > 0 ? Math.round(valor / max * 100) : 0;
+        return '<div class="grafico-linha">' +
+          '<div class="grafico-rotulo">' + escaparHTML(rotulo) + '</div>' +
+          '<div class="grafico-barra-area"><div class="grafico-barra ' + cor + '" style="width:' + pct + '%"></div></div>' +
+          '<div class="grafico-valor">' + valor + '</div>' +
+        '</div>';
+      }
+
+      function carregarGraficoStock() {
+        var caixa = document.getElementById('grafico-stock');
+        if (!caixa || typeof db === 'undefined') return;
+        db.query('stock_movimentos', 'select=data_movimento,tipo&data_movimento=gte.' + inicio6Meses() + '&estado=eq.confirmado')
+          .then(function (movs) {
+            var meses = ultimos6Meses();
+            movs.forEach(function (m) {
+              var chave = (m.data_movimento || '').slice(0, 7);
+              for (var j = 0; j < meses.length; j++) {
+                if (meses[j].chave === chave) {
+                  if (m.tipo === 'entrada') meses[j].entradas++;
+                  else if (m.tipo === 'saida') meses[j].saidas++;
+                  break;
+                }
+              }
+            });
+            if (!movs.length) { caixa.innerHTML = '<div class="tabela-vazia">Ainda sem movimentos confirmados.</div>'; return; }
+            var max = 1;
+            meses.forEach(function (x) { max = Math.max(max, x.entradas, x.saidas); });
+            var html = '';
+            meses.forEach(function (x) {
+              html += barra(x.nome, x.entradas, max, 'verde');
+              html += barra('', x.saidas, max, 'ambar');
+            });
+            html += '<div style="font-size:.72rem;color:var(--cor-texto-sec);margin-top:6px;">Verde: entradas - Amarelo: saídas (só movimentos confirmados)</div>';
+            caixa.innerHTML = html;
+          })
+          .catch(function () {
+            caixa.innerHTML = '<div class="tabela-vazia">Sem dados de stock para já.</div>';
+          });
+      }
+
+      function ultimos6Meses() {
+        var meses = [];
+        var agora = new Date();
+        for (var i = 5; i >= 0; i--) {
+          var d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
+          meses.push({
+            chave: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
+            nome: d.toLocaleString('pt-PT', { month: 'short' }),
+            entradas: 0, saidas: 0
+          });
+        }
+        return meses;
+      }
+
+      function inicio6Meses() {
+        var agora = new Date();
+        var d = new Date(agora.getFullYear(), agora.getMonth() - 5, 1);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
+      }
+
+      function carregarGraficoOS() {
+        var caixa = document.getElementById('grafico-os');
+        if (!caixa || typeof db === 'undefined') return;
+        db.query('ordens_servico', 'select=status_atual')
+          .then(function (ordens) {
+            if (!ordens.length) { caixa.innerHTML = '<div class="tabela-vazia">Ainda sem obras registadas.</div>'; return; }
+            var contagem = {};
+            ordens.forEach(function (o) {
+              var s = o.status_atual || 'Sem estado';
+              contagem[s] = (contagem[s] || 0) + 1;
+            });
+            var pares = Object.keys(contagem).map(function (k) { return { nome: k, n: contagem[k] }; });
+            pares.sort(function (a, b) { return b.n - a.n; });
+            pares = pares.slice(0, 6);
+            var max = 1;
+            pares.forEach(function (p) { max = Math.max(max, p.n); });
+            var html = '';
+            pares.forEach(function (p) { html += barra(p.nome, p.n, max, ''); });
+            caixa.innerHTML = html;
+          })
+          .catch(function () {
+            caixa.innerHTML = '<div class="tabela-vazia">Sem dados de obras para já.</div>';
+          });
+      }
+
+      function carregarAtividade() {
+        var tbody = document.getElementById('tabela-atividade');
+        if (!tbody || typeof db === 'undefined') return;
+        db.query('registos_acesso', 'order=criado_em.desc&limit=8')
+          .then(function (lista) {
+            if (!lista.length) return; /* mantém a mensagem de vazio */
+            tbody.innerHTML = lista.map(function (r) {
+              var acao = escaparHTML(r.acao || '-');
+              if (r.acao === 'login') acao = 'Entrou no sistema';
+              else if (r.acao === 'logout') acao = 'Terminou sessão';
+              return '<tr>' +
+                '<td>' + formataData(r.criado_em, true) + '</td>' +
+                '<td><strong>' + escaparHTML(r.usuario || '-') + '</strong></td>' +
+                '<td>' + acao + '</td>' +
+                '<td>' + escaparHTML(r.detalhe || '-') + '</td>' +
+              '</tr>';
+            }).join('');
+          })
+          .catch(function (err) {
+            console.error('Atividade recente indisponível:', err);
+          });
+      }
+
+      carregarGraficoStock();
+      carregarGraficoOS();
+      carregarAtividade();
+    })();
   </script>
   <script>
     /* Aviso de boas-vindas: mostra apenas na primeira visita e guarda a decisao. */

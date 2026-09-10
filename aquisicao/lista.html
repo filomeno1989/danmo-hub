@@ -31,7 +31,7 @@
         <h1 class="pagina-titulo">Histórico de Pedidos</h1>
         <p class="pagina-subtitulo">Todos os pedidos de aquisição, por ano</p>
       </div>
-      <button class="btn btn-verde" onclick="window.location.href='novo.html'">+ Novo Pedido</button>
+      <button class="btn btn-verde" onclick="window.location.href='novo.html'" data-dh="criar">+ Novo Pedido</button>
     </div>
 
     <div class="card" style="margin-top:24px;">
@@ -155,7 +155,7 @@
           <td>
             <span class="link-action" onclick="window.location.href='imprimir.html?id=${p.id}'">Ver / Imprimir</span>
             <span class="link-action" onclick="window.location.href='novo.html?id=${p.id}'">Editar</span>
-            <span class="link-danger" onclick="eliminar('${p.id}')">Eliminar</span>
+            <span class="link-danger" data-dh="apagar" onclick="eliminar('${p.id}')">Eliminar</span>
           </td>
         </tr>`;
       }).join('');
@@ -166,7 +166,7 @@
     document.getElementById('f-pesquisa').addEventListener('input', debounce(renderizar, 200));
 
     window.eliminar = async function (id) {
-      if (!confirmarAcao('Eliminar definitivamente este pedido? Esta acção não pode ser desfeita.')) return;
+      if (!(await dhConfirmar('Eliminar definitivamente este pedido? Esta acção não pode ser desfeita.'))) return;
       try {
         const itens = await db.query('aquisicao_itens', `select=id&pedido_id=eq.${id}`);
         for (const it of itens) await db.delete('aquisicao_itens', it.id);

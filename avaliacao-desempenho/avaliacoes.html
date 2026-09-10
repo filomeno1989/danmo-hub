@@ -476,7 +476,7 @@
       fecharModal('modal-nova-campanha');
       await carregarCampanhas();
 
-      if (confirm('Campanha criada! Queres abrir já o Cartaz QR para imprimir e colar na vitrine?')) {
+      if (await dhConfirmar('Campanha criada! Queres abrir já o Cartaz QR para imprimir e colar na vitrine?')) {
         window.open('cartaz_qr.html?mes=' + mes, '_blank');
       }
 
@@ -490,7 +490,7 @@
   }
 
   async function fecharCampanhaAtual() {
-    if (!confirm('Fechar esta campanha? Ninguém mais vai conseguir preencher avaliações nela (mesmo que faltem pessoas).')) return;
+    if (!(await dhConfirmar('Fechar esta campanha? Ninguém mais vai conseguir preencher avaliações nela (mesmo que faltem pessoas).'))) return;
     try {
       await db.update('rh_campanhas_avaliacao', campanhaActual.id, { estado: 'fechada' });
       mostrarToast('Campanha fechada.', 'sucesso');

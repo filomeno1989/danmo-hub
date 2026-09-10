@@ -34,7 +34,7 @@
         <h1 class="pagina-titulo">Ordens de Serviço</h1>
         <p class="pagina-subtitulo">Acompanhamento de obras abertas e fechadas na oficina</p>
       </div>
-      <button class="btn btn-primario" id="btn-nova-os">+ Nova Obra</button>
+      <button class="btn btn-primario" id="btn-nova-os" data-dh="criar">+ Nova Obra</button>
     </div>
 
     <!-- Filtros de Pesquisa -->
@@ -225,7 +225,7 @@
         
         <div class="modal-rodape">
           <button type="button" class="btn btn-secundario" id="btn-cancelar-os">Cancelar</button>
-          <button type="submit" class="btn btn-primario" id="btn-submit-os">Criar Obra</button>
+          <button type="submit" class="btn btn-primario" id="btn-submit-os" data-dh="criar">Criar Obra</button>
         </div>
       </form>
     </div>
@@ -374,14 +374,14 @@
           <td>${diasSemNr||'-'}</td>
           <td><span class="badge ${badge}">${o.status_fisico||'-'}</span></td>
           <td><span class="badge badge-secundario">${o.status_atual}</span></td>
-          <td><button class="btn btn-vermelho btn-sm" onclick="eliminarOS(${o.id},event)">Apagar</button></td>
+          <td><button class="btn btn-vermelho btn-sm" data-dh="apagar" onclick="eliminarOS(${o.id},event)">Apagar</button></td>
         </tr>`;
       }).join('');
     }
 
     async function eliminarOS(id, ev) {
       ev.stopPropagation();
-      if (!confirm('ATENÇÃO: Deseja apagar esta obra e todas as suas intervenções? Esta acção é irreversível.')) return;
+      if (!(await dhConfirmar('ATENÇÃO: Deseja apagar esta obra e todas as suas intervenções? Esta acção é irreversível.'))) return;
       try {
         await db.delete('ordens_servico', id);
         mostrarToast('Ordem de serviço apagada com sucesso.', 'sucesso');

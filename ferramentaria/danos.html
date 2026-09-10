@@ -362,7 +362,7 @@
         var novo = nextStatus(damage.status);
         
         var msg = "O estado será atualizado para: " + novo.toUpperCase() + ".\nPretende continuar?";
-        if (!confirm(msg)) return;
+        if (!(await dhConfirmar(msg))) return;
 
         var updateData = { status: novo };
         if (novo === 'reparado') {
@@ -378,7 +378,7 @@
           mostrarToast('Erro ao actualizar registo.', 'erro');
         }
       } else if (action === 'inutilizar') {
-        if (!confirm('ATENÇÃO: Tem a certeza que deseja dar a ferramenta como INUTILIZADA e fechar este registo de dano?')) return;
+        if (!(await dhConfirmar('ATENÇÃO: Tem a certeza que deseja dar a ferramenta como INUTILIZADA e fechar este registo de dano?'))) return;
         try {
           await db.update('tool_damage', id, {
             status: 'inutilizado',

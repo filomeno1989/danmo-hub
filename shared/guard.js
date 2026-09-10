@@ -61,6 +61,31 @@
   function revelar() {
     document.documentElement.style.visibility = '';
     try { document.dispatchEvent(new CustomEvent('dh:autorizado')); } catch (e) {}
+    dhAplicarAcoes();
+    /* Botões criados depois (linhas de tabelas, modais) também ficam cobertos */
+    try {
+      var agenda = null;
+      new MutationObserver(function () {
+        if (agenda) return;
+        agenda = setTimeout(function () { agenda = null; dhAplicarAcoes(); }, 150);
+      }).observe(document.documentElement, { childList: true, subtree: true });
+    } catch (e) {}
+  }
+
+  /* ═══ Matriz de permissões a agir nos botões ═══
+     As páginas marcam as acções com data-dh="criar|editar|apagar".
+     Quem não tem a permissão não vê o botão (admin vê tudo). */
+  function dhAplicarAcoes() {
+    if (!MODULO) return;
+    var elementos;
+    try { elementos = document.querySelectorAll('[data-dh]'); } catch (e) { return; }
+    for (var i = 0; i < elementos.length; i++) {
+      var acao = elementos[i].getAttribute('data-dh');
+      if (acao !== 'criar' && acao !== 'editar' && acao !== 'apagar') continue;
+      if (!window.dhPode(MODULO, acao)) {
+        elementos[i].style.display = 'none';
+      }
+    }
   }
 
   /* Ecrã a ecrã inteiro (sem acesso / atualização / sem ligação) */

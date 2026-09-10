@@ -40,7 +40,7 @@
         <h1 class="pagina-titulo">Ferramenteiros</h1>
         <p class="pagina-subtitulo">Gestão dos operadores e responsáveis da ferramentaria</p>
       </div>
-      <button class="btn btn-primario" id="btn-novo">Novo Ferramenteiro</button>
+      <button class="btn btn-primario" id="btn-novo" data-dh="criar">Novo Ferramenteiro</button>
     </div>
 
     <!-- Tabela Principal -->
@@ -95,7 +95,7 @@
       </div>
       <div class="modal-rodape">
         <button class="btn btn-secundario" id="btn-cancelar">Cancelar</button>
-        <button class="btn btn-verde" id="btn-guardar">Guardar Registo</button>
+        <button class="btn btn-verde" id="btn-guardar" data-dh="criar">Guardar Registo</button>
       </div>
     </div>
   </div>
@@ -182,7 +182,7 @@
       if (action === 'editar') {
         openEditModal(id);
       } else if (action === 'desactivar') {
-        if (!confirm('Tem a certeza que deseja desactivar este ferramenteiro? Ele deixará de aparecer nas opções de empréstimo.')) return;
+        if (!(await dhConfirmar('Tem a certeza que deseja desactivar este ferramenteiro? Ele deixará de aparecer nas opções de empréstimo.'))) return;
         try {
           await db.update('tool_staff', id, { active: false });
           mostrarToast('Ferramenteiro desactivado com sucesso.', 'sucesso');

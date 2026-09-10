@@ -160,7 +160,7 @@
     }
 
     async function removerDiretor(id) {
-      if (!confirm('Remover esta pessoa da lista de Directores? Deixa de ter acesso à avaliação final.')) return;
+      if (!(await dhConfirmar('Remover esta pessoa da lista de Directores? Deixa de ter acesso à avaliação final.'))) return;
       try {
         await db.delete('rh_avaliadores_diretores', id);
         mostrarToast('Removido.', 'sucesso');

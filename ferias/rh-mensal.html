@@ -262,7 +262,7 @@
       const porEnviar = linhas.filter(r => !r.enviado_rh_em);
       if (!linhas.length) { mostrarToast('Não há colaboradores neste mês.', 'aviso'); return; }
       if (!porEnviar.length) { mostrarToast('Esta lista já foi toda marcada como enviada.', 'info'); return; }
-      if (!window.confirm(`Registar que a lista de ${MESES_PT[mes - 1]} ${ano} (${porEnviar.length} colaborador(es)) foi enviada ao RH central?`)) return;
+      if (!(await dhConfirmar(`Registar que a lista de ${MESES_PT[mes - 1]} ${ano} (${porEnviar.length} colaborador(es)) foi enviada ao RH central?`))) return;
       try {
         const quando = hojeISO();
         const por = user ? user.nome : 'Administração';

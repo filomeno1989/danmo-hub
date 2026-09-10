@@ -53,7 +53,7 @@
         <h1 class="pagina-titulo">👤 Fichas de Colaboradores</h1>
         <p class="pagina-subtitulo" id="subtitulo-contagem" style="margin-bottom:0;">A carregar...</p>
       </div>
-      <button class="btn btn-primario" onclick="abrirModalNovo()">➕ Novo Colaborador</button>
+      <button class="btn btn-primario" onclick="abrirModalNovo()" data-dh="criar">➕ Novo Colaborador</button>
     </div>
 
     <div class="barra-pesquisa">
@@ -345,8 +345,8 @@
       </div>
       <div class="modal-rodape">
         <button class="btn btn-secundario" onclick="fecharModal('modal-ficha')">Cancelar</button>
-        <button class="btn btn-vermelho btn-sm" id="btn-apagar" onclick="confirmarApagar()" style="display:none">🗑 Apagar</button>
-        <button class="btn btn-primario" onclick="guardarFicha()">💾 Guardar</button>
+        <button class="btn btn-vermelho btn-sm" id="btn-apagar" onclick="confirmarApagar()" data-dh="apagar" style="display:none">🗑 Apagar</button>
+        <button class="btn btn-primario" onclick="guardarFicha()" data-dh="criar">💾 Guardar</button>
       </div>
     </div>
   </div>
@@ -442,7 +442,7 @@
             <td>
               <div class="flex gap-1">
                 <button class="btn btn-secundario btn-sm" onclick="verDetalhe(${c.id})">👁</button>
-                <button class="btn btn-primario btn-sm" onclick="abrirModalEditar(${c.id})">✏️</button>
+                <button class="btn btn-primario btn-sm" onclick="abrirModalEditar(${c.id})" data-dh="editar">✏️</button>
               </div>
             </td>
           </tr>
@@ -737,10 +737,10 @@
     }
 
     // ── Apagar ────────────────────────────────────────────
-    function confirmarApagar() {
+    async function confirmarApagar() {
       const c = colaboradores.find(x => x.id === idActual);
       if (!c) return;
-      if (!confirm(`Apagar permanentemente "${c.name}"?\n\nEsta acção não pode ser desfeita.`)) return;
+      if (!(await dhConfirmar(`Apagar permanentemente "${c.name}"?\n\nEsta acção não pode ser desfeita.`))) return;
       apagarColaborador();
     }
 

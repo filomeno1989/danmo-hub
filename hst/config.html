@@ -184,9 +184,10 @@
   }
 
   /* === Limpar dados de teste === */
-  function limparDadosTeste() {
-    if (!confirmarAcao('ATENCAO: Isto vai APAGAR TODOS os dados das 6 tabelas HST (areas, EPIs, entregas, acidentes, acoes, medicoes).\n\nTem a certeza? Esta accao nao pode ser desfeita.')) return;
-    if (!confirmarAcao('Ultima chance: Tem ABSOLUTA certeza que quer apagar todos os dados HST?')) return;
+  async function limparDadosTeste() {
+    if (!(await dhConfirmar('ATENCAO: Isto vai APAGAR TODOS os dados das 6 tabelas HST (areas, EPIs, entregas, acidentes, acoes, medicoes).\n\nTem a certeza? Esta accao nao pode ser desfeita.', { perigo: true, botaoOk: 'Sim, apagar tudo' }))) return;
+    if (!(await dhConfirmar('Ultima chance: Tem ABSOLUTA certeza que quer apagar todos os dados HST?', { perigo: true, botaoOk: 'Apagar definitivamente' }))) return;
+    if (!(await dhPedirChaveAdmin('A limpeza total dos dados HST precisa de autorizacao. Escreve a chave de administracao (nao e a tua senha).'))) return;
 
     mostrarToast('A limpar dados... (pode demorar alguns segundos)', 'info');
 

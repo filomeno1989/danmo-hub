@@ -142,12 +142,155 @@ function formataMoeda(valor) {
    ═══════════════════════════════════════════════ */
 
 /**
- * Diálogo de confirmação. Substitui a função `confirmar` inexistente no RH.
+ * Diálogo de confirmação LEGADO (síncrono). Mantido só para páginas antigas.
+ * Nas páginas novas usa dhConfirmar(), que abre o modal do sistema.
  * @param {string} mensagem
  * @returns {boolean}
  */
 function confirmarAcao(mensagem) {
   return window.confirm(mensagem);
+}
+
+/* ═══════════════════════════════════════════════
+   MODAL DE CONFIRMAÇÃO DO SISTEMA
+   Substitui as janelas cinzentas do navegador.
+   Fecha com ESC, confirma com Enter.
+   ═══════════════════════════════════════════════ */
+
+var __dhModalAberto = false;
+
+/**
+ * Diálogo de confirmação com a cara do sistema.
+ * @param {string} mensagem - Texto mostrado ao utilizador
+ * @param {Object} [opcoes] - { titulo, botaoOk, botaoCancelar, perigo }
+ * @returns {Promise<boolean>} true se o utilizador confirmou
+ */
+function dhConfirmar(mensagem, opcoes) {
+  return new Promise(function (resolve) {
+    opcoes = opcoes || {};
+    if (__dhModalAberto) { resolve(false); return; }
+    __dhModalAberto = true;
+
+    var perigo = opcoes.perigo === true;
+    var overlay = document.createElement('div');
+    overlay.className = 'dh-modal-overlay';
+    overlay.innerHTML =
+      '<div class="dh-modal" role="dialog" aria-modal="true">' +
+        '<div class="dh-modal-titulo">' + escaparHTML(opcoes.titulo || (perigo ? 'Acção irreversível' : 'Confirmar acção')) + '</div>' +
+        '<div class="dh-modal-texto">' + escaparHTML(mensagem) + '</div>' +
+        '<div class="dh-modal-botoes">' +
+          '<button type="button" class="btn btn-secundario" data-dh-modal="nao">' + escaparHTML(opcoes.botaoCancelar || 'Cancelar') + '</button>' +
+          '<button type="button" class="btn ' + (perigo ? 'btn-vermelho' : 'btn-primario') + '" data-dh-modal="sim">' + escaparHTML(opcoes.botaoOk || 'Confirmar') + '</button>' +
+        '</div>' +
+      '</div>';
+
+    function fechar(valor) {
+      if (!overlay.parentNode) return;
+      document.removeEventListener('keydown', aoTecla, true);
+      overlay.parentNode.removeChild(overlay);
+      __dhModalAberto = false;
+      resolve(valor);
+    }
+    function aoTecla(e) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fechar(false); }
+      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); fechar(true); }
+    }
+
+    overlay.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-dh-modal]');
+      if (b) fechar(b.getAttribute('data-dh-modal') === 'sim');
+      else if (e.target === overlay) fechar(false);
+    });
+    document.addEventListener('keydown', aoTecla, true);
+
+    (document.body || document.documentElement).appendChild(overlay);
+    var botaoOk = overlay.querySelector('[data-dh-modal="sim"]');
+    if (botaoOk) botaoOk.focus();
+  });
+}
+
+/**
+ * Pede a chave de administração num modal do sistema e valida no servidor.
+ * Usada antes de acções destrutivas (limpeza total, eliminação em massa).
+ * @param {string} mensagem - Explica o que está a ser autorizado
+ * @returns {Promise<boolean>} true se a chave foi validada
+ */
+function dhPedirChaveAdmin(mensagem) {
+  return new Promise(function (resolve) {
+    var token = null;
+    try {
+      if (typeof sessao === 'function') {
+        var s = sessao();
+        token = s ? s.token : null;
+      }
+    } catch (e) { token = null; }
+    if (!token) {
+      mostrarToast('Sessão inválida. Entra de novo no sistema.', 'erro');
+      resolve(false);
+      return;
+    }
+    if (__dhModalAberto) { resolve(false); return; }
+    __dhModalAberto = true;
+
+    var overlay = document.createElement('div');
+    overlay.className = 'dh-modal-overlay';
+    overlay.innerHTML =
+      '<div class="dh-modal" role="dialog" aria-modal="true">' +
+        '<div class="dh-modal-titulo">&#128274; Autorização da administração</div>' +
+        '<div class="dh-modal-texto">' + escaparHTML(mensagem || 'Esta acção é sensível e precisa de autorização.') + '</div>' +
+        '<input type="password" class="form-input dh-modal-input" id="dh-chave-input" placeholder="Escreve a chave de administração" autocomplete="off">' +
+        '<div class="dh-modal-botoes">' +
+          '<button type="button" class="btn btn-secundario" data-dh-modal="nao">Cancelar</button>' +
+          '<button type="button" class="btn btn-primario" data-dh-modal="sim">Autorizar</button>' +
+        '</div>' +
+      '</div>';
+
+    function fechar(valor) {
+      document.removeEventListener('keydown', aoTecla, true);
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      __dhModalAberto = false;
+      resolve(valor);
+    }
+    async function autorizar() {
+      var input = overlay.querySelector('#dh-chave-input');
+      var btnOk = overlay.querySelector('[data-dh-modal="sim"]');
+      var chave = (input.value || '').trim();
+      if (!chave) { input.focus(); return; }
+      btnOk.disabled = true;
+      btnOk.textContent = 'A validar...';
+      var ok = false;
+      try {
+        ok = (await db.rpc('verificar_chave_admin', { p_token: token, p_chave: chave })) === true;
+      } catch (e) { ok = false; }
+      if (!ok) {
+        mostrarToast('Chave de administração errada. Nota: não é a senha da tua conta.', 'erro');
+        btnOk.disabled = false;
+        btnOk.textContent = 'Autorizar';
+        input.value = '';
+        input.focus();
+        return;
+      }
+      fechar(true);
+    }
+    function aoTecla(e) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fechar(false); }
+      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); autorizar(); }
+    }
+
+    overlay.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-dh-modal]');
+      if (!b) return;
+      if (b.getAttribute('data-dh-modal') === 'sim') autorizar();
+      else fechar(false);
+    });
+    document.addEventListener('keydown', aoTecla, true);
+
+    (document.body || document.documentElement).appendChild(overlay);
+    setTimeout(function () {
+      var input = overlay.querySelector('#dh-chave-input');
+      if (input) input.focus();
+    }, 60);
+  });
 }
 
 /* ═══════════════════════════════════════════════
@@ -315,8 +458,8 @@ function abrirModal(id) { document.getElementById(id)?.classList.add('open', 'ab
 function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val ?? ''; }
 function getVal(id) { return document.getElementById(id)?.value ?? ''; }
 
-// Atalho para Diálogo de Confirmação
-function confirmar(msg, callback) { if (confirmarAcao(msg)) callback(); }
+// Atalho para Diálogo de Confirmação (legado, com callback - abre o modal do sistema)
+function confirmar(msg, callback) { dhConfirmar(msg).then(function (ok) { if (ok) callback(); }); }
 
 // Atalho para Formatação de Número Simples (sem MZN)
 function fmtNum(n) {

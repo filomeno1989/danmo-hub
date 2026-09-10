@@ -225,7 +225,7 @@
           var msg = novoEstado
             ? 'Reactivar? Volta a aparecer nos formulários.'
             : 'Desactivar? Deixa de aparecer nos formulários (os registos já criados mantêm-se).';
-          if (!confirm(msg)) return;
+          if (!(await dhConfirmar(msg))) return;
           try {
             await db.update(cfg.tabela, id, { active: novoEstado });
             mostrarToast((novoEstado ? 'Reactivado' : 'Desactivado') + ' com sucesso.', 'sucesso');

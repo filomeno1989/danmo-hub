@@ -53,7 +53,7 @@
         </div>
       </div>
       <div style="margin-top:20px; display:flex; gap:10px;">
-        <button class="btn btn-primario" onclick="guardarSaida()">💾 Registar Saída</button>
+        <button class="btn btn-primario" onclick="guardarSaida()" data-dh="criar">💾 Registar Saída</button>
         <button class="btn btn-secundario" onclick="limparForm()">✖ Limpar</button>
       </div>
     </div>
@@ -182,8 +182,8 @@
           '<td>' + (m.colaborador_nome || '-') + '</td>' +
           '<td><span class="badge badge-info">Oficina</span></td>' +
           '<td><div style="display:flex; gap:6px;">' +
-            '<button class="btn btn-verde btn-sm" onclick="confirmarPendenteOficina(\'' + m.id + '\')">✅ Confirmar</button>' +
-            '<button class="btn btn-secundario btn-sm" onclick="rejeitarPendenteOficina(\'' + m.id + '\')">✖ Rejeitar</button>' +
+            '<button class="btn btn-verde btn-sm" data-dh="editar" onclick="confirmarPendenteOficina(\'' + m.id + '\')">✅ Confirmar</button>' +
+            '<button class="btn btn-secundario btn-sm" data-dh="apagar" onclick="rejeitarPendenteOficina(\'' + m.id + '\')">✖ Rejeitar</button>' +
           '</div></td>' +
         '</tr>';
       }).join('');
@@ -194,9 +194,9 @@
       if (!m) return;
       var disp = stockCalc[m.material_id] || 0;
       if (Number(m.quantidade) > disp) {
-        if (!confirmarAcao('Stock insuficiente (disponível: ' + fmtNum(disp) + '). Confirmar mesmo assim?')) return;
+        if (!(await dhConfirmar('Stock insuficiente (disponível: ' + fmtNum(disp) + '). Confirmar mesmo assim?'))) return;
       } else {
-        if (!confirmarAcao('Confirmar esta saída de material para a Oficina? O stock será abatido directamente.')) return;
+        if (!(await dhConfirmar('Confirmar esta saída de material para a Oficina? O stock será abatido directamente.'))) return;
       }
 
       try {
@@ -219,7 +219,7 @@
     }
 
     async function rejeitarPendenteOficina(id) {
-      if (!confirmarAcao('Rejeitar este pedido de saída? A peça associada na OS não será eliminada.')) return;
+      if (!(await dhConfirmar('Rejeitar este pedido de saída? A peça associada na OS não será eliminada.'))) return;
       await db.delete('stock_movimentos', id);
       mostrarToast('Pedido rejeitado.', 'info');
       await carregarPendentesOficina();
@@ -350,7 +350,7 @@
     }
 
     async function eliminar(id) {
-      if (!confirmarAcao('Eliminar este registo de saída?')) return;
+      if (!(await dhConfirmar('Eliminar este registo de saída?'))) return;
       await db.delete('stock_movimentos', id);
       mostrarToast('Registo eliminado.', 'info');
       await calcularStock();

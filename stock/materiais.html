@@ -50,7 +50,7 @@
         </div>
       </div>
       <div style="margin-top:20px; display:flex; gap:10px;">
-        <button class="btn btn-primario" onclick="guardar()" id="btn-guardar">💾 Guardar</button>
+        <button class="btn btn-primario" onclick="guardar()" id="btn-guardar" data-dh="criar">💾 Guardar</button>
         <button class="btn btn-secundario" onclick="cancelarEdicao()">✖ Cancelar</button>
       </div>
     </div>
@@ -180,8 +180,7 @@
         else if (stock <= minimo) { badge = '<span class="badge badge-aviso">Stock Baixo</span>'; cor = 'var(--cor-aviso)'; }
         else { badge = '<span class="badge badge-sucesso">OK</span>'; cor = 'var(--cor-sucesso)'; }
 
-        var user = obterUtilizador();
-        var podeEditar = user && (user.nivel === 'admin' || user.nivel === 'gestor');
+        var podeEditar = window.dhPode ? window.dhPode('stock', 'editar') : false;
         var acoes = podeEditar
           ? '<div style="display:flex; gap:6px;">' +
               '<button class="btn btn-secundario btn-sm" onclick="editar(\'' + m.id + '\')">✏️</button>' +
@@ -269,7 +268,7 @@
     }
 
     async function desactivar(id) {
-      if (!confirmarAcao('Desactivar este material?')) return;
+      if (!(await dhConfirmar('Desactivar este material?'))) return;
       await db.update('materiais', id, { ativo: false });
       mostrarToast('Material desactivado.', 'info');
       materiais = await db.query('materiais', 'ativo=eq.true&order=referencia.asc');

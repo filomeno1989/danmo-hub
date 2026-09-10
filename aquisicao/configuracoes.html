@@ -285,7 +285,7 @@
 
     window.alternarEstado = async function (id, estaAtivo) {
       const acao = estaAtivo ? 'arquivar' : 'reactivar';
-      if (!confirmarAcao(`Tens a certeza que queres ${acao} este fornecedor?`)) return;
+      if (!(await dhConfirmar(`Tens a certeza que queres ${acao} este fornecedor?`))) return;
       try {
         await db.update('aquisicao_fornecedores', id, { ativo: !estaAtivo });
         mostrarToast(`Fornecedor ${estaAtivo ? 'arquivado' : 'reactivado'}.`, 'sucesso');
@@ -300,7 +300,7 @@
         mostrarToast('Este fornecedor já tem pedidos associados - arquiva-o em vez de eliminar.', 'aviso');
         return;
       }
-      if (!confirmarAcao('Eliminar definitivamente este fornecedor?')) return;
+      if (!(await dhConfirmar('Eliminar definitivamente este fornecedor?'))) return;
       try {
         await db.delete('aquisicao_fornecedores', id);
         mostrarToast('Fornecedor eliminado.', 'sucesso');
@@ -405,7 +405,7 @@
 
     window.alternarEstadoDenominacao = async function (id, estaAtiva) {
       const acao = estaAtiva ? 'arquivar' : 'reactivar';
-      if (!confirmarAcao(`Tens a certeza que queres ${acao} esta denominação?`)) return;
+      if (!(await dhConfirmar(`Tens a certeza que queres ${acao} esta denominação?`))) return;
       try {
         await db.update('aquisicao_denominacoes', id, { ativo: !estaAtiva });
         mostrarToast(`Denominação ${estaAtiva ? 'arquivada' : 'reactivada'}.`, 'sucesso');
@@ -421,7 +421,7 @@
         mostrarToast('Esta denominação já tem pedidos associados - arquiva-a em vez de eliminar.', 'aviso');
         return;
       }
-      if (!confirmarAcao('Eliminar definitivamente esta denominação?')) return;
+      if (!(await dhConfirmar('Eliminar definitivamente esta denominação?'))) return;
       try {
         await db.delete('aquisicao_denominacoes', id);
         mostrarToast('Denominação eliminada.', 'sucesso');

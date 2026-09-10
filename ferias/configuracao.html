@@ -146,8 +146,9 @@
     let feriados = [];
 
     async function init() {
-      // permissão: admin/gestor
-      if (!temPermissao(['admin', 'gestor'])) {
+      // permissão: quem pode editar o módulo de férias (a matriz decide; admin vê sempre)
+      const podeConfigurar = window.dhPode ? window.dhPode('ferias', 'editar') : temPermissao(['admin', 'gestor']);
+      if (!podeConfigurar) {
         document.getElementById('acesso-negado').style.display = 'block';
         document.getElementById('conteudo-config').style.display = 'none';
         return;
@@ -241,7 +242,7 @@
 
     async function apagarFeriado(id) {
       const f = feriados.find(x => x.id === id);
-      if (!confirmarAcao(`Apagar o feriado "${f ? f.descricao : ''}"?`)) return;
+      if (!(await dhConfirmar(`Apagar o feriado "${f ? f.descricao : ''}"?`))) return;
       try {
         await db.delete('ferias_feriados', id);
         mostrarToast('Feriado apagado.', 'sucesso');
@@ -251,8 +252,8 @@
 
     async function limparPlano() {
       const ano = parseInt(document.getElementById('sel-ano-limpar').value, 10);
-      if (!confirmarAcao(`⚠ Isto apaga TODAS as linhas do plano de ${ano} (meses, dias do RH, datas...).\nO histórico de alterações NÃO é apagado.\n\nContinuar?`)) return;
-      if (!confirmarAcao(`Confirmação final: apagar definitivamente o plano de ${ano}?`)) return;
+      if (!(await dhConfirmar(`⚠ Isto apaga TODAS as linhas do plano de ${ano} (meses, dias do RH, datas...).\nO histórico de alterações NÃO é apagado.\n\nContinuar?`))) return;
+      if (!(await dhConfirmar(`Confirmação final: apagar definitivamente o plano de ${ano}?`))) return;
       try {
         const linhas = await db.query('ferias_plano', 'select=id&ano=eq.' + ano) || [];
         for (const l of linhas) await db.delete('ferias_plano', l.id);
@@ -262,8 +263,8 @@
 
     async function limparAlteracoes() {
       const ano = parseInt(document.getElementById('sel-ano-limpar').value, 10);
-      if (!confirmarAcao(`⚠ Isto apaga TODO o histórico de alterações de ${ano}.\nContinuar?`)) return;
-      if (!confirmarAcao(`Confirmação final: apagar o histórico de alterações de ${ano}?`)) return;
+      if (!(await dhConfirmar(`⚠ Isto apaga TODO o histórico de alterações de ${ano}.\nContinuar?`))) return;
+      if (!(await dhConfirmar(`Confirmação final: apagar o histórico de alterações de ${ano}?`))) return;
       try {
         const linhas = await db.query('ferias_alteracoes', 'select=id&ano=eq.' + ano) || [];
         for (const l of linhas) await db.delete('ferias_alteracoes', l.id);
@@ -271,7 +272,12 @@
       } catch (e) { console.error(e); mostrarToast('Erro ao limpar alterações.', 'erro'); }
     }
 
-    init();
+    // Espera o guard validar a sessão antes de avaliar permissões
+    if (window.__DH__ && window.__DH__.matriz) {
+      init();
+    } else {
+      document.addEventListener('dh:autorizado', function () { init(); }, { once: true });
+    }
   </script>
 </body>
 </html>
