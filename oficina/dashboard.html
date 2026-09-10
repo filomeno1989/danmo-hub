@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard - Danmo Oficina</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <meta name="theme-color" content="#1E293B">
   <link rel="stylesheet" href="../shared/style.css" />
   <link rel="stylesheet" href="../shared/oficina.css" />
   <style>
@@ -774,5 +776,25 @@
       await carregarDados();
     })();
   </script>
+
+<!-- Atualizar dados do painel -->
+<button id="fab-atualizar" title="Atualizar dados" aria-label="Atualizar dados">&#8635;</button>
+<style>
+  #fab-atualizar { position:fixed; right:18px; bottom:18px; width:46px; height:46px;
+    border-radius:50%; border:1px solid var(--cor-borda); background:var(--cor-superficie);
+    color:var(--cor-texto); font-size:1.35rem; line-height:1; cursor:pointer;
+    box-shadow:var(--sombra-md); z-index:900; transition:all var(--transicao);
+    display:flex; align-items:center; justify-content:center; }
+  #fab-atualizar:hover { background:var(--cor-ambar); border-color:var(--cor-ambar); color:#FFFFFF;
+    transform:rotate(60deg); }
+  #fab-atualizar:active { transform:rotate(120deg) scale(0.94); }
+</style>
+
+<script>
+  (function () {
+    var fab = document.getElementById('fab-atualizar');
+    if (fab) fab.addEventListener('click', function () { window.location.reload(); });
+  })();
+</script>
 </body>
 </html>

@@ -434,4 +434,14 @@
     }
   }
   arrancar();
+
+  /* Sino de avisos: carrega o painel de notificacoes (shared/notificacoes.js),
+     que fica a espera do botao do sino criado pela topbar acima. */
+  (function () {
+    if (window.__dhNotifCarregado) return;
+    window.__dhNotifCarregado = true;
+    var s = document.createElement('script');
+    s.src = BASE + 'shared/notificacoes.js';
+    document.head.appendChild(s);
+  })();
 })();

@@ -19,6 +19,26 @@
     <p class="pagina-titulo">Painel Operacional Central</p>
     <p class="pagina-subtitulo" id="saudacao">Consolidação de dados em tempo real - Danmo Service System, Lda</p>
 
+    <style>
+      .aviso-boas-vindas { display:none; align-items:flex-start; gap:14px; background:var(--cor-ambar-claro);
+        border:1px solid var(--cor-ambar); border-radius:var(--raio-md); padding:14px 16px; margin-bottom:20px; }
+      .aviso-boas-vindas.visivel { display:flex; }
+      .aviso-bv-texto { color:var(--cor-texto); font-size:var(--tamanho-sm); line-height:1.55; }
+      .aviso-bv-texto a { color:var(--cor-ambar-hover); font-weight:700; }
+      #aviso-bv-fechar { background:none; border:0; color:var(--cor-texto-sec); font-size:1.2rem;
+        cursor:pointer; line-height:1; padding:2px 4px; }
+      #aviso-bv-fechar:hover { color:var(--cor-erro); }
+    </style>
+    <div class="aviso-boas-vindas" id="aviso-boas-vindas">
+      <div class="aviso-bv-texto">
+        <strong>Novidades no portal:</strong> cada pessoa agora entra com a sua senha e só vê o que lhe compete,
+        conforme as permissões. O sino no topo mostra os avisos do dia (stock por confirmar, obras paradas,
+        férias no RH). Vale a pena espreitar as <a href="permissoes/index.html">Permissões</a> e o
+        <a href="ferias/index.html">Plano de Férias</a>.
+      </div>
+      <button type="button" id="aviso-bv-fechar" title="Fechar" aria-label="Fechar aviso">&times;</button>
+    </div>
+
     <!-- KPIs -->
     <div class="kpi-grid" id="kpi-grid">
       <div class="kpi-card verde">
@@ -133,6 +153,24 @@
       });
     }
   })();
+  </script>
+  <script>
+    /* Aviso de boas-vindas: mostra apenas na primeira visita e guarda a decisao. */
+    (function () {
+      var CHAVE = 'hub_aviso_bv_v1';
+      var caixa = document.getElementById('aviso-boas-vindas');
+      if (!caixa) return;
+      var visto = false;
+      try { visto = localStorage.getItem(CHAVE) === '1'; } catch (e) {}
+      if (!visto) caixa.classList.add('visivel');
+      var btn = document.getElementById('aviso-bv-fechar');
+      if (btn) {
+        btn.addEventListener('click', function () {
+          caixa.classList.remove('visivel');
+          try { localStorage.setItem(CHAVE, '1'); } catch (e) {}
+        });
+      }
+    })();
   </script>
 </body>
 </html>

@@ -108,10 +108,16 @@ function formataHora(dataISO) {
 }
 
 /**
- * Retorna a data atual em formato ISO (YYYY-MM-DD)
+ * Retorna a data atual em formato ISO (YYYY-MM-DD).
+ * Usa a hora LOCAL (nao a UTC): o toISOString() desandava entre a
+ * meia-noite e as 02:00 em Mocambique (UTC+2), onde devolvia a data
+ * de ontem em vez de hoje.
  */
 function dataHojeISO() {
-  return new Date().toISOString().split('T')[0];
+  var d = new Date();
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
 }
 
 /* ═══════════════════════════════════════════════
