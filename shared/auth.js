@@ -102,7 +102,7 @@ function temPermissao(niveisPermitidos) {
 async function iniciarSessao(codigo, senha) {
   try {
     const res = await db.rpc('autenticar', {
-      p_usuario: String(codigo || '').trim(),
+      p_usuario: String(codigo || '').trim().toUpperCase(),
       p_senha: String(senha || '')
     });
     if (!res || !res.token) {

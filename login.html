@@ -111,7 +111,8 @@
         <div class="form-grupo">
           <label class="form-label" for="login-codigo">Código de Utilizador</label>
           <input class="form-input" type="text" id="login-codigo"
-                 placeholder="Ex: DM0069" required autocomplete="username" autofocus>
+                 placeholder="Ex: DM0069" required autocomplete="username" autofocus
+                 style="text-transform:uppercase;">
         </div>
         <div class="form-grupo">
           <label class="form-label" for="login-senha">Senha</label>
@@ -173,6 +174,11 @@
         btn.textContent = aCarregar ? 'Aguarde...' : textoNormal;
       }
 
+      /* O código fica sempre em maiúsculas (DM0069, não dm0069) */
+      document.getElementById('login-codigo').addEventListener('input', function () {
+        this.value = this.value.toUpperCase();
+      });
+
       /* Mensagens vindas do guard (sessão expirada, sistema bloqueado) */
       var params = new URLSearchParams(window.location.search);
       var motivo = params.get('motivo');
@@ -201,7 +207,7 @@
       formLogin.addEventListener('submit', function (e) {
         e.preventDefault();
         limparErro();
-        var codigo = document.getElementById('login-codigo').value;
+        var codigo = document.getElementById('login-codigo').value.trim().toUpperCase();
         var senha = document.getElementById('login-senha').value;
         var btnLogin = document.getElementById('btn-login');
         if (!codigo || !senha) {

@@ -149,8 +149,9 @@
         <h2 class="painel-titulo">Chave de administração</h2>
         <p class="mini-aviso" style="margin-top:0;">
           A chave é pedida nas ações sensíveis (criar contas, repor senhas, apagar,
-          alterar permissões, bloquear o sistema). Troca-a de vez em quando e não a
-          partilhes com quem não gerencia o hub.
+          alterar permissões, bloquear o sistema). Não confundir com a senha da conta:
+          a senha serve para entrar, a chave serve para confirmar. Troca-a de vez em
+          quando e não a partilhes com quem não gerencia o hub.
         </p>
         <form id="form-chave" class="form-grid mt-16" style="grid-template-columns:1fr;max-width:420px;gap:12px;">
           <div class="form-grupo">
@@ -185,7 +186,7 @@
         <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;">
           <div class="form-grupo">
             <label class="form-label" for="c-usuario">Código de Utilizador</label>
-            <input class="form-input" type="text" id="c-usuario" placeholder="Ex: DM0013" required>
+            <input class="form-input" type="text" id="c-usuario" placeholder="Ex: DM0013" required style="text-transform:uppercase;">
           </div>
           <div class="form-grupo">
             <label class="form-label" for="c-nivel">Nível</label>
@@ -241,6 +242,10 @@
         <div class="form-grupo">
           <input class="form-input" type="password" id="modal-chave-input"
                  placeholder="Chave de administração" autocomplete="off">
+          <p class="mini-aviso" style="margin-top:6px;">
+            Atenção: a chave de administração não é a senha da tua conta.
+            A senha serve para entrar no hub, a chave serve para confirmar ações.
+          </p>
         </div>
       </div>
       <div class="modal-rodape" style="display:flex;gap:10px;justify-content:flex-end;">
@@ -353,7 +358,7 @@
         });
         if (ok2 === true) return pedida;
       } catch (e) { /* segue */ }
-      mostrarToast('Chave de administração errada.', 'erro');
+      mostrarToast('Chave de administração errada. Nota: não é a senha da tua conta.', 'erro');
       try { sessionStorage.removeItem(CHAVE_CACHE); } catch (e) {}
       return null;
     }
@@ -478,9 +483,14 @@
 
     document.getElementById('btn-nova-conta').addEventListener('click', function () { abrirModalConta(null); });
 
+    /* Código de utilizador fica sempre em maiúsculas (DM0013, não dm0013) */
+    document.getElementById('c-usuario').addEventListener('input', function () {
+      this.value = this.value.toUpperCase();
+    });
+
     document.getElementById('btn-guardar-conta').addEventListener('click', async function () {
       var id = document.getElementById('c-id').value || null;
-      var usuario = document.getElementById('c-usuario').value.trim();
+      var usuario = document.getElementById('c-usuario').value.trim().toUpperCase();
       var nome = document.getElementById('c-nome').value.trim();
       var cargo = document.getElementById('c-cargo').value.trim();
       var nivel = document.getElementById('c-nivel').value;
