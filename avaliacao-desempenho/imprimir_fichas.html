@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Imprimir Fichas de Avaliação — Danmo Service System</title>
+  <title>Imprimir Fichas de Avaliação - Danmo Service System</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Times New Roman', Times, serif; background: #E5E7EB; color: #111827; }
@@ -100,7 +100,7 @@
   }
 
   function formatarData(d) {
-    if (!d) return '—';
+    if (!d) return '-';
     var dt = new Date(d);
     if (isNaN(dt.getTime())) return d;
     return String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + dt.getFullYear();
@@ -127,8 +127,8 @@
       if (apenasId) query = 'id=eq.' + apenasId;
       var avaliacoes = await db.query('rh_avaliacoes', query) || [];
 
-      document.getElementById('titulo-barra').textContent = 'Fichas de Avaliação — ' + nomeMes;
-      document.getElementById('sub-barra').textContent = avaliacoes.length + ' ficha(s) prontas — usa "Imprimir" e escolhe "Guardar como PDF" no destino.';
+      document.getElementById('titulo-barra').textContent = 'Fichas de Avaliação - ' + nomeMes;
+      document.getElementById('sub-barra').textContent = avaliacoes.length + ' ficha(s) prontas - usa "Imprimir" e escolhe "Guardar como PDF" no destino.';
       document.getElementById('status').style.display = 'none';
 
       document.getElementById('fichas-container').innerHTML = avaliacoes.map(function(a) {
@@ -149,17 +149,17 @@
       return '<tr>' +
         '<td class="item">' + (i + 1) + '</td>' +
         '<td>' + cr.nome + '</td>' +
-        '<td class="num">' + (va != null ? va : '—') + '</td>' +
-        '<td class="num">' + (vs != null ? vs : '—') + '</td>' +
-        '<td class="num">' + (vd != null ? vd : '—') + '</td>' +
+        '<td class="num">' + (va != null ? va : '-') + '</td>' +
+        '<td class="num">' + (vs != null ? vs : '-') + '</td>' +
+        '<td class="num">' + (vd != null ? vd : '-') + '</td>' +
         '</tr>';
     }).join('');
 
     var totalLinha = '<tr class="linha-total">' +
       '<td colspan="2" class="factor-label">TOTAL / MÉDIA</td>' +
-      '<td class="num">' + (a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos.toFixed(2) : '—') + '</td>' +
-      '<td class="num">' + (a.avaliacao_supervisor_pontos != null ? a.avaliacao_supervisor_pontos.toFixed(2) : '—') + '</td>' +
-      '<td class="num">' + (a.avaliacao_director_pontos != null ? a.avaliacao_director_pontos.toFixed(2) : '—') + '</td>' +
+      '<td class="num">' + (a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos.toFixed(2) : '-') + '</td>' +
+      '<td class="num">' + (a.avaliacao_supervisor_pontos != null ? a.avaliacao_supervisor_pontos.toFixed(2) : '-') + '</td>' +
+      '<td class="num">' + (a.avaliacao_director_pontos != null ? a.avaliacao_director_pontos.toFixed(2) : '-') + '</td>' +
       '</tr>';
 
     var obsHtml = '';
@@ -173,16 +173,16 @@
       '<div class="ficha">' +
         '<div class="cabecalho-ficha">' +
           '<h2>DANMO SERVICE SYSTEM, LDA</h2>' +
-          '<p>Ficha de Avaliação de Desempenho — ' + nomeMes + '</p>' +
+          '<p>Ficha de Avaliação de Desempenho - ' + nomeMes + '</p>' +
         '</div>' +
 
         '<div class="info-grid">' +
           '<div class="campo"><strong>Nome:</strong> ' + escapar(a.colaborador_nome) + '</div>' +
           '<div class="campo"><strong>Nº de Trabalhador:</strong> ' + escapar(a.colaborador_codigo) + '</div>' +
-          '<div class="campo"><strong>Categoria/Função:</strong> ' + escapar(a.colaborador_cargo || '—') + '</div>' +
-          '<div class="campo"><strong>Departamento:</strong> ' + escapar(a.colaborador_departamento || '—') + '</div>' +
+          '<div class="campo"><strong>Categoria/Função:</strong> ' + escapar(a.colaborador_cargo || '-') + '</div>' +
+          '<div class="campo"><strong>Departamento:</strong> ' + escapar(a.colaborador_departamento || '-') + '</div>' +
           '<div class="campo"><strong>Período:</strong> ' + nomeMes + '</div>' +
-          '<div class="campo"><strong>Responsável:</strong> ' + escapar(a.supervisor_nome || '—') + '</div>' +
+          '<div class="campo"><strong>Responsável:</strong> ' + escapar(a.supervisor_nome || '-') + '</div>' +
         '</div>' +
 
         '<table class="tabela-ficha">' +
@@ -193,7 +193,7 @@
         '<div class="classificacao-final">' +
           '<span>PONTUAÇÃO FINAL:</span>' +
           '<span class="pontos">' + (a.pontuacao_final != null ? a.pontuacao_final.toFixed(2) + ' / 100' : 'Em curso') + '</span>' +
-          '<span class="nome-classif">' + (a.classificacao || '—') + '</span>' +
+          '<span class="nome-classif">' + (a.classificacao || '-') + '</span>' +
         '</div>' +
 
         '<div class="legenda-classif">' +

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Histórico de Devoluções — Ferramentaria — Danmo Hub</title>
+  <title>Histórico de Devoluções - Ferramentaria - Danmo Hub</title>
   
   <!-- CSS Global do Danmo Hub -->
   <link rel="stylesheet" href="../shared/style.css" />
@@ -36,6 +36,7 @@
       white-space: nowrap;
     }
   </style>
+  <script src="../shared/guard.js" data-modulo="ferramentaria"></script>
 </head>
 <body>
   <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
@@ -131,11 +132,11 @@
         perdido: 'badge-erro'
       };
       var cls = map[estado] || 'badge-secundario';
-      return '<span class="badge ' + cls + '">' + (estado || '—') + '</span>';
+      return '<span class="badge ' + cls + '">' + (estado || '-') + '</span>';
     }
 
     function truncarObs(texto, max) {
-      if (!texto) return '—';
+      if (!texto) return '-';
       if (texto.length <= max) return texto;
       return texto.substring(0, max) + '...';
     }
@@ -161,7 +162,7 @@
       try {
         /* Fonte única: tipo='devolucao'. Cada devolução grava sempre uma
            linha aqui (feito no emprestimos.html), por isso não é preciso
-           ir também buscar as linhas 'emprestimo' já devolvidas — isso
+           ir também buscar as linhas 'emprestimo' já devolvidas - isso
            duplicava cada devolução (aparecia duas vezes na tabela). */
         var movRes = await db.query('tool_movements', 'select=*&tipo=eq.devolucao&order=data_devolucao.desc&limit=500');
         var allDevs = movRes || [];
@@ -174,9 +175,9 @@
         var toolMap = {};
         if (toolIds.length > 0) {
           /* IMPORTANTE: para várias ferramentas, o filtro tem de ser
-             id=in.(a,b,c) — usar id=eq.a&id=eq.b&id=eq.c pede ao Supabase
+             id=in.(a,b,c) - usar id=eq.a&id=eq.b&id=eq.c pede ao Supabase
              "id igual a A E igual a B ao mesmo tempo", que nunca dá match
-             (por isso Código/Ferramenta apareciam sempre como "—"). */
+             (por isso Código/Ferramenta apareciam sempre como "-"). */
           var toolFilter = 'id=in.(' + toolIds.join(',') + ')';
           var toolRes = await db.query('tools', 'select=id,code,nome&' + toolFilter);
           (toolRes || []).forEach(function(t) { toolMap[t.id] = t; });
@@ -219,12 +220,12 @@
           var devDate = m.data_devolucao || m.created_at;
 
           tr.innerHTML =
-            '<td>' + (tool.code || '—') + '</td>' +
-            '<td>' + (tool.nome || '—') + '</td>' +
-            '<td>' + (m.colaborador || '—') + '</td>' +
-            '<td>' + (m.departamento || '—') + '</td>' +
+            '<td>' + (tool.code || '-') + '</td>' +
+            '<td>' + (tool.nome || '-') + '</td>' +
+            '<td>' + (m.colaborador || '-') + '</td>' +
+            '<td>' + (m.departamento || '-') + '</td>' +
             '<td>' + estadoBadge(estado) + '</td>' +
-            '<td>' + (m.recebido_por || '—') + '</td>' +
+            '<td>' + (m.recebido_por || '-') + '</td>' +
             '<td>' + formatarData(devDate, true) + '</td>' +
             '<td title="' + escapeAttr(obs) + '">' + truncarObs(obs, 50) + '</td>';
 

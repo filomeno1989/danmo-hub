@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ferramenteiros — Ferramentaria — Danmo Hub</title>
+  <title>Ferramenteiros - Ferramentaria - Danmo Hub</title>
   
   <!-- CSS Global do Danmo Hub -->
   <link rel="stylesheet" href="../shared/style.css" />
@@ -26,6 +26,7 @@
     }
     .link-danger:hover { opacity: .8; }
   </style>
+  <script src="../shared/guard.js" data-modulo="ferramentaria"></script>
 </head>
 <body>
   <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
@@ -85,9 +86,9 @@
           <label class="form-label" for="m-codigo">Código de Colaborador</label>
           <input class="form-input" type="text" id="m-codigo" placeholder="Preenchido automaticamente ao escolher o colaborador" />
         </div>
-        <!-- Turno de Trabalho: desactivado por agora — a ferramentaria só opera no
+        <!-- Turno de Trabalho: desactivado por agora - a ferramentaria só opera no
              período normal, cada grupo de turno tem a sua própria mala de ferramenta.
-             Coluna/campo escondidos, não apagados — fácil de reactivar mais tarde. -->
+             Coluna/campo escondidos, não apagados - fácil de reactivar mais tarde. -->
         <input type="hidden" id="m-turno" value="" />
       </div>
       <div class="modal-rodape">
@@ -148,8 +149,8 @@
           var tr = document.createElement('tr');
           var count = loanCounts[s.nome] || 0;
           tr.innerHTML =
-            '<td>' + (s.nome || '—') + '</td>' +
-            '<td>' + (s.codigo || '—') + '</td>' +
+            '<td>' + (s.nome || '-') + '</td>' +
+            '<td>' + (s.codigo || '-') + '</td>' +
             '<td><span class="badge badge-info">' + count + ' empréstimos</span></td>' +
             '<td>' +
               '<span class="link-action" data-action="editar" data-id="' + s.id + '">Editar</span>' +

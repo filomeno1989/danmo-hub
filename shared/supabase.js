@@ -1,5 +1,5 @@
 /**
- * supabase.js — Ligação à base de dados (Danmo Hub)
+ * supabase.js - Ligação à base de dados (Danmo Hub)
  * Wrapper mínimo por cima do REST API do Supabase (fetch puro, sem SDK externo).
  * MESMO padrão já usado e testado em danmo-billing e danmo-oficina.
  * Todas as aplicações do Hub usam ESTE ficheiro.
@@ -28,7 +28,7 @@ const db = {
     return lista[0] || null;
   },
 
-  /** Query avançada — aceita query-string PostgREST completa (filtros, order, limit, etc.) */
+  /** Query avançada - aceita query-string PostgREST completa (filtros, order, limit, etc.) */
   async query(tabela, params = '') {
     const url = `${SUPABASE_URL}/rest/v1/${tabela}?${params}`;
     const r = await fetch(url, { headers: headers() });
@@ -78,6 +78,22 @@ const db = {
     if (!r.ok) throw await r.json();
     const range = r.headers.get('content-range'); // formato "0-24/137"
     return range ? parseInt(range.split('/')[1], 10) : (await r.json()).length;
+  },
+
+  /** Chamar uma função do servidor (RPC) criada no SQL Editor */
+  async rpc(nome, params = {}) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${nome}`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify(params)
+    });
+    if (!r.ok) {
+      const erro = await r.json().catch(() => ({}));
+      erro.status = r.status;
+      throw erro;
+    }
+    const texto = await r.text();
+    return texto ? JSON.parse(texto) : null;
   }
 };
 

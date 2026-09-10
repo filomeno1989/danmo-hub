@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Relatórios e Estatísticas — Ferramentaria — Danmo Hub</title>
+  <title>Relatórios e Estatísticas - Ferramentaria - Danmo Hub</title>
   
   <!-- CSS Global do Danmo Hub -->
   <link rel="stylesheet" href="../shared/style.css" />
@@ -88,6 +88,7 @@
       color: var(--cor-texto);
     }
   </style>
+  <script src="../shared/guard.js" data-modulo="ferramentaria"></script>
 </head>
 <body>
   <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
@@ -240,7 +241,7 @@
 
     /* ── Helpers ── */
     function tempoAtraso(dateStr) {
-      if (!dateStr) return '—';
+      if (!dateStr) return '-';
       var dias = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
       if (dias < 1) return 'Hoje';
       if (dias === 1) return '1 dia';
@@ -335,8 +336,8 @@
         var topTools = Object.keys(toolLoanCount).map(function(tid) {
           var tool = toolsMap[tid] || {};
           return {
-            code: tool.code || '—',
-            nome: tool.nome || '—',
+            code: tool.code || '-',
+            nome: tool.nome || '-',
             count: toolLoanCount[tid],
             lastLoan: toolLastLoan[tid]
           };
@@ -367,9 +368,9 @@
         /* ── 3. Colaboradores com Mais Movimentações ── */
         var colabMap = {};
         periodMovements.forEach(function(m) {
-          var key = (m.colaborador || '—') + '|||' + (m.departamento || '—');
+          var key = (m.colaborador || '-') + '|||' + (m.departamento || '-');
           if (!colabMap[key]) {
-            colabMap[key] = { colaborador: m.colaborador || '—', departamento: m.departamento || '—', total: 0, atrasadas: 0 };
+            colabMap[key] = { colaborador: m.colaborador || '-', departamento: m.departamento || '-', total: 0, atrasadas: 0 };
           }
           colabMap[key].total++;
           if (m.data_devolucao && m.prazo_devolucao) {
@@ -479,13 +480,13 @@
             var tr = document.createElement('tr');
             if (dias > 30) tr.className = 'row-red';
             
-            var toolStr = (tool.code || '—') + (tool.estado === 'inutilizado' ? ' <span class="badge badge-erro" style="font-size:0.6rem">Inutilizada</span>' : '');
+            var toolStr = (tool.code || '-') + (tool.estado === 'inutilizado' ? ' <span class="badge badge-erro" style="font-size:0.6rem">Inutilizada</span>' : '');
             
             tr.innerHTML =
               '<td>' + toolStr + '</td>' +
-              '<td>' + (tool.nome || '—') + '</td>' +
-              '<td>' + (m.colaborador || '—') + '</td>' +
-              '<td>' + (m.departamento || '—') + '</td>' +
+              '<td>' + (tool.nome || '-') + '</td>' +
+              '<td>' + (m.colaborador || '-') + '</td>' +
+              '<td>' + (m.departamento || '-') + '</td>' +
               '<td>' + formatarData(m.data_saida) + '</td>' +
               '<td><span style="font-weight:600;' + (dias>30?'color:var(--cor-erro)':'') + '">' + tempoAtraso(m.data_saida) + '</span></td>';
             naoDevTbody.appendChild(tr);

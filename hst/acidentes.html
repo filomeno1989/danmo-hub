@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Acidentes — HST — Danmo Hub</title>
+  <title>Acidentes - HST - Danmo Hub</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <style>
     .filtro-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
@@ -28,6 +28,7 @@
     .accao-corpo { flex: 1; }
     .accao-corpo strong { display: block; margin-bottom: 4px; }
   </style>
+  <script src="../shared/guard.js" data-modulo="hst"></script>
 </head>
 <body>
   <div id="navbar"></div>
@@ -302,15 +303,15 @@
   /* === Badge de status === */
   function badgeStatus(s) {
     var m = { 'Em Investigacao': 'aviso', 'Investigado': 'info', 'Encerrado': 'sucesso' };
-    return '<span class="badge badge-' + (m[s] || 'secundario') + '">' + (s || '—') + '</span>';
+    return '<span class="badge badge-' + (m[s] || 'secundario') + '">' + (s || '-') + '</span>';
   }
   function badgeAcaoStatus(s) {
     var m = { 'Pendente': 'aviso', 'Em Andamento': 'info', 'Concluida': 'sucesso' };
-    return '<span class="badge badge-' + (m[s] || 'secundario') + '">' + (s || '—') + '</span>';
+    return '<span class="badge badge-' + (m[s] || 'secundario') + '">' + (s || '-') + '</span>';
   }
   function badgeTipo(t) {
     var m = { 'Acidente com Afastamento': 'erro', 'Acidente sem Afastamento': 'aviso', 'Incidente': 'info', 'Doenca Ocupacional': 'secundario' };
-    return '<span class="badge badge-' + (m[t] || 'secundario') + '">' + (t || '—') + '</span>';
+    return '<span class="badge badge-' + (m[t] || 'secundario') + '">' + (t || '-') + '</span>';
   }
 
   /* === Render tabela === */
@@ -326,7 +327,7 @@
       var tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
       tr.innerHTML =
-        '<td style="font-weight:700;">' + (a.numero || '—') + '</td>' +
+        '<td style="font-weight:700;">' + (a.numero || '-') + '</td>' +
         '<td>' + formataData(a.data_hora, true) + '</td>' +
         '<td>' + escaparHTML(a.colaborador_nome) + '</td>' +
         '<td>' + badgeTipo(a.tipo_ocorrencia) + '</td>' +
@@ -358,18 +359,18 @@
   /* === Ver detalhe === */
   function verDetalhe(a) {
     accDetalheId = a.id;
-    document.getElementById('det-titulo').textContent = a.numero + ' — ' + a.colaborador_nome;
-    var area = a.area_risco_nome || '—';
+    document.getElementById('det-titulo').textContent = a.numero + ' - ' + a.colaborador_nome;
+    var area = a.area_risco_nome || '-';
     var html =
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">' +
         '<div><strong>Data/Hora:</strong> ' + formataData(a.data_hora, true) + '</div>' +
         '<div><strong>Tipo:</strong> ' + badgeTipo(a.tipo_ocorrencia) + '</div>' +
         '<div><strong>Status:</strong> ' + badgeStatus(a.status) + '</div>' +
         '<div><strong>Area:</strong> ' + escaparHTML(area) + '</div>' +
-        '<div><strong>Lesao:</strong> ' + (a.tipo_lesao || '—') + '</div>' +
-        '<div><strong>Parte do Corpo:</strong> ' + (a.parte_corpo || '—') + '</div>' +
+        '<div><strong>Lesao:</strong> ' + (a.tipo_lesao || '-') + '</div>' +
+        '<div><strong>Parte do Corpo:</strong> ' + (a.parte_corpo || '-') + '</div>' +
         '<div><strong>Dias Afastamento:</strong> ' + (a.dias_afastamento || 0) + '</div>' +
-        '<div><strong>Atestado:</strong> ' + (a.gerou_atestado ? 'Sim — ' + (a.numero_atestado || '') : 'Nao') + '</div>' +
+        '<div><strong>Atestado:</strong> ' + (a.gerou_atestado ? 'Sim - ' + (a.numero_atestado || '') : 'Nao') + '</div>' +
       '</div>' +
       '<p style="margin-bottom:8px;"><strong>Descricao:</strong></p><p style="margin-bottom:16px;color:var(--cor-texto-sec);">' + escaparHTML(a.descricao) + '</p>' +
       (a.testemunhas ? '<p style="margin-bottom:16px;"><strong>Testemunhas:</strong> ' + escaparHTML(a.testemunhas) + '</p>' : '');
@@ -518,7 +519,7 @@
         '<span class="accao-status">' + badgeAcaoStatus(ac.status) + '</span>' +
         '<div class="accao-corpo">' +
           '<strong>' + escaparHTML(ac.descricao_acao) + '</strong>' +
-          '<div style="font-size:0.82rem;color:var(--cor-texto-sec);">Acidente: ' + (acc ? acc.numero : '—') + ' | Responsavel: ' + escaparHTML(ac.responsavel) + '</div>' +
+          '<div style="font-size:0.82rem;color:var(--cor-texto-sec);">Acidente: ' + (acc ? acc.numero : '-') + ' | Responsavel: ' + escaparHTML(ac.responsavel) + '</div>' +
           '<div style="font-size:0.82rem;color:var(--cor-texto-sec);">Prazo: ' + formataData(ac.prazo) + (atrasada ? ' <span style="color:var(--cor-erro);font-weight:700;">ATRASADA</span>' : '') + '</div>' +
         '</div>' +
         '<select class="form-select" style="width:auto;min-width:130px;" onchange="mudarStatusAccao(' + ac.id + ',this.value)">' +

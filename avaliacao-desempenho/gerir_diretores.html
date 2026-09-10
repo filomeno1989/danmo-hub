@@ -3,21 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Directores — Avaliação de Desempenho — Danmo Hub</title>
+  <title>Directores - Avaliação de Desempenho - Danmo Hub</title>
   <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="../shared/style.css" />
   <script src="../shared/supabase.js"></script>
   <script src="../shared/auth.js"></script>
   <script src="../shared/tema.js"></script>
-  <script>
-    if (!verificarSessao()) {
-      localStorage.setItem('dss_user', JSON.stringify({
-        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
-        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
-      }));
-    }
-  </script>
-  <style>
+<style>
     .item-diretor {
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
       padding: 14px 16px; border: 1px solid var(--cor-borda); border-radius: var(--raio-md);
@@ -28,13 +20,14 @@
     .novo-diretor-linha { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
     .novo-diretor-linha .tech-search-wrap { flex: 1; min-width: 240px; }
   </style>
+  <script src="../shared/guard.js" data-modulo="avaliacao"></script>
 </head>
 <body>
 
   <div id="navbar"></div>
 
   <main class="main">
-    <h1 class="pagina-titulo">Directores — Avaliação de Desempenho</h1>
+    <h1 class="pagina-titulo">Directores - Avaliação de Desempenho</h1>
     <p class="pagina-subtitulo">Quem estiver aqui vê a opção "Avaliação Final" no Portal, para os colaboradores já avaliados pelo Responsável.</p>
 
     <div class="painel">
@@ -110,7 +103,7 @@
           var acaoTexto = d.active ? 'Desactivar' : 'Reactivar';
           return '' +
             '<div class="item-diretor">' +
-              '<div><div class="nome">' + escapar(d.nome || '—') + '</div><div class="codigo">' + escapar(d.codigo) + '</div></div>' +
+              '<div><div class="nome">' + escapar(d.nome || '-') + '</div><div class="codigo">' + escapar(d.codigo) + '</div></div>' +
               '<div style="display:flex;align-items:center;gap:10px;">' +
                 estadoBadge +
                 '<button class="btn btn-secundario btn-sm" onclick="alternarDiretor(' + d.id + ')">' + acaoTexto + '</button>' +

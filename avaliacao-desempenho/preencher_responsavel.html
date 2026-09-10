@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Avaliação da Equipa (Responsável) — Danmo Service System</title>
+  <title>Avaliação da Equipa (Responsável) - Danmo Service System</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; background: #F4F6F9; color: #2C3E50; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
@@ -87,7 +87,7 @@
 
   <div class="logo-bar">
     <h1>DANMO SERVICE SYSTEM, LDA</h1>
-    <p>Avaliação da Minha Equipa — Responsável</p>
+    <p>Avaliação da Minha Equipa - Responsável</p>
   </div>
 
   <button class="btn-voltar" onclick="window.location.href='portal.html'">&#8592; Voltar ao Portal</button>
@@ -117,7 +117,7 @@
 
       <div class="resumo-final" id="resumo-final" style="display:none;">
         <div style="font-size:0.82rem;color:#7F8C8D;">Média da Avaliação do Responsável</div>
-        <div class="media" id="resumo-media">—</div>
+        <div class="media" id="resumo-media">-</div>
         <div style="font-size:0.85rem;" id="resumo-classificacao"></div>
       </div>
 
@@ -189,8 +189,8 @@
       var html = '';
       pendentes.forEach(function(a) {
         html += '<div class="item-lista" onclick="abrirFormulario(' + a.id + ')">';
-        html += '<div><div class="nome">' + escaparHTML(a.colaborador_nome) + '</div><div class="cargo">' + escaparHTML(a.colaborador_cargo || '—') + ' · ' + escaparHTML(a.colaborador_departamento || '—') + '</div></div>';
-        html += '<span class="badge-auto">Auto: ' + (a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos.toFixed(1) : '—') + '</span>';
+        html += '<div><div class="nome">' + escaparHTML(a.colaborador_nome) + '</div><div class="cargo">' + escaparHTML(a.colaborador_cargo || '-') + ' · ' + escaparHTML(a.colaborador_departamento || '-') + '</div></div>';
+        html += '<span class="badge-auto">Auto: ' + (a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos.toFixed(1) : '-') + '</span>';
         html += '</div>';
       });
       document.getElementById('lista-container').innerHTML = html;
@@ -215,13 +215,13 @@
     document.getElementById('card-lista').style.display = 'none';
     document.getElementById('card-formulario').style.display = 'block';
     document.getElementById('colab-nome').textContent = avaliacaoActual.colaborador_nome;
-    document.getElementById('colab-info-sub').textContent = (avaliacaoActual.colaborador_cargo || '—') + ' · ' + (avaliacaoActual.colaborador_departamento || '—');
+    document.getElementById('colab-info-sub').textContent = (avaliacaoActual.colaborador_cargo || '-') + ' · ' + (avaliacaoActual.colaborador_departamento || '-');
 
     /* Mostrar a auto-avaliação como referência */
     var refHtml = '<div class="ref-titulo">📝 Auto-Avaliação deste colaborador (referência)</div><table class="ref-tabela">';
     CRITERIOS.forEach(function(cr) {
       var v = avaliacaoActual.auto_avaliacao ? avaliacaoActual.auto_avaliacao[cr.id] : null;
-      refHtml += '<tr><td>' + cr.nome + '</td><td>' + (v != null ? v : '—') + '</td></tr>';
+      refHtml += '<tr><td>' + cr.nome + '</td><td>' + (v != null ? v : '-') + '</td></tr>';
     });
     refHtml += '</table>';
     if (avaliacaoActual.auto_observacoes) {
@@ -309,7 +309,7 @@
   }
 
   /* === SUBMETER ===
-     NOTA: não gravamos pontuacao_final/classificacao aqui — só o
+     NOTA: não gravamos pontuacao_final/classificacao aqui - só o
      Director (última etapa) grava o valor verdadeiramente final. */
   async function submeterAvaliacao() {
     if (Object.keys(respostas).length < CRITERIOS.length) {

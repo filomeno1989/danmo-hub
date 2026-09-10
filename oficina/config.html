@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Configurações — Danmo Oficina</title>
+  <title>Configurações - Danmo Oficina</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <link rel="stylesheet" href="../shared/oficina.css" />
   <style>
@@ -21,6 +21,7 @@
     .linha-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
     .linha-item:last-child { border-bottom: none; }
   </style>
+  <script src="../shared/guard.js" data-modulo="oficina"></script>
 </head>
 <body>
   <div id="navbar" class="navbar"></div>
@@ -51,16 +52,9 @@
 
     <div class="card">
       <div class="card-title">Níveis de Acesso</div>
-      <p class="text-muted mt-16">Os utilizadores e os seus níveis (Admin / Gestor / Operador) são geridos de forma centralizada e partilhada com os outros módulos Danmo.</p>
-      <div class="table-wrap mt-16">
-        <table>
-          <thead>
-            <tr><th>Utilizador</th><th>Nome</th><th>Nível</th><th>Ativo</th><th></th></tr>
-          </thead>
-          <tbody id="tbody-utilizadores">
-            <tr><td colspan="5">A carregar...</td></tr>
-          </tbody>
-        </table>
+      <p class="text-muted mt-16">As contas, os níveis (Admin / Gestor / Operador / Consulta) e as permissões de cada nível passaram a ser geridos no módulo Permissões, no menu lateral. Assim o controle fica num sítio só, igual para todo o hub.</p>
+      <div class="mt-16">
+        <button class="btn btn-primary btn-sm" onclick="window.location.href='../permissoes/index.html'">Abrir o módulo Permissões</button>
       </div>
     </div>
   </main>
@@ -164,50 +158,14 @@
           const cat = categorias.find((c) => c.id === g.categoria_id);
           return `
           <div class="linha-item">
-            <span>${g.nome} <span class="text-muted">— ${cat ? cat.nome : '—'}</span> ${!g.ativo ? '<span class="badge badge-gray">inativo</span>' : ''}</span>
+            <span>${g.nome} <span class="text-muted">- ${cat ? cat.nome : '-'}</span> ${!g.ativo ? '<span class="badge badge-gray">inativo</span>' : ''}</span>
             <button class="btn btn-ghost btn-sm" onclick="editarGrupo(${g.id})">Editar</button>
           </div>`;
         })
         .join('');
     }
 
-    async function carregarUtilizadores() {
-      const lista = await db.query('utilizadores', 'select=*&order=nome.asc');
-      const tbody = document.getElementById('tbody-utilizadores');
-      if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5">Sem utilizadores registados.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = lista
-        .map(
-          (u) => `
-        <tr>
-          <td>${u.usuario || '—'}</td>
-          <td>${u.nome || '—'}</td>
-          <td>
-            <select onchange="mudarNivel(${u.id}, this.value)">
-              <option value="admin" ${u.nivel === 'admin' ? 'selected' : ''}>Admin</option>
-              <option value="gestor" ${u.nivel === 'gestor' ? 'selected' : ''}>Gestor</option>
-              <option value="operador" ${u.nivel === 'operador' ? 'selected' : ''}>Operador</option>
-            </select>
-          </td>
-          <td><span class="badge ${u.ativo ? 'badge-green' : 'badge-gray'}">${u.ativo ? 'Sim' : 'Não'}</span></td>
-          <td><button class="btn btn-ghost btn-sm" onclick="alternarAtivoUtilizador(${u.id}, ${u.ativo})">${u.ativo ? 'Desativar' : 'Ativar'}</button></td>
-        </tr>`
-        )
-        .join('');
-    }
-
-    async function mudarNivel(id, nivel) {
-      await db.update('utilizadores', id, { nivel });
-    }
-
-    async function alternarAtivoUtilizador(id, ativoAtual) {
-      await db.update('utilizadores', id, { ativo: !ativoAtual });
-      await carregarUtilizadores();
-    }
-
-    // Categoria — modal
+    // Categoria - modal
     const modalCategoria = document.getElementById('modal-categoria');
     document.getElementById('btn-nova-categoria').addEventListener('click', () => {
       document.getElementById('form-categoria').reset();
@@ -223,7 +181,7 @@
       document.getElementById('c-id').value = c.id;
       document.getElementById('c-nome').value = c.nome;
       document.getElementById('c-ativo').value = String(c.ativo);
-      document.getElementById('titulo-modal-categoria').textContent = `Editar — ${c.nome}`;
+      document.getElementById('titulo-modal-categoria').textContent = `Editar - ${c.nome}`;
       modalCategoria.classList.add('aberto');
     }
 
@@ -246,7 +204,7 @@
       }
     });
 
-    // Grupo — modal
+    // Grupo - modal
     const modalGrupo = document.getElementById('modal-grupo');
     document.getElementById('btn-novo-grupo').addEventListener('click', () => {
       document.getElementById('form-grupo').reset();
@@ -263,7 +221,7 @@
       document.getElementById('g-categoria').value = g.categoria_id;
       document.getElementById('g-nome').value = g.nome;
       document.getElementById('g-ativo').value = String(g.ativo);
-      document.getElementById('titulo-modal-grupo').textContent = `Editar — ${g.nome}`;
+      document.getElementById('titulo-modal-grupo').textContent = `Editar - ${g.nome}`;
       modalGrupo.classList.add('aberto');
     }
 
@@ -289,7 +247,6 @@
     (async function init() {
       await carregarCategorias();
       await carregarGrupos();
-      await carregarUtilizadores();
     })();
   </script>
 </body>

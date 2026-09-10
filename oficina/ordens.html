@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ordens de Serviço — Danmo Oficina</title>
+  <title>Ordens de Serviço - Danmo Oficina</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <!-- Se ainda usares o oficina.css para outras coisas, podes mantê-lo -->
   <link rel="stylesheet" href="../shared/oficina.css" />
@@ -21,6 +21,7 @@
     .horimetro-linha input { flex: 1; }
     .horimetro-linha select { width: 90px; flex-shrink: 0; }
   </style>
+  <script src="../shared/guard.js" data-modulo="oficina"></script>
 </head>
 <body>
   <div id="navbar" class="navbar"></div>
@@ -132,7 +133,7 @@
           <div class="form-grupo">
             <label class="form-label">Nº Obra (fornecido pela CdM)</label>
             <input class="form-input" type="text" id="f-numero-obra" placeholder="Deixar vazio se ainda não atribuído" />
-            <span class="nota">Opcional — pode ser preenchido depois quando a CdM atribuir.</span>
+            <span class="nota">Opcional - pode ser preenchido depois quando a CdM atribuir.</span>
           </div>
 
           <div class="form-grupo">
@@ -143,7 +144,7 @@
           <div class="form-grupo">
             <label class="form-label">Sector *</label>
             <select class="form-select" id="f-sector" required>
-              <option value="">— Selecionar —</option>
+              <option value="">- Selecionar -</option>
               <option value="Elétrica">Elétrica</option>
               <option value="Mecânica">Mecânica</option>
               <option value="Serralharia">Serralharia</option>
@@ -188,7 +189,7 @@
           <div class="form-grupo">
             <label class="form-label">Estado Físico *</label>
             <select class="form-select" id="f-status-fisico" required>
-              <option value="">— Selecionar —</option>
+              <option value="">- Selecionar -</option>
               <option value="Avariada">Avariada</option>
               <option value="Acidentada">Acidentada</option>
               <option value="Pneumático">Pneumático</option>
@@ -259,7 +260,7 @@
       const sf = document.getElementById('filtro-equipamento');
       const ff = document.getElementById('f-equipamento');
       eq.forEach(e => {
-        const label = `${e.code} — ${e.fleet_type||''}`;
+        const label = `${e.code} - ${e.fleet_type||''}`;
         sf.insertAdjacentHTML('beforeend',`<option value="${e.id}">${label}</option>`);
         ff.insertAdjacentHTML('beforeend',`<option value="${e.id}">${label}</option>`);
       });
@@ -280,7 +281,7 @@
         (c.name.toLowerCase().includes(q) || (c.code||'').toLowerCase().includes(q))
       );
       dd.innerHTML = matches.length
-        ? matches.map(c => `<div class="tech-option" data-id="${c.id}">${c.name}${c.code?' ('+c.code+')':''}${c.setor?' — '+c.setor:''}</div>`).join('')
+        ? matches.map(c => `<div class="tech-option" data-id="${c.id}">${c.name}${c.code?' ('+c.code+')':''}${c.setor?' - '+c.setor:''}</div>`).join('')
         : '<div class="tech-option text-muted">Nenhum resultado.</div>';
       dd.classList.add('open');
     }
@@ -353,7 +354,7 @@
         const badge = BADGE_FISICO[o.status_fisico]||'badge-secundario';
         const avaria = o.descricao_avaria
           ? (o.descricao_avaria.length>50 ? o.descricao_avaria.slice(0,50)+'…' : o.descricao_avaria)
-          : '—';
+          : '-';
 
         let diasSemNr = '';
         if (!o.numero_obra && o.status_atual !== 'Fechada') {
@@ -363,13 +364,13 @@
 
         return `<tr>
           <td style="cursor:pointer; font-weight: 600;" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${o.numero_obra || '<span class="badge-sem-nr">s/nº</span>'}</td>
-          <td style="cursor:pointer; color: var(--cor-info); font-weight: 600;" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${eq.code||'—'}</td>
-          <td>${eq.fleet_type||'—'}</td>
-          <td>${o.sector||'—'}</td>
+          <td style="cursor:pointer; color: var(--cor-info); font-weight: 600;" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${eq.code||'-'}</td>
+          <td>${eq.fleet_type||'-'}</td>
+          <td>${o.sector||'-'}</td>
           <td title="${o.descricao_avaria||''}">${avaria}</td>
           <td>${formatarData(o.data_abertura)}</td>
-          <td>${diasSemNr||'—'}</td>
-          <td><span class="badge ${badge}">${o.status_fisico||'—'}</span></td>
+          <td>${diasSemNr||'-'}</td>
+          <td><span class="badge ${badge}">${o.status_fisico||'-'}</span></td>
           <td><span class="badge badge-secundario">${o.status_atual}</span></td>
           <td><button class="btn btn-vermelho btn-sm" onclick="eliminarOS(${o.id},event)">Apagar</button></td>
         </tr>`;

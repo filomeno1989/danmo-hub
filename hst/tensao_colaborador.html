@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Historico de Tensao — HST — Danmo Hub</title>
+  <title>Historico de Tensao - HST - Danmo Hub</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <style>
     .classificacao-tensao { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
@@ -19,6 +19,7 @@
     .evolucao-mini { display: flex; gap: 3px; align-items: flex-end; height: 60px; margin-top: 12px; }
     .evo-bar { flex: 1; min-width: 6px; border-radius: 3px 3px 0 0; transition: height 0.5s; }
   </style>
+  <script src="../shared/guard.js" data-modulo="hst"></script>
 </head>
 <body>
   <div id="navbar"></div>
@@ -30,10 +31,10 @@
 
     <!-- Resumo -->
     <div class="resumo-grid" id="resumo-grid">
-      <div class="resumo-card"><div class="resumo-valor" id="r-total">—</div><div class="resumo-label">Total Medicoes</div></div>
-      <div class="resumo-card"><div class="resumo-valor" id="r-ultima">—/—</div><div class="resumo-label">Ultima Medicao</div></div>
-      <div class="resumo-card"><div class="resumo-valor" id="r-ultima-data">—</div><div class="resumo-label">Data Ultima</div></div>
-      <div class="resumo-card"><div class="resumo-valor" id="r-hta">—</div><div class="resumo-label">Medicoes com HTA</div></div>
+      <div class="resumo-card"><div class="resumo-valor" id="r-total">-</div><div class="resumo-label">Total Medicoes</div></div>
+      <div class="resumo-card"><div class="resumo-valor" id="r-ultima">-/-</div><div class="resumo-label">Ultima Medicao</div></div>
+      <div class="resumo-card"><div class="resumo-valor" id="r-ultima-data">-</div><div class="resumo-label">Data Ultima</div></div>
+      <div class="resumo-card"><div class="resumo-valor" id="r-hta">-</div><div class="resumo-label">Medicoes com HTA</div></div>
     </div>
 
     <!-- Grafico mini evolucao -->
@@ -166,7 +167,7 @@
     if (!colabNome) { document.getElementById('colab-nome-titulo').textContent = 'Colaborador nao especificado'; return; }
     document.getElementById('colab-nome-titulo').textContent = colabNome;
     document.getElementById('mc-colab').value = colabNome;
-    document.title = colabNome + ' — Tensao Arterial — HST';
+    document.title = colabNome + ' - Tensao Arterial - HST';
 
     try {
       var medicoes = await db.query('hst_medicoes_tensao', 'select=*&colaborador_nome=eq.' + encodeURIComponent(colabNome) + '&order=data_medicao.desc&limit=500');
@@ -208,8 +209,8 @@
       document.getElementById('evo-sis').innerHTML = sisHtml;
       document.getElementById('evo-dia').innerHTML = diaHtml;
       document.getElementById('evo-legend').innerHTML =
-        '<div><strong>Primeira:</strong> ' + formataData(ultimas20[0].data_medicao) + ' — ' + ultimas20[0].sistolica + '/' + ultimas20[0].diastolica + '</div>' +
-        '<div><strong>Ultima:</strong> ' + formataData(ultimas20[ultimas20.length - 1].data_medicao) + ' — ' + ultimas20[ultimas20.length - 1].sistolica + '/' + ultimas20[ultimas20.length - 1].diastolica + '</div>';
+        '<div><strong>Primeira:</strong> ' + formataData(ultimas20[0].data_medicao) + ' - ' + ultimas20[0].sistolica + '/' + ultimas20[0].diastolica + '</div>' +
+        '<div><strong>Ultima:</strong> ' + formataData(ultimas20[ultimas20.length - 1].data_medicao) + ' - ' + ultimas20[ultimas20.length - 1].sistolica + '/' + ultimas20[ultimas20.length - 1].diastolica + '</div>';
 
       /* Tabela historico */
       var tbody = document.getElementById('hist-tbody');
@@ -222,10 +223,10 @@
           '<td style="font-weight:700;">' + m.sistolica + '</td>' +
           '<td style="font-weight:700;">' + m.diastolica + '</td>' +
           '<td style="font-weight:700;">' + m.sistolica + '/' + m.diastolica + '</td>' +
-          '<td>' + (m.frequencia_cardiaca || '—') + '</td>' +
+          '<td>' + (m.frequencia_cardiaca || '-') + '</td>' +
           '<td><span class="classificacao-tensao ' + cla.cardCls + '">' + cla.texto + '</span></td>' +
-          '<td>' + escaparHTML(m.medido_por || '—') + '</td>' +
-          '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escaparHTML(m.observacoes || '') + '">' + escaparHTML(m.observacoes || '—') + '</td>';
+          '<td>' + escaparHTML(m.medido_por || '-') + '</td>' +
+          '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escaparHTML(m.observacoes || '') + '">' + escaparHTML(m.observacoes || '-') + '</td>';
         tbody.appendChild(tr);
       });
 

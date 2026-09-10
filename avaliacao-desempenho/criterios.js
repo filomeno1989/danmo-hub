@@ -1,5 +1,5 @@
 /**
- * criterios.js — Os 10 critérios oficiais da Ficha de Avaliação de
+ * criterios.js - Os 10 critérios oficiais da Ficha de Avaliação de
  * Desempenho da Danmo, extraídos diretamente da folha CLASSIFICADOR
  * do ficheiro Excel partilhado. Cada critério é pontuado de 0 a 100.
  * Usado por: portal.html, preencher_auto.html, preencher_supervisor.html,
@@ -88,7 +88,7 @@ var CRITERIOS = [
         excelente: '. Executa o trabalho com total ausência de erros'
       } },
   ];
-/* Faixas de classificação FINAL (confirmadas com o utilizador —
+/* Faixas de classificação FINAL (confirmadas com o utilizador -
    Satisfatório usa 41-70, igual à folha CLASSIFICADOR) */
 var FAIXAS_CLASSIFICACAO = [
   { min: 91, max: 100, nome: 'Excelente' },
@@ -99,12 +99,12 @@ var FAIXAS_CLASSIFICACAO = [
 ];
 
 function classificar(pontos) {
-  if (pontos === null || pontos === undefined) return '—';
+  if (pontos === null || pontos === undefined) return '-';
   for (var i = 0; i < FAIXAS_CLASSIFICACAO.length; i++) {
     var f = FAIXAS_CLASSIFICACAO[i];
     if (pontos >= f.min && pontos <= f.max) return f.nome;
   }
-  return '—';
+  return '-';
 }
 
 /* Pontuação = média simples dos 10 critérios (0-100 cada) */

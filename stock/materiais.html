@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Materiais — Gestão de Stock — Danmo Hub</title>
+  <title>Materiais - Gestão de Stock - Danmo Hub</title>
   <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/guard.js" data-modulo="stock"></script>
 </head>
 <body>
   <div id="navbar"></div>
@@ -145,7 +146,7 @@
           ? '<span class="badge badge-erro">Esgotado</span>'
           : '<span class="badge badge-aviso">Stock Baixo</span>';
         return '<div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--cor-borda);">' +
-          badge + '<strong>' + m.referencia + ' — ' + m.nome + '</strong>' +
+          badge + '<strong>' + m.referencia + ' - ' + m.nome + '</strong>' +
           '<span style="color:var(--cor-texto-sec); font-size:var(--tamanho-sm);">Stock: ' + fmtNum(stock) + ' ' + m.unidade + ' &nbsp;|&nbsp; Mínimo: ' + fmtNum(m.stock_minimo) + ' ' + m.unidade + '</span>' +
         '</div>';
       }).join('');
@@ -184,17 +185,17 @@
               '<button class="btn btn-secundario btn-sm" onclick="editar(\'' + m.id + '\')">✏️</button>' +
               '<button class="btn btn-secundario btn-sm" onclick="desactivar(\'' + m.id + '\')">🗑</button>' +
             '</div>'
-          : '—';
+          : '-';
 
         return '<tr>' +
           '<td><code style="color:var(--cor-ambar);">' + m.referencia + '</code></td>' +
           '<td><strong>' + m.nome + '</strong></td>' +
-          '<td>' + (m.categoria || '—') + '</td>' +
+          '<td>' + (m.categoria || '-') + '</td>' +
           '<td>' + m.unidade + '</td>' +
           '<td>' + fmtNum(minimo) + '</td>' +
           '<td style="color:' + cor + '; font-weight:700;">' + fmtNum(stock) + '</td>' +
           '<td>' + badge + '</td>' +
-          '<td>' + (m.localizacao || '—') + '</td>' +
+          '<td>' + (m.localizacao || '-') + '</td>' +
           '<td>' + acoes + '</td>' +
         '</tr>';
       }).join('');

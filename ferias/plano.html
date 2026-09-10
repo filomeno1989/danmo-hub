@@ -3,21 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Plano Anual de Férias — Danmo Hub</title>
+  <title>Plano Anual de Férias - Danmo Hub</title>
   <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="../shared/style.css" />
   <script src="../shared/supabase.js"></script>
   <script src="../shared/auth.js"></script>
   <script src="../shared/tema.js"></script>
-  <script>
-    if (!verificarSessao()) {
-      localStorage.setItem('dss_user', JSON.stringify({
-        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
-        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
-      }));
-    }
-  </script>
-  <style>
+<style>
     .barra-filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
     .pesquisa-input { flex: 1; min-width: 200px; padding: 10px 14px; border: 1px solid var(--cor-borda);
       border-radius: var(--raio-md); background: var(--cor-superficie); color: var(--cor-texto); font-size: var(--tamanho-base); }
@@ -61,6 +53,7 @@
     .gap-1 { gap: 4px; } .gap-2 { gap: 8px; }
     .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
   </style>
+  <script src="../shared/guard.js" data-modulo="ferias"></script>
 </head>
 <body>
 
@@ -70,14 +63,14 @@
 
     <div style="margin-bottom:20px;">
       <h1 class="pagina-titulo">📋 Plano Anual de Férias</h1>
-      <p class="pagina-subtitulo">A folha que circula em Outubro — clique num mês para marcar as férias de cada colaborador</p>
+      <p class="pagina-subtitulo">A folha que circula em Outubro - clique num mês para marcar as férias de cada colaborador</p>
     </div>
 
-    <div class="titulo-impressao" id="titulo-impressao">Plano de Férias — Folha de Planeamento</div>
+    <div class="titulo-impressao" id="titulo-impressao">Plano de Férias - Folha de Planeamento</div>
 
     <div class="nota-outubro no-print">
       <strong>Como funciona:</strong> marca o <u>mês</u> de férias de cada colaborador (clique no quadrado do mês;
-      clicar de novo retira). Se um setor já tiver o limite de férias naquele mês, o sistema <u>alerta sempre</u> —
+      clicar de novo retira). Se um setor já tiver o limite de férias naquele mês, o sistema <u>alerta sempre</u> -
       e pode deixar passar como exceção. Os <strong>dias de direito</strong> chegam depois do RH central
       (lançar em <a href="rh-mensal.html">Folha do RH</a>).
     </div>
@@ -126,7 +119,7 @@
 
   </main>
 
-  <!-- MODAL — editar linha do plano (forçar alterações) -->
+  <!-- MODAL - editar linha do plano (forçar alterações) -->
   <div class="modal-fundo" id="modal-linha">
     <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto;">
       <div class="modal-cabecalho">
@@ -139,7 +132,7 @@
           <div class="form-grupo" style="margin-bottom:0;">
             <label class="form-label">Mês de férias</label>
             <select id="e-mes" class="form-select">
-              <option value="">— Sem mês —</option>
+              <option value="">- Sem mês -</option>
               <option value="1">Janeiro</option><option value="2">Fevereiro</option>
               <option value="3">Março</option><option value="4">Abril</option>
               <option value="5">Maio</option><option value="6">Junho</option>
@@ -256,7 +249,7 @@
 
       const corpo = document.getElementById('tabela-corpo');
       document.getElementById('sem-resultados').style.display = lista.length ? 'none' : 'block';
-      document.getElementById('titulo-impressao').textContent = `Plano de Férias ${ano} — Folha de Planeamento`;
+      document.getElementById('titulo-impressao').textContent = `Plano de Férias ${ano} - Folha de Planeamento`;
 
       corpo.innerHTML = lista.map((c, i) => {
         const r = mapaPlano[c.id];
@@ -267,23 +260,23 @@
           const excede = (contas[k] || 0) > CONFIG.limite_departamento;
           return `<td class="col-mes">
             <div class="cel-mes${marcado ? ' marcado' : ''}${excede ? ' excedido' : ''}"
-                 title="${escaparHTML(setorDe(c))} · ${ab} ${ano}${excede ? ' — limite ultrapassado!' : ''}"
+                 title="${escaparHTML(setorDe(c))} · ${ab} ${ano}${excede ? ' - limite ultrapassado!' : ''}"
                  onclick="alternarMes(${c.id}, ${m})"><span class="m">${marcado ? '✔ ' + ab : ab}</span></div>
           </td>`;
         }).join('');
 
         const periodo = (r && r.data_inicio)
           ? `${formatarData(r.data_inicio)}${r.data_fim ? ' → ' + formatarData(r.data_fim) : ''}`
-          : '—';
+          : '-';
         const badge = estadoBadge(r);
 
         return `
           <tr>
             <td class="text-muted">${i + 1}</td>
-            <td><div class="bold">${escaparHTML(c.name || '—')}</div><div style="font-size:0.75rem;color:var(--cor-texto-sec)">${escaparHTML(c.code || '')}${c.categoria ? ' · ' + escaparHTML(c.categoria) : ''}</div></td>
+            <td><div class="bold">${escaparHTML(c.name || '-')}</div><div style="font-size:0.75rem;color:var(--cor-texto-sec)">${escaparHTML(c.code || '')}${c.categoria ? ' · ' + escaparHTML(c.categoria) : ''}</div></td>
             <td style="font-size:0.82rem">${escaparHTML(setorDe(c))}</td>
             ${celulas}
-            <td>${r && r.dias_rh ? '<strong>' + r.dias_rh + '</strong>' : '<span class="text-muted">—</span>'}</td>
+            <td>${r && r.dias_rh ? '<strong>' + r.dias_rh + '</strong>' : '<span class="text-muted">-</span>'}</td>
             <td style="font-size:0.8rem;white-space:nowrap">${periodo}</td>
             <td>${badge}</td>
             <td class="no-print">
@@ -316,7 +309,7 @@
           const k = setorDe(c) + '||' + mes;
           const noSetorMes = contas[k] || 0;
           if (noSetorMes >= CONFIG.limite_departamento) {
-            const msg = `⚠️ ATENÇÃO\n\nO setor "${setorDe(c)}" já tem ${noSetorMes} colaborador(es) de férias em ${MESES_PT[mes - 1]} ${ano} (limite: ${CONFIG.limite_departamento}).\n\n${CONFIG.permitir_excedente ? 'Pode marcar como EXCEÇÃO — o aviso fica sempre assinalado no calendário e nos relatórios.' : 'Pela regra actual o limite BLOQUEIA esta marcação.'}\n\nMarcar mesmo assim?`;
+            const msg = `⚠️ ATENÇÃO\n\nO setor "${setorDe(c)}" já tem ${noSetorMes} colaborador(es) de férias em ${MESES_PT[mes - 1]} ${ano} (limite: ${CONFIG.limite_departamento}).\n\n${CONFIG.permitir_excedente ? 'Pode marcar como EXCEÇÃO - o aviso fica sempre assinalado no calendário e nos relatórios.' : 'Pela regra actual o limite BLOQUEIA esta marcação.'}\n\nMarcar mesmo assim?`;
             if (CONFIG.permitir_excedente) {
               if (!window.confirm(msg)) return;
             } else {

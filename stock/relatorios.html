@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Relatórios — Gestão de Stock — Danmo Hub</title>
+  <title>Relatórios - Gestão de Stock - Danmo Hub</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <style>
     .tabs { display:flex; gap:4px; margin-bottom:24px; border-bottom:1px solid var(--cor-borda); }
@@ -35,6 +35,7 @@
     .print-header h1 { font-size:20px; margin-bottom:4px; }
     .print-header p { font-size:13px; color:#555; }
   </style>
+  <script src="../shared/guard.js" data-modulo="stock"></script>
 </head>
 <body>
   <div id="navbar"></div>
@@ -52,7 +53,7 @@
     <!-- TAB 1: INVENTÁRIO -->
     <div id="tab-inventario" class="tab-content ativo">
       <div class="print-header">
-        <h1>DANMO Service System, Lda — Inventário de Stock</h1>
+        <h1>DANMO Service System, Lda - Inventário de Stock</h1>
         <p id="print-data-inv"></p>
       </div>
 
@@ -75,10 +76,10 @@
       </div>
 
       <div class="kpi-grid no-print" style="margin-bottom:20px;">
-        <div class="kpi-card azul"><div class="kpi-label">Total Materiais</div><div class="kpi-valor" id="inv-total">—</div></div>
-        <div class="kpi-card verde"><div class="kpi-label">Stock OK</div><div class="kpi-valor" id="inv-ok">—</div></div>
-        <div class="kpi-card amarelo"><div class="kpi-label">Stock Baixo</div><div class="kpi-valor" id="inv-baixo">—</div></div>
-        <div class="kpi-card vermelho"><div class="kpi-label">Esgotados</div><div class="kpi-valor" id="inv-esgotado">—</div></div>
+        <div class="kpi-card azul"><div class="kpi-label">Total Materiais</div><div class="kpi-valor" id="inv-total">-</div></div>
+        <div class="kpi-card verde"><div class="kpi-label">Stock OK</div><div class="kpi-valor" id="inv-ok">-</div></div>
+        <div class="kpi-card amarelo"><div class="kpi-label">Stock Baixo</div><div class="kpi-valor" id="inv-baixo">-</div></div>
+        <div class="kpi-card vermelho"><div class="kpi-label">Esgotados</div><div class="kpi-valor" id="inv-esgotado">-</div></div>
       </div>
 
       <div class="card">
@@ -100,7 +101,7 @@
     <!-- TAB 2: MOVIMENTOS -->
     <div id="tab-movimentos" class="tab-content">
       <div class="print-header">
-        <h1>DANMO Service System, Lda — Movimentos de Stock</h1>
+        <h1>DANMO Service System, Lda - Movimentos de Stock</h1>
         <p id="print-data-mov"></p>
       </div>
       <div class="card">
@@ -135,10 +136,10 @@
         <button class="btn btn-primario no-print" onclick="carregarMovimentos()" style="margin-bottom:20px;">🔍 Pesquisar</button>
 
         <div class="kpi-grid no-print" style="margin-bottom:20px; display:none;" id="kpi-movimentos">
-          <div class="kpi-card verde"><div class="kpi-label">Total Entradas</div><div class="kpi-valor" id="mov-total-entradas">—</div></div>
-          <div class="kpi-card vermelho"><div class="kpi-label">Total Saídas</div><div class="kpi-valor" id="mov-total-saidas">—</div></div>
-          <div class="kpi-card azul"><div class="kpi-label">Qtd Total Entrada</div><div class="kpi-valor" id="mov-qtd-entradas">—</div></div>
-          <div class="kpi-card"><div class="kpi-label">Qtd Total Saída</div><div class="kpi-valor" id="mov-qtd-saidas">—</div></div>
+          <div class="kpi-card verde"><div class="kpi-label">Total Entradas</div><div class="kpi-valor" id="mov-total-entradas">-</div></div>
+          <div class="kpi-card vermelho"><div class="kpi-label">Total Saídas</div><div class="kpi-valor" id="mov-total-saidas">-</div></div>
+          <div class="kpi-card azul"><div class="kpi-label">Qtd Total Entrada</div><div class="kpi-valor" id="mov-qtd-entradas">-</div></div>
+          <div class="kpi-card"><div class="kpi-label">Qtd Total Saída</div><div class="kpi-valor" id="mov-qtd-saidas">-</div></div>
         </div>
 
         <div class="tabela-container">
@@ -161,7 +162,7 @@
     <!-- TAB 3: COMPRAS -->
     <div id="tab-compras" class="tab-content">
       <div class="print-header">
-        <h1>DANMO Service System, Lda — Resumo de Compras</h1>
+        <h1>DANMO Service System, Lda - Resumo de Compras</h1>
         <p id="print-data-comp"></p>
       </div>
       <div class="card">
@@ -188,8 +189,8 @@
         <button class="btn btn-primario no-print" onclick="carregarCompras()" style="margin-bottom:20px;">🔍 Pesquisar</button>
 
         <div class="kpi-grid no-print" style="margin-bottom:20px;">
-          <div class="kpi-card azul"><div class="kpi-label">Total Compras</div><div class="kpi-valor" id="comp-total-movs">—</div></div>
-          <div class="kpi-card verde"><div class="kpi-label">Total Gasto (MZN)</div><div class="kpi-valor" id="comp-total-mzn">—</div></div>
+          <div class="kpi-card azul"><div class="kpi-label">Total Compras</div><div class="kpi-valor" id="comp-total-movs">-</div></div>
+          <div class="kpi-card verde"><div class="kpi-label">Total Gasto (MZN)</div><div class="kpi-valor" id="comp-total-mzn">-</div></div>
         </div>
 
         <div style="margin-bottom:20px;">
@@ -270,7 +271,7 @@
         var selMat = document.getElementById('mov-material');
         materiais.forEach(function (m) {
           var o = document.createElement('option');
-          o.value = m.id; o.textContent = m.referencia + ' — ' + m.nome;
+          o.value = m.id; o.textContent = m.referencia + ' - ' + m.nome;
           selMat.appendChild(o);
         });
 
@@ -342,9 +343,9 @@
         return '<tr>' +
           '<td><code style="color:var(--cor-ambar);">' + m.referencia + '</code></td>' +
           '<td><strong>' + m.nome + '</strong></td>' +
-          '<td>' + (m.categoria || '—') + '</td>' +
+          '<td>' + (m.categoria || '-') + '</td>' +
           '<td>' + m.unidade + '</td>' +
-          '<td>' + (m.localizacao || '—') + '</td>' +
+          '<td>' + (m.localizacao || '-') + '</td>' +
           '<td>' + fmtNum(m.stock_minimo || 0) + '</td>' +
           '<td style="color:' + cor + '; font-weight:700;">' + fmtNum(m._stock) + '</td>' +
           '<td>' + badge + '</td>' +
@@ -386,12 +387,12 @@
 
       tb.innerHTML = movs.map(function (m) {
         var mat = materiais.find(function (x) { return x.id === m.material_id; });
-        var nome = mat ? (mat.referencia + ' — ' + mat.nome) : '—';
+        var nome = mat ? (mat.referencia + ' - ' + mat.nome) : '-';
         var unid = mat ? mat.unidade : '';
         var tipoBadge = m.tipo === 'entrada'
           ? '<span class="badge badge-sucesso">Entrada</span>'
           : '<span class="badge badge-erro">Saída</span>';
-        var quem = m.tipo === 'entrada' ? (m.fornecedor || '—') : (m.colaborador_nome || '—');
+        var quem = m.tipo === 'entrada' ? (m.fornecedor || '-') : (m.colaborador_nome || '-');
         var cor = m.tipo === 'entrada' ? 'var(--cor-sucesso)' : 'var(--cor-erro)';
         var sinal = m.tipo === 'entrada' ? '+' : '−';
         return '<tr>' +
@@ -401,8 +402,8 @@
           '<td style="font-weight:700; color:' + cor + ';">' + sinal + fmtNum(m.quantidade) + '</td>' +
           '<td>' + unid + '</td>' +
           '<td>' + quem + '</td>' +
-          '<td>' + (m.departamento || '—') + '</td>' +
-          '<td>' + (m.observacoes || '—') + '</td>' +
+          '<td>' + (m.departamento || '-') + '</td>' +
+          '<td>' + (m.observacoes || '-') + '</td>' +
         '</tr>';
       }).join('');
     }
@@ -444,7 +445,7 @@
 
       var linhasDetalhe = compras.map(function (m) {
         var mat = materiais.find(function (x) { return x.id === m.material_id; });
-        var nome = mat ? (mat.referencia + ' — ' + mat.nome) : '—';
+        var nome = mat ? (mat.referencia + ' - ' + mat.nome) : '-';
         var unid = mat ? mat.unidade : '';
         var total = (m.preco_unitario || 0) * m.quantidade;
         return '<tr>' +
@@ -452,11 +453,11 @@
           '<td><strong>' + nome + '</strong></td>' +
           '<td>' + fmtNum(m.quantidade) + '</td>' +
           '<td>' + unid + '</td>' +
-          '<td>' + (m.preco_unitario ? fmtNum(m.preco_unitario) + ' MZN' : '—') + '</td>' +
-          '<td style="color:var(--cor-ambar); font-weight:700;">' + (total ? fmtNum(total) + ' MZN' : '—') + '</td>' +
-          '<td>' + (m.fornecedor || '—') + '</td>' +
-          '<td>' + (m.numero_po || '—') + '</td>' +
-          '<td>' + (m.comprador_nome || '—') + '</td>' +
+          '<td>' + (m.preco_unitario ? fmtNum(m.preco_unitario) + ' MZN' : '-') + '</td>' +
+          '<td style="color:var(--cor-ambar); font-weight:700;">' + (total ? fmtNum(total) + ' MZN' : '-') + '</td>' +
+          '<td>' + (m.fornecedor || '-') + '</td>' +
+          '<td>' + (m.numero_po || '-') + '</td>' +
+          '<td>' + (m.comprador_nome || '-') + '</td>' +
         '</tr>';
       }).join('');
       document.getElementById('tbody-compras').innerHTML =

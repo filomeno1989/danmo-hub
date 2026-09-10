@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="pt" data-tema="claro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Permissões - Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
+  <link rel="stylesheet" href="../shared/style.css">
+  <script src="../shared/guard.js" data-modulo="permissoes"></script>
+  <style>
+    .painel-abas { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .painel-abas .btn { border-radius: 999px; }
+    .painel-abas .btn.ativo { box-shadow: 0 0 0 2px var(--cor-ambar) inset; }
+    .acoes-conta { display: flex; gap: 6px; flex-wrap: wrap; }
+    .mini-aviso { font-size: var(--tamanho-sm); color: var(--cor-texto-sec); margin-top: 10px; }
+    .matriz-tabela th, .matriz-tabela td { text-align: center; }
+    .matriz-tabela th:first-child, .matriz-tabela td:first-child { text-align: left; }
+    .matriz-tabela input[type="checkbox"] { width: 17px; height: 17px; cursor: pointer; }
+    .matriz-modulo-label { font-weight: 600; }
+    .matriz-modulo-nota { display: block; font-size: var(--tamanho-xs); color: var(--cor-texto-sec); font-weight: 400; }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="main" id="conteudo-principal">
+    <p class="pagina-titulo">Permissões e Utilizadores</p>
+    <p class="pagina-subtitulo">Quem entra no sistema, o que cada nível pode fazer e o historial de acessos</p>
+
+    <div class="painel-abas" id="painel-abas">
+      <button class="btn btn-primario ativo" data-aba="utilizadores">Utilizadores</button>
+      <button class="btn btn-secundario" data-aba="permissoes">Permissões por Nível</button>
+      <button class="btn btn-secundario" data-aba="acessos">Registo de Acessos</button>
+      <button class="btn btn-secundario" data-aba="sistema" id="aba-sistema" style="display:none;">Sistema</button>
+    </div>
+
+    <!-- ============ ABA: UTILIZADORES ============ -->
+    <section id="aba-utilizadores">
+      <div class="painel">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <h2 class="painel-titulo" style="margin-bottom:0;">Contas com acesso</h2>
+          <button class="btn btn-ambar" id="btn-nova-conta">+ Nova Conta</button>
+        </div>
+        <div class="tabela-container mt-16">
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Nome</th>
+                <th>Cargo</th>
+                <th>Nível</th>
+                <th>Estado</th>
+                <th>Último Acesso</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbody-utilizadores">
+              <tr><td colspan="7" class="tabela-vazia">A carregar...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mini-aviso">
+          Desativar uma conta corta a sessão dela de imediato. O nível define o que a conta
+          pode fazer (ver a aba Permissões por Nível). A conta com senha a trocar entra e o
+          sistema pede logo uma senha nova.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ ABA: PERMISSÕES ============ -->
+    <section id="aba-permissoes" style="display:none;">
+      <div class="painel">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <h2 class="painel-titulo" style="margin-bottom:0;">O que cada nível pode fazer</h2>
+          <div class="form-grupo" style="margin:0;">
+            <select class="form-select" id="select-nivel" style="min-width:180px;">
+              <option value="gestor">Gestor</option>
+              <option value="operador">Operador</option>
+              <option value="consulta">Consulta</option>
+            </select>
+          </div>
+        </div>
+        <div class="tabela-container mt-16">
+          <table class="tabela matriz-tabela">
+            <thead>
+              <tr>
+                <th>Módulo</th>
+                <th>Ver</th>
+                <th>Criar</th>
+                <th>Editar</th>
+                <th>Apagar</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-matriz">
+              <tr><td colspan="5" class="tabela-vazia">A carregar...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-ambar" id="btn-guardar-matriz">Guardar Permissões</button>
+          <span class="mini-aviso" style="margin-top:0;" id="matriz-aviso">
+            O nível Admin tem sempre acesso total e não se edita aqui.
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ABA: ACESSOS ============ -->
+    <section id="aba-acessos" style="display:none;">
+      <div class="painel">
+        <h2 class="painel-titulo">Últimos 200 registos</h2>
+        <div class="tabela-container">
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th>Data e Hora</th>
+                <th>Código</th>
+                <th>Ação</th>
+                <th>Resultado</th>
+                <th>Detalhe</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-registos">
+              <tr><td colspan="5" class="tabela-vazia">A carregar...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ABA: SISTEMA ============ -->
+    <section id="aba-sistema-corpo" style="display:none;">
+      <div class="painel">
+        <h2 class="painel-titulo">Estado do sistema</h2>
+        <p class="mini-aviso" style="margin-top:0;">
+          Com o sistema bloqueado, só contas de administração conseguem entrar. Serve para
+          trancar tudo de imediato sem mexer nas contas (por exemplo, fora do horário ou
+          durante uma auditoria).
+        </p>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px;">
+          <span class="badge" id="badge-bloqueio">A carregar...</span>
+          <button class="btn btn-vermelho" id="btn-bloquear">Bloquear Sistema</button>
+          <button class="btn btn-verde" id="btn-desbloquear" style="display:none;">Desbloquear Sistema</button>
+        </div>
+      </div>
+
+      <div class="painel">
+        <h2 class="painel-titulo">Chave de administração</h2>
+        <p class="mini-aviso" style="margin-top:0;">
+          A chave é pedida nas ações sensíveis (criar contas, repor senhas, apagar,
+          alterar permissões, bloquear o sistema). Troca-a de vez em quando e não a
+          partilhes com quem não gerencia o hub.
+        </p>
+        <form id="form-chave" class="form-grid mt-16" style="grid-template-columns:1fr;max-width:420px;gap:12px;">
+          <div class="form-grupo">
+            <label class="form-label" for="chave-atual">Chave atual</label>
+            <input class="form-input" type="password" id="chave-atual" required autocomplete="off">
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="chave-nova">Chave nova</label>
+            <input class="form-input" type="password" id="chave-nova" required minlength="8" autocomplete="off">
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="chave-confirmar">Confirmar chave nova</label>
+            <input class="form-input" type="password" id="chave-confirmar" required minlength="8" autocomplete="off">
+          </div>
+          <div>
+            <button class="btn btn-primario" type="submit">Alterar Chave</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ MODAL: CONTA ============ -->
+  <div class="modal-fundo" id="modal-conta">
+    <div class="modal" style="max-width:520px;max-height:90vh;overflow-y:auto;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" id="modal-conta-titulo">Nova Conta</span>
+        <button class="modal-fechar" onclick="fecharModal('modal-conta')">&#10005;</button>
+      </div>
+      <div class="modal-corpo">
+        <input type="hidden" id="c-id" />
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-grupo">
+            <label class="form-label" for="c-usuario">Código de Utilizador</label>
+            <input class="form-input" type="text" id="c-usuario" placeholder="Ex: DM0013" required>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="c-nivel">Nível</label>
+            <select class="form-select" id="c-nivel">
+              <option value="admin">Admin (acesso total)</option>
+              <option value="gestor">Gestor</option>
+              <option value="operador">Operador</option>
+              <option value="consulta">Consulta (só ver)</option>
+            </select>
+          </div>
+          <div class="form-grupo" style="grid-column:1 / -1;">
+            <label class="form-label" for="c-nome">Nome completo</label>
+            <input class="form-input" type="text" id="c-nome" placeholder="Ex: Manuel Pedro Laice" required>
+          </div>
+          <div class="form-grupo" style="grid-column:1 / -1;">
+            <label class="form-label" for="c-cargo">Cargo</label>
+            <input class="form-input" type="text" id="c-cargo" placeholder="Ex: Fiel de Armazém">
+          </div>
+          <div class="form-grupo" style="grid-column:1 / -1;">
+            <label class="form-label" for="c-senha" id="c-senha-label">Senha inicial</label>
+            <input class="form-input" type="text" id="c-senha" placeholder="Pelo menos 6 caracteres" autocomplete="off">
+            <p class="mini-aviso" id="c-senha-nota" style="margin-top:6px;">
+              A pessoa vai ter de trocar esta senha no primeiro login.
+            </p>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="c-ativo">Estado da conta</label>
+            <select class="form-select" id="c-ativo">
+              <option value="true">Ativa</option>
+              <option value="false">Desativada</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-rodape" style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-secundario" onclick="fecharModal('modal-conta')">Cancelar</button>
+        <button class="btn btn-ambar" id="btn-guardar-conta">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: CHAVE DE ADMINISTRAÇÃO ============ -->
+  <div class="modal-fundo" id="modal-chave">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo">Confirmação de Administração</span>
+        <button class="modal-fechar" onclick="fecharModal('modal-chave')">&#10005;</button>
+      </div>
+      <div class="modal-corpo">
+        <p style="margin:0 0 12px;font-size:var(--tamanho-sm);color:var(--cor-texto-sec);" id="modal-chave-texto">
+          Para confirmar esta ação, escreve a chave de administração.
+        </p>
+        <div class="form-grupo">
+          <input class="form-input" type="password" id="modal-chave-input"
+                 placeholder="Chave de administração" autocomplete="off">
+        </div>
+      </div>
+      <div class="modal-rodape" style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-secundario" onclick="fecharModal('modal-chave')">Cancelar</button>
+        <button class="btn btn-ambar" id="btn-modal-chave-ok">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    /* ===== Constantes ===== */
+    var MODULOS_INFO = [
+      { id: 'inicio',        label: 'Painel Principal',       nota: 'KPIs centrais' },
+      { id: 'oficina',       label: 'Oficina & Manutenção',   nota: 'ordens, checklists, equipamentos' },
+      { id: 'stock',         label: 'Gestão de Stock',        nota: 'entradas, saídas, materiais' },
+      { id: 'hst',           label: 'Portal HST',             nota: 'acidentes, EPIs, saúde' },
+      { id: 'ferramentaria', label: 'Ferramentaria',          nota: 'inventário, empréstimos' },
+      { id: 'rh',            label: 'RH & Quadro de Pessoal', nota: 'colaboradores' },
+      { id: 'avaliacao',     label: 'Avaliação de Desempenho', nota: 'campanhas e fichas' },
+      { id: 'aquisicao',     label: 'Pedidos de Aquisição',   nota: 'pedidos e fornecedores' },
+      { id: 'ferias',        label: 'Plano de Férias',        nota: 'plano anual e folhas' },
+      { id: 'permissoes',    label: 'Permissões',             nota: 'gestão de contas e acesso' }
+    ];
+    var ACOES = ['ver', 'criar', 'editar', 'apagar'];
+    var ACAO_LABEL = {
+      login: 'Entrou no sistema', login_falhou: 'Tentativa de login falhada',
+      criar_utilizador: 'Criou conta', editar_utilizador: 'Editou conta',
+      apagar_utilizador: 'Apagou conta', redefinir_senha: 'Reposição de senha',
+      trocar_senha: 'Trocou a própria senha', matriz_atualizada: 'Atualizou permissões',
+      chave_admin_errada: 'Chave de administração errada', chave_alterada: 'Alterou a chave de administração',
+      bloquear_sistema: 'Bloqueou o sistema', desbloquear_sistema: 'Desbloqueou o sistema'
+    };
+    var NIVEL_LABEL = { admin: 'Admin', gestor: 'Gestor', operador: 'Operador', consulta: 'Consulta' };
+    var CHAVE_CACHE = 'dss_chave_admin';
+
+    var utilizadoresCache = [];
+
+    /* ===== Utilitários locais ===== */
+    function sessao() { return verificarSessao(); }
+
+    function msgErro(err) {
+      return (err && err.message) || 'Aconteceu um erro. Tenta de novo.';
+    }
+
+    function marcarAba(idBotao, ativo) {
+      var btn = document.querySelector('[data-aba="' + idBotao + '"]');
+      if (!btn) return;
+      btn.classList.remove('btn-primario', 'btn-secundario');
+      btn.classList.add(ativo ? 'btn-primario' : 'btn-secundario', 'ativo');
+    }
+
+    /* ===== Chave de administração (pedir a pedido, guardar na sessão) ===== */
+    var chavePendente = null;
+
+    function pedirChave() {
+      return new Promise(function (resolve) {
+        chavePendente = resolve;
+        document.getElementById('modal-chave-input').value = '';
+        abrirModal('modal-chave');
+        document.getElementById('modal-chave-input').focus();
+      });
+    }
+
+    function fecharChave(valor) {
+      fecharModal('modal-chave');
+      if (chavePendente) {
+        chavePendente(valor);
+        chavePendente = null;
+      }
+    }
+
+    document.getElementById('btn-modal-chave-ok').addEventListener('click', function () {
+      var chave = document.getElementById('modal-chave-input').value;
+      if (!chave) return;
+      try { sessionStorage.setItem(CHAVE_CACHE, chave); } catch (e) {}
+      fecharChave(chave);
+    });
+    document.getElementById('modal-chave-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('btn-modal-chave-ok').click();
+      }
+    });
+
+    /* Devolve a chave validada ou null (o utilizador cancelou) */
+    async function obterChave() {
+      var guardada = null;
+      try { guardada = sessionStorage.getItem(CHAVE_CACHE); } catch (e) {}
+      if (guardada) {
+        try {
+          var ok = await db.rpc('verificar_chave_admin', {
+            p_token: sessao().token, p_chave: guardada
+          });
+          if (ok === true) return guardada;
+        } catch (e) { /* chave antiga inválida: pedir de novo */ }
+      }
+      var pedida = await pedirChave();
+      if (!pedida) return null;
+      try {
+        var ok2 = await db.rpc('verificar_chave_admin', {
+          p_token: sessao().token, p_chave: pedida
+        });
+        if (ok2 === true) return pedida;
+      } catch (e) { /* segue */ }
+      mostrarToast('Chave de administração errada.', 'erro');
+      try { sessionStorage.removeItem(CHAVE_CACHE); } catch (e) {}
+      return null;
+    }
+
+    /* ===== Abas ===== */
+    document.querySelectorAll('[data-aba]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var alvo = btn.getAttribute('data-aba');
+        ['utilizadores', 'permissoes', 'acessos', 'sistema'].forEach(function (aba) {
+          var sec = document.getElementById(aba === 'sistema' ? 'aba-sistema-corpo' : 'aba-' + aba);
+          if (sec) sec.style.display = (aba === alvo) ? 'block' : 'none';
+        });
+        document.querySelectorAll('[data-aba]').forEach(function (b) {
+          b.classList.remove('btn-primario', 'btn-secundario', 'ativo');
+          b.classList.add(b === btn ? 'btn-primario' : 'btn-secundario', 'ativo');
+          if (b === btn) b.classList.add('ativo');
+        });
+        if (alvo === 'acessos') carregarRegistos();
+        if (alvo === 'sistema') carregarEstado();
+      });
+    });
+
+    /* ===== Utilizadores ===== */
+    async function carregarUtilizadores() {
+      var tbody = document.getElementById('tbody-utilizadores');
+      tbody.innerHTML = '<tr><td colspan="7" class="tabela-vazia">A carregar...</td></tr>';
+      try {
+        var lista = await db.rpc('listar_utilizadores', { p_token: sessao().token });
+        utilizadoresCache = lista || [];
+        if (!utilizadoresCache.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="tabela-vazia">Sem contas registadas.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = utilizadoresCache.map(function (u) {
+          var estado = u.ativo
+            ? (u.precisa_trocar ? '<span class="badge badge-aviso">Senha a trocar</span>'
+                                : '<span class="badge badge-sucesso">Ativa</span>')
+            : '<span class="badge badge-erro">Desativada</span>';
+          var ultimo = u.ultimo_acesso ? formataData(u.ultimo_acesso, true) : 'Nunca entrou';
+          return '<tr>' +
+            '<td><strong>' + escaparHTML(u.usuario) + '</strong></td>' +
+            '<td>' + escaparHTML(u.nome || '-') + '</td>' +
+            '<td>' + escaparHTML(u.cargo || '-') + '</td>' +
+            '<td>' + (NIVEL_LABEL[u.nivel] || u.nivel) + '</td>' +
+            '<td>' + estado + '</td>' +
+            '<td>' + ultimo + '</td>' +
+            '<td><div class="acoes-conta">' +
+              '<button class="btn btn-secundario btn-sm" onclick="abrirConta(\'' + u.id + '\')">Editar</button>' +
+              '<button class="btn btn-secundario btn-sm" onclick="reporSenha(\'' + u.id + '\')">Senha</button>' +
+              (u.id === sessao().id ? '' :
+                '<button class="btn btn-vermelho btn-sm" onclick="apagarConta(\'' + u.id + '\')">Apagar</button>') +
+            '</div></td>' +
+          '</tr>';
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="7" class="tabela-vazia">' + escaparHTML(msgErro(err)) + '</td></tr>';
+      }
+    }
+
+    function abrirModalConta(dados) {
+      document.getElementById('modal-conta-titulo').textContent = dados ? 'Editar Conta' : 'Nova Conta';
+      document.getElementById('c-id').value = dados ? dados.id : '';
+      document.getElementById('c-usuario').value = dados ? dados.usuario : '';
+      document.getElementById('c-nome').value = dados ? (dados.nome || '') : '';
+      document.getElementById('c-cargo').value = dados ? (dados.cargo || '') : '';
+      document.getElementById('c-nivel').value = dados ? dados.nivel : 'consulta';
+      document.getElementById('c-ativo').value = dados ? String(dados.ativo) : 'true';
+      document.getElementById('c-senha').value = '';
+      var nota = document.getElementById('c-senha-nota');
+      if (dados) {
+        document.getElementById('c-senha-label').textContent = 'Repôr senha (opcional)';
+        nota.textContent = 'Deixar vazio mantém a senha atual. Se preencheres, a pessoa tem de trocar no próximo login.';
+      } else {
+        document.getElementById('c-senha-label').textContent = 'Senha inicial';
+        nota.textContent = 'A pessoa vai ter de trocar esta senha no primeiro login.';
+      }
+      abrirModal('modal-conta');
+    }
+
+    window.abrirConta = function (id) {
+      var dados = utilizadoresCache.find(function (u) { return u.id === id; });
+      abrirModalConta(dados || null);
+    };
+
+    window.reporSenha = async function (id) {
+      var dados = utilizadoresCache.find(function (u) { return u.id === id; });
+      if (!dados) return;
+      var nova = window.prompt('Nova senha para ' + dados.usuario + ' (mínimo 6 caracteres):');
+      if (nova === null) return;
+      if (nova.length < 6) { mostrarToast('A senha precisa de ter pelo menos 6 caracteres.', 'erro'); return; }
+
+      var chave = await obterChave();
+      if (!chave) return;
+      try {
+        await db.rpc('guardar_utilizador', {
+          p_token: sessao().token, p_chave: chave, p_id: dados.id,
+          p_usuario: dados.usuario, p_nome: dados.nome, p_cargo: dados.cargo,
+          p_nivel: dados.nivel, p_ativo: dados.ativo, p_senha: nova
+        });
+        mostrarToast('Senha reposta. ' + dados.usuario + ' tem de trocar no próximo login.', 'sucesso');
+        carregarUtilizadores();
+      } catch (err) {
+        mostrarToast(msgErro(err), 'erro');
+      }
+    };
+
+    window.apagarConta = async function (id) {
+      var dados = utilizadoresCache.find(function (u) { return u.id === id; });
+      if (!dados) return;
+      if (!confirmarAcao('Apagar definitivamente a conta ' + dados.usuario + ' (' + (dados.nome || '') + ')?')) return;
+
+      var chave = await obterChave();
+      if (!chave) return;
+      try {
+        await db.rpc('apagar_utilizador', { p_token: sessao().token, p_chave: chave, p_id: id });
+        mostrarToast('Conta apagada.', 'sucesso');
+        carregarUtilizadores();
+      } catch (err) {
+        mostrarToast(msgErro(err), 'erro');
+      }
+    };
+
+    document.getElementById('btn-nova-conta').addEventListener('click', function () { abrirModalConta(null); });
+
+    document.getElementById('btn-guardar-conta').addEventListener('click', async function () {
+      var id = document.getElementById('c-id').value || null;
+      var usuario = document.getElementById('c-usuario').value.trim();
+      var nome = document.getElementById('c-nome').value.trim();
+      var cargo = document.getElementById('c-cargo').value.trim();
+      var nivel = document.getElementById('c-nivel').value;
+      var ativo = document.getElementById('c-ativo').value === 'true';
+      var senha = document.getElementById('c-senha').value;
+
+      if (!usuario || usuario.length < 3) { mostrarToast('O código precisa de ter pelo menos 3 caracteres.', 'erro'); return; }
+      if (!nome) { mostrarToast('Escreve o nome completo.', 'erro'); return; }
+      if (!id && senha.length < 6) { mostrarToast('Define uma senha inicial de pelo menos 6 caracteres.', 'erro'); return; }
+      if (id && senha && senha.length < 6) { mostrarToast('A senha nova precisa de ter pelo menos 6 caracteres.', 'erro'); return; }
+
+      var chave = await obterChave();
+      if (!chave) return;
+      try {
+        await db.rpc('guardar_utilizador', {
+          p_token: sessao().token, p_chave: chave,
+          p_id: id, p_usuario: usuario, p_nome: nome, p_cargo: cargo,
+          p_nivel: nivel, p_ativo: ativo, p_senha: senha || null
+        });
+        mostrarToast(id ? 'Conta atualizada.' : 'Conta criada.', 'sucesso');
+        fecharModal('modal-conta');
+        carregarUtilizadores();
+      } catch (err) {
+        mostrarToast(msgErro(err), 'erro');
+      }
+    });
+
+    /* ===== Matriz de permissões ===== */
+    function matrizAtual() {
+      return (window.__DH__ && window.__DH__.matriz) || [];
+    }
+
+    function renderMatriz() {
+      var nivel = document.getElementById('select-nivel').value;
+      var tbody = document.getElementById('tbody-matriz');
+      var m = matrizAtual();
+      tbody.innerHTML = MODULOS_INFO.map(function (mod) {
+        var celulas = ACOES.map(function (acao) {
+          var linha = m.find(function (p) {
+            return p.nivel === nivel && p.modulo === mod.id && p.acao === acao;
+          });
+          var marcado = linha ? linha.permitido === true : false;
+          return '<td><input type="checkbox" data-modulo="' + mod.id + '" data-acao="' + acao + '"' +
+                 (marcado ? ' checked' : '') + '></td>';
+        }).join('');
+        return '<tr>' +
+          '<td><span class="matriz-modulo-label">' + mod.label + '</span>' +
+          '<span class="matriz-modulo-nota">' + mod.nota + '</span></td>' +
+          celulas + '</tr>';
+      }).join('');
+    }
+
+    document.getElementById('select-nivel').addEventListener('change', renderMatriz);
+
+    document.getElementById('btn-guardar-matriz').addEventListener('click', async function () {
+      var nivel = document.getElementById('select-nivel').value;
+      var checkboxes = document.querySelectorAll('#tbody-matriz input[type="checkbox"]');
+      var itens = [];
+      checkboxes.forEach(function (cb) {
+        itens.push({ modulo: cb.getAttribute('data-modulo'), acao: cb.getAttribute('data-acao'), permitido: cb.checked });
+      });
+
+      var chave = await obterChave();
+      if (!chave) return;
+      try {
+        await db.rpc('guardar_matriz', {
+          p_token: sessao().token, p_chave: chave, p_nivel: nivel, p_itens: itens
+        });
+        /* Atualiza a matriz em memória para o menu refletir já as mudanças */
+        if (window.__DH__ && window.__DH__.matriz) {
+          window.__DH__.matriz = window.__DH__.matriz.filter(function (p) { return p.nivel !== nivel; })
+            .concat(itens.map(function (i) {
+              return { nivel: nivel, modulo: i.modulo, acao: i.acao, permitido: i.permitido };
+            }));
+        }
+        mostrarToast('Permissões do nível ' + (NIVEL_LABEL[nivel] || nivel) + ' guardadas.', 'sucesso');
+      } catch (err) {
+        mostrarToast(msgErro(err), 'erro');
+      }
+    });
+
+    /* ===== Registo de acessos ===== */
+    async function carregarRegistos() {
+      var tbody = document.getElementById('tbody-registos');
+      tbody.innerHTML = '<tr><td colspan="5" class="tabela-vazia">A carregar...</td></tr>';
+      try {
+        var lista = await db.rpc('listar_registos', { p_token: sessao().token });
+        if (!lista || !lista.length) {
+          tbody.innerHTML = '<tr><td colspan="5" class="tabela-vazia">Sem registos ainda.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = lista.map(function (r) {
+          var resultado = r.sucesso
+            ? '<span class="badge badge-sucesso">OK</span>'
+            : '<span class="badge badge-erro">Falhou</span>';
+          return '<tr>' +
+            '<td>' + formataData(r.criado_em, true) + '</td>' +
+            '<td><strong>' + escaparHTML(r.usuario || '-') + '</strong></td>' +
+            '<td>' + (ACAO_LABEL[r.acao] || escaparHTML(r.acao)) + '</td>' +
+            '<td>' + resultado + '</td>' +
+            '<td>' + escaparHTML(r.detalhe || '-') + '</td>' +
+          '</tr>';
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="5" class="tabela-vazia">' + escaparHTML(msgErro(err)) + '</td></tr>';
+      }
+    }
+
+    /* ===== Sistema: bloqueio e chave ===== */
+    var estadoBloqueado = false;
+
+    async function carregarEstado() {
+      try {
+        var estado = await db.rpc('obter_estado', { p_token: sessao().token });
+        estadoBloqueado = !!(estado && estado.bloqueado);
+        renderBloqueio();
+      } catch (err) {
+        mostrarToast(msgErro(err), 'erro');
+      }
+    }
+
+    function renderBloqueio() {
+      var badge = document.getElementById('badge-bloqueio');
+      var btnBloquear = document.getElementById('btn-bloquear');
+      var btnDesbloquear = document.getElementById('btn-desbloquear');
+      if (estadoBloqueado) {
+        badge.textContent = 'BLOQUEADO: só admins entram';
+        badge.className = 'badge badge-erro';
+        btnBloquear.style.display = 'none';
+        btnDesbloquear.style.display = 'inline-flex';
+      } else {
+        badge.textContent = 'Aberto: cada um entra com a sua conta';
+        badge.className = 'badge badge-sucesso';
+        btnBloquear.style.display = 'inline-flex';
+        btnDesbloquear.style.display = 'none';
+      }
+    }
+
+    async function alternarBloqueio(bloquear) {
+      if (bloquear && !confirmarAcao('Bloquear o sistema para todos, exceto administração?')) return;
+      var chave = await obterChave();
+      if (!chave) return;
+      try {
+        var res = await db.rpc('alternar_bloqueio', {
+          p_token: sessao().token, p_chave: chave, p_bloquear: bloquear
+        });
+        estadoBloqueado = !!(res && res.bloqueado);
+        renderBloqueio();
+        mostrarToast(bloquear ? 'Sistema bloqueado. As sessões dos outros níveis foram fechadas.' : 'Sistema desbloqueado.', 'sucesso');
+      } catch (err) {
+        mostrarToast(msgErro(err), 'erro');
+      }
+    }
+
+    document.getElementById('btn-bloquear').addEventListener('click', function () { alternarBloqueio(true); });
+    document.getElementById('btn-desbloquear').addEventListener('click', function () { alternarBloqueio(false); });
+
+    document.getElementById('form-chave').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var atual = document.getElementById('chave-atual').value;
+      var nova = document.getElementById('chave-nova').value;
+      var conf = document.getElementById('chave-confirmar').value;
+      if (!atual || !nova || !conf) { mostrarToast('Preenche os três campos.', 'erro'); return; }
+      if (nova.length < 8) { mostrarToast('A chave nova precisa de ter pelo menos 8 caracteres.', 'erro'); return; }
+      if (nova !== conf) { mostrarToast('A chave nova e a confirmação não são iguais.', 'erro'); return; }
+      try {
+        await db.rpc('alterar_chave_admin', { p_token: sessao().token, p_atual: atual, p_nova: nova });
+        try { sessionStorage.setItem(CHAVE_CACHE, nova); } catch (e2) {}
+        mostrarToast('Chave de administração alterada.', 'sucesso');
+        document.getElementById('form-chave').reset();
+      } catch (err) {
+        mostrarToast(msgErro(err), 'erro');
+      }
+    });
+
+    /* ===== Arranque ===== */
+    (async function iniciar() {
+      /* A aba Sistema e o acesso às contas são de administração */
+      var souAdmin = sessao() && sessao().nivel === 'admin';
+      if (souAdmin) {
+        document.getElementById('aba-sistema').style.display = 'inline-flex';
+      } else {
+        document.getElementById('btn-nova-conta').style.display = 'none';
+      }
+      renderMatriz();
+      carregarUtilizadores();
+    })();
+
+  })();
+  </script>
+</body>
+</html>

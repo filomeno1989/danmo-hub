@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Entradas — Gestão de Stock — Danmo Hub</title>
+  <title>Entradas - Gestão de Stock - Danmo Hub</title>
   <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/guard.js" data-modulo="stock"></script>
 </head>
 <body>
   <div id="navbar"></div>
@@ -201,7 +202,7 @@
         compradores = resultados[3];
         receptores = resultados[4];
 
-        preencherSelect('f-material', materiais, function (m) { return m.referencia + ' — ' + m.nome; }, function (m) { return m.id; }, '-- Seleccione --');
+        preencherSelect('f-material', materiais, function (m) { return m.referencia + ' - ' + m.nome; }, function (m) { return m.id; }, '-- Seleccione --');
         preencherSelect('f-fornecedor', fornecedores, function (f) { return f.nome; }, function (f) { return f.nome; }, '-- Seleccione --');
         preencherSelect('f-departamento', departamentos, function (d) { return d.nome; }, function (d) { return d.nome; }, '-- Seleccione --');
         preencherSelect('f-comprador', compradores, function (c) { return c.nome; }, function (c) { return c.nome; }, '-- Seleccione --');
@@ -232,7 +233,7 @@
       confirmadas = [];
       todos.forEach(function (m) {
         var mat = materiais.find(function (x) { return x.id === m.material_id; });
-        m._mat = mat ? (mat.referencia + ' — ' + mat.nome) : '—';
+        m._mat = mat ? (mat.referencia + ' - ' + mat.nome) : '-';
         m._unid = mat ? mat.unidade : '';
         if (m.estado === 'pendente') pendentes.push(m);
         if (m.estado === 'confirmado') confirmadas.push(m);
@@ -259,13 +260,13 @@
           '<td>' + formataData(m.data_movimento) + '</td>' +
           '<td><strong>' + m._mat + '</strong></td>' +
           '<td>' + fmtNum(m.quantidade) + '</td>' +
-          '<td>' + (m.preco_unitario ? fmtNum(m.preco_unitario) + ' MZN' : '—') + '</td>' +
-          '<td>' + (total ? fmtNum(total) + ' MZN' : '—') + '</td>' +
-          '<td>' + (m.fornecedor || '—') + '</td>' +
-          '<td>' + (m.numero_po || '—') + '</td>' +
-          '<td>' + (m.departamento || '—') + '</td>' +
-          '<td>' + (m.comprador_nome || '—') + '</td>' +
-          '<td>' + (m.observacoes || '—') + '</td>' +
+          '<td>' + (m.preco_unitario ? fmtNum(m.preco_unitario) + ' MZN' : '-') + '</td>' +
+          '<td>' + (total ? fmtNum(total) + ' MZN' : '-') + '</td>' +
+          '<td>' + (m.fornecedor || '-') + '</td>' +
+          '<td>' + (m.numero_po || '-') + '</td>' +
+          '<td>' + (m.departamento || '-') + '</td>' +
+          '<td>' + (m.comprador_nome || '-') + '</td>' +
+          '<td>' + (m.observacoes || '-') + '</td>' +
           '<td><div style="display:flex; gap:6px;">' +
             '<button class="btn btn-verde btn-sm" onclick="abrirModal(\'' + m.id + '\')">✅ Confirmar</button>' +
             '<button class="btn btn-secundario btn-sm" onclick="eliminarPendente(\'' + m.id + '\')">🗑</button>' +
@@ -294,14 +295,14 @@
           '<td><strong>' + m._mat + '</strong></td>' +
           '<td style="color:var(--cor-sucesso); font-weight:700;">' + fmtNum(m.quantidade) + '</td>' +
           '<td>' + m._unid + '</td>' +
-          '<td>' + (m.preco_unitario ? fmtNum(m.preco_unitario) + ' MZN' : '—') + '</td>' +
-          '<td style="color:var(--cor-ambar); font-weight:700;">' + (total ? fmtNum(total) + ' MZN' : '—') + '</td>' +
-          '<td>' + (m.fornecedor || '—') + '</td>' +
-          '<td>' + (m.numero_po || '—') + '</td>' +
-          '<td>' + (m.departamento || '—') + '</td>' +
-          '<td>' + (m.comprador_nome || '—') + '</td>' +
-          '<td>' + (m.recebedor_nome || '—') + '</td>' +
-          '<td>' + (m.observacoes || '—') + '</td>' +
+          '<td>' + (m.preco_unitario ? fmtNum(m.preco_unitario) + ' MZN' : '-') + '</td>' +
+          '<td style="color:var(--cor-ambar); font-weight:700;">' + (total ? fmtNum(total) + ' MZN' : '-') + '</td>' +
+          '<td>' + (m.fornecedor || '-') + '</td>' +
+          '<td>' + (m.numero_po || '-') + '</td>' +
+          '<td>' + (m.departamento || '-') + '</td>' +
+          '<td>' + (m.comprador_nome || '-') + '</td>' +
+          '<td>' + (m.recebedor_nome || '-') + '</td>' +
+          '<td>' + (m.observacoes || '-') + '</td>' +
         '</tr>';
       }).join('');
     }

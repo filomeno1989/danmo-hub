@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Danmo Service System, Lda — Login</title>
+  <title>Danmo Service System, Lda - Login</title>
   <link rel="icon" href="shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="shared/style.css">
   <script src="shared/supabase.js"></script>
@@ -60,6 +60,16 @@
       display: none;
     }
     .login-erro.visivel { display: block; }
+    .login-info {
+      background: var(--cor-info-bg, rgba(59,130,246,0.08));
+      color: var(--cor-info, #2563EB);
+      padding: 10px 14px;
+      border-radius: var(--raio-md);
+      font-size: var(--tamanho-sm);
+      margin-bottom: 16px;
+      display: none;
+    }
+    .login-info.visivel { display: block; }
     .login-rodape { text-align: center; margin-top: 20px; font-size: var(--tamanho-xs); color: var(--cor-texto-sec); }
     .login-tema-btn {
       position: absolute; top: 16px; right: 16px; z-index: 10;
@@ -73,6 +83,14 @@
       transition: all var(--transicao);
     }
     .login-tema-btn:hover { background: rgba(255,255,255,0.2); border-color: var(--cor-ambar); color: var(--cor-ambar); }
+    .login-titulo-form { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; color: var(--cor-texto); }
+    .login-subtitulo-form { font-size: var(--tamanho-sm); color: var(--cor-texto-sec); margin-bottom: 18px; }
+    .login-sair { text-align: center; margin-top: 14px; }
+    .login-sair button {
+      background: none; border: none; color: var(--cor-texto-sec);
+      cursor: pointer; font-size: var(--tamanho-sm); text-decoration: underline;
+    }
+    .login-sair button:hover { color: var(--cor-erro); }
   </style>
 </head>
 <body>
@@ -84,7 +102,11 @@
         <h1>Danmo Service System, Lda</h1>
         <p>Porto da Beira, Moçambique</p>
       </div>
+
       <div class="login-erro" id="login-erro" role="alert"></div>
+      <div class="login-info" id="login-info"></div>
+
+      <!-- Formulário de entrada -->
       <form class="login-form" id="form-login" novalidate>
         <div class="form-grupo">
           <label class="form-label" for="login-codigo">Código de Utilizador</label>
@@ -98,50 +120,153 @@
         </div>
         <button class="btn btn-ambar login-btn" type="submit" id="btn-login">Entrar no Sistema</button>
       </form>
+
+      <!-- Troca obrigatória de senha (primeiro acesso ou senha reposta) -->
+      <form class="login-form" id="form-trocar" novalidate style="display:none;">
+        <p class="login-titulo-form">Define a tua nova senha</p>
+        <p class="login-subtitulo-form">Por segurança, tens de trocar a senha antes de continuar.</p>
+        <div class="form-grupo">
+          <label class="form-label" for="trocar-atual">Senha atual</label>
+          <input class="form-input" type="password" id="trocar-atual"
+                 placeholder="A senha que recebeste" required autocomplete="current-password">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="trocar-nova">Nova senha</label>
+          <input class="form-input" type="password" id="trocar-nova"
+                 placeholder="Pelo menos 6 caracteres" required minlength="6" autocomplete="new-password">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" for="trocar-confirmar">Confirmar nova senha</label>
+          <input class="form-input" type="password" id="trocar-confirmar"
+                 placeholder="Repete a nova senha" required minlength="6" autocomplete="new-password">
+        </div>
+        <button class="btn btn-ambar login-btn" type="submit" id="btn-trocar">Guardar Nova Senha</button>
+        <div class="login-sair">
+          <button type="button" id="btn-trocar-sair">Sair da sessão</button>
+        </div>
+      </form>
+
       <div class="login-rodape">Danmo Service System, Lda &copy; 2026</div>
     </div>
   </div>
-  <script src="shared/utils.js"></script>
   <script src="shared/auth.js"></script>
   <script>
-    /* Se já logado, redirecionar */
-    if (typeof verificarSessao === 'function' && verificarSessao()) {
-      window.location.replace('index.html');
-    }
-    /* Tema */
-    document.getElementById('btn-tema').addEventListener('click', function() { alternarTema(); });
-    /* Login */
-    document.getElementById('form-login').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var codigo = document.getElementById('login-codigo').value;
-      var senha = document.getElementById('login-senha').value;
+    (function () {
+      'use strict';
+
+      var formLogin = document.getElementById('form-login');
+      var formTrocar = document.getElementById('form-trocar');
       var erroEl = document.getElementById('login-erro');
-      var btnLogin = document.getElementById('btn-login');
-      if (!codigo || !senha) {
-        erroEl.textContent = 'Preencha o código e a senha.';
+      var infoEl = document.getElementById('login-info');
+
+      function mostrarErro(texto) {
+        erroEl.textContent = texto;
         erroEl.classList.add('visivel');
+      }
+      function limparErro() { erroEl.classList.remove('visivel'); }
+      function mostrarInfo(texto) {
+        infoEl.textContent = texto;
+        infoEl.classList.add('visivel');
+      }
+      function botao(btn, aCarregar, textoNormal) {
+        btn.disabled = aCarregar;
+        btn.textContent = aCarregar ? 'Aguarde...' : textoNormal;
+      }
+
+      /* Mensagens vindas do guard (sessão expirada, sistema bloqueado) */
+      var params = new URLSearchParams(window.location.search);
+      var motivo = params.get('motivo');
+      if (motivo === 'expirada') mostrarInfo('A tua sessão terminou. Entra de novo.');
+      if (motivo === 'bloqueado') mostrarInfo('O sistema está bloqueado temporariamente pela administração.');
+
+      /* Se já existe sessão válida:
+         - precisa trocar senha -> modo trocar
+         - senão -> direto ao painel */
+      var sessao = verificarSessao();
+      var modoTrocar = params.get('trocar') === '1' || (sessao && sessao.precisa_trocar);
+
+      if (modoTrocar && sessao) {
+        formLogin.style.display = 'none';
+        formTrocar.style.display = 'block';
+        document.getElementById('trocar-atual').focus();
+      } else if (sessao && !sessao.precisa_trocar) {
+        window.location.replace('index.html');
         return;
       }
-      btnLogin.disabled = true;
-      btnLogin.textContent = 'A verificar...';
-      erroEl.classList.remove('visivel');
-      iniciarSessao(codigo, senha).then(function(resultado) {
-        if (resultado.sucesso) {
-          window.location.replace('index.html');
-        } else {
-          erroEl.textContent = resultado.erro;
-          erroEl.classList.add('visivel');
-          btnLogin.disabled = false;
-          btnLogin.textContent = 'Entrar no Sistema';
-          document.getElementById('login-codigo').focus();
+
+      /* Tema */
+      document.getElementById('btn-tema').addEventListener('click', function () { alternarTema(); });
+
+      /* ===== Entrar ===== */
+      formLogin.addEventListener('submit', function (e) {
+        e.preventDefault();
+        limparErro();
+        var codigo = document.getElementById('login-codigo').value;
+        var senha = document.getElementById('login-senha').value;
+        var btnLogin = document.getElementById('btn-login');
+        if (!codigo || !senha) {
+          mostrarErro('Preenche o código e a senha.');
+          return;
         }
-      }).catch(function() {
-        erroEl.textContent = 'Erro de ligação ao servidor. Tente novamente.';
-        erroEl.classList.add('visivel');
-        btnLogin.disabled = false;
-        btnLogin.textContent = 'Entrar no Sistema';
+        botao(btnLogin, true, 'Entrar no Sistema');
+        iniciarSessao(codigo, senha).then(function (resultado) {
+          if (resultado.sucesso) {
+            if (resultado.utilizador.precisa_trocar) {
+              window.location.replace('login.html?trocar=1');
+            } else {
+              window.location.replace('index.html');
+            }
+          } else {
+            mostrarErro(resultado.erro);
+            botao(btnLogin, false, 'Entrar no Sistema');
+            document.getElementById('login-codigo').focus();
+          }
+        });
       });
-    });
+
+      /* ===== Trocar senha obrigatória ===== */
+      formTrocar.addEventListener('submit', function (e) {
+        e.preventDefault();
+        limparErro();
+        var atual = document.getElementById('trocar-atual').value;
+        var nova = document.getElementById('trocar-nova').value;
+        var confirmar = document.getElementById('trocar-confirmar').value;
+        var btn = document.getElementById('btn-trocar');
+
+        if (!atual || !nova || !confirmar) {
+          mostrarErro('Preenche os três campos.');
+          return;
+        }
+        if (nova.length < 6) {
+          mostrarErro('A nova senha precisa de ter pelo menos 6 caracteres.');
+          return;
+        }
+        if (nova !== confirmar) {
+          mostrarErro('A nova senha e a confirmação não são iguais.');
+          return;
+        }
+        if (nova === atual) {
+          mostrarErro('A nova senha não pode ser igual à atual.');
+          return;
+        }
+
+        botao(btn, true, 'Guardar Nova Senha');
+        trocarPropriaSenha(atual, nova).then(function (resultado) {
+          if (resultado.sucesso) {
+            window.location.replace('index.html');
+          } else {
+            mostrarErro(resultado.erro);
+            botao(btn, false, 'Guardar Nova Senha');
+          }
+        });
+      });
+
+      /* Sair no modo trocar (por exemplo, era outra pessoa no computador) */
+      document.getElementById('btn-trocar-sair').addEventListener('click', function () {
+        localStorage.removeItem('dss_user');
+        window.location.replace('login.html');
+      });
+    })();
   </script>
 </body>
 </html>

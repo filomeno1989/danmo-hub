@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Checklist de Manutenção — Danmo Oficina</title>
+  <title>Checklist de Manutenção - Danmo Oficina</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <link rel="stylesheet" href="../shared/oficina.css" />
   <style>
@@ -34,7 +34,7 @@
 
     /* O .ck-header não é .card nem .modal-box, por isso os estilos de
        formulário do oficina.css (fundo escuro, largura 100%, label em
-       maiúsculas) não chegam aqui por defeito — repõem-se só para esta
+       maiúsculas) não chegam aqui por defeito - repõem-se só para esta
        caixa, sem mexer no ficheiro partilhado. */
     .ck-header .form-group { display:flex; flex-direction:column; gap:6px; }
     .ck-header .form-group label {
@@ -113,6 +113,7 @@
     }
     .save-flash.show { opacity:1; transform:translateY(0); }
   </style>
+  <script src="../shared/guard.js" data-modulo="oficina"></script>
 </head>
 <body>
   <div id="navbar" class="navbar"></div>
@@ -126,10 +127,10 @@
     <div class="ck-header mt-16">
       <div class="ck-header-top">
         <div>
-          <div class="ck-title" id="ck-titulo">—</div>
-          <div class="ck-sub" id="ck-subtitulo">—</div>
+          <div class="ck-title" id="ck-titulo">-</div>
+          <div class="ck-sub" id="ck-subtitulo">-</div>
         </div>
-        <span class="ck-ref-badge" id="ck-ref">—</span>
+        <span class="ck-ref-badge" id="ck-ref">-</span>
       </div>
 
       <div class="ck-progress-wrap">
@@ -143,8 +144,8 @@
       </div>
 
       <div class="ck-legenda">
-        <span><strong style="color:var(--green)">Sim / Não</strong> — o item foi executado?</span>
-        <span><strong style="color:var(--amber)">Bom / Danificado</strong> — estado encontrado</span>
+        <span><strong style="color:var(--green)">Sim / Não</strong> - o item foi executado?</span>
+        <span><strong style="color:var(--amber)">Bom / Danificado</strong> - estado encontrado</span>
       </div>
 
       <div class="ck-dados-form">
@@ -170,11 +171,11 @@
         </div>
         <div class="form-group">
           <label>Executante</label>
-          <select id="d-executante"><option value="">— Selecionar —</option></select>
+          <select id="d-executante"><option value="">- Selecionar -</option></select>
         </div>
         <div class="form-group">
           <label>Encarregado</label>
-          <select id="d-encarregado"><option value="">— Selecionar —</option></select>
+          <select id="d-encarregado"><option value="">- Selecionar -</option></select>
         </div>
         <div class="form-group" style="align-self:flex-end">
           <button class="btn btn-primary btn-sm" id="btn-guardar-cabecalho">Guardar Dados</button>
@@ -242,13 +243,13 @@
 
       if (checklistAtual.os_id) document.getElementById('btn-voltar-os').href = `os_detalhe.html?id=${checklistAtual.os_id}`;
 
-      document.getElementById('ck-titulo').textContent = templateAtual ? templateAtual.nome : '—';
+      document.getElementById('ck-titulo').textContent = templateAtual ? templateAtual.nome : '-';
       document.getElementById('ck-subtitulo').textContent =
-        `${equipRelacionado ? equipRelacionado.code : ''} — Obra ${osRelacionada ? (osRelacionada.numero_obra || 'S/Nº') : '—'}`;
-      document.getElementById('ck-ref').textContent = templateAtual ? templateAtual.ref_versao : '—';
+        `${equipRelacionado ? equipRelacionado.code : ''} - Obra ${osRelacionada ? (osRelacionada.numero_obra || 'S/Nº') : '-'}`;
+      document.getElementById('ck-ref').textContent = templateAtual ? templateAtual.ref_versao : '-';
 
-      document.getElementById('d-numero-obra-info').value = checklistAtual.numero_obra || '—';
-      document.getElementById('d-horas-equip-info').value = checklistAtual.horas_equipamento != null ? checklistAtual.horas_equipamento + ' h' : '—';
+      document.getElementById('d-numero-obra-info').value = checklistAtual.numero_obra || '-';
+      document.getElementById('d-horas-equip-info').value = checklistAtual.horas_equipamento != null ? checklistAtual.horas_equipamento + ' h' : '-';
       document.getElementById('d-data-revisao').value    = checklistAtual.data_revisao || '';
       document.getElementById('d-horas-trabalho').value  = checklistAtual.horas_trabalho || '';
       document.getElementById('d-folha').value           = checklistAtual.folha_numero || '';

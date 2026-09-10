@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Empréstimos — Ferramentaria — Danmo Hub</title>
+  <title>Empréstimos - Ferramentaria - Danmo Hub</title>
   
   <!-- CSS Global do Danmo Hub -->
   <link rel="stylesheet" href="../shared/style.css" />
@@ -62,6 +62,7 @@
     .autocomplete-item:hover small,
     .autocomplete-item.active small { color: rgba(255,255,255,0.7); }
   </style>
+  <script src="../shared/guard.js" data-modulo="ferramentaria"></script>
 </head>
 <body>
   <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
@@ -100,12 +101,12 @@
           </div>
           <div class="form-grupo">
             <label class="form-label" for="f-os">Nº da Obra / OS</label>
-            <input class="form-input" type="text" id="f-os" placeholder="Opcional — se existir, o equipamento é preenchido automaticamente" />
+            <input class="form-input" type="text" id="f-os" placeholder="Opcional - se existir, o equipamento é preenchido automaticamente" />
             <span id="f-os-status" style="font-size:var(--tamanho-xs);color:var(--cor-texto-sec);display:block;margin-top:4px;"></span>
           </div>
           <div class="form-grupo">
             <label class="form-label" for="f-equip">Equipamento</label>
-            <input class="form-input" type="text" id="f-equip" placeholder="Opcional — preenchido automaticamente se a OS for reconhecida" />
+            <input class="form-input" type="text" id="f-equip" placeholder="Opcional - preenchido automaticamente se a OS for reconhecida" />
           </div>
           <div class="form-grupo">
             <label class="form-label" for="f-prazo">Prazo de Devolução</label>
@@ -232,7 +233,7 @@
 
     /* ── Helpers ── */
     function diasDesde(dateStr) {
-      if (!dateStr) return '—';
+      if (!dateStr) return '-';
       return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
     }
 
@@ -323,14 +324,14 @@
         var quantidadeTotal = tool.quantidade || 1;
 
         document.getElementById('indisp-titulo').textContent =
-          tool.code + ' — ' + tool.nome;
+          tool.code + ' - ' + tool.nome;
         document.getElementById('indisp-resumo').textContent =
           'Sem unidades disponíveis (' + emprestimosAtivos.length + '/' + quantidadeTotal + ' emprestadas). ' +
           (emprestimosAtivos.length > 1 ? 'Está com:' : 'Está com:');
 
         var listaEl = document.getElementById('indisp-lista');
         listaEl.innerHTML = emprestimosAtivos.map(function (m) {
-          var dataSaida = m.data_saida ? formatarData(m.data_saida, true) : '—';
+          var dataSaida = m.data_saida ? formatarData(m.data_saida, true) : '-';
           var maquinaLinha = m.equipamento_id
             ? '<div style="margin-top:4px;"><strong>Máquina/Equipamento:</strong> ' + m.equipamento_id + '</div>'
             : '';
@@ -340,7 +341,7 @@
           return '' +
             '<div style="background:var(--cor-erro-bg);border:1px solid var(--cor-erro);border-radius:var(--raio-md);padding:14px;margin-bottom:10px;">' +
               '<div style="font-weight:700;color:var(--cor-erro);font-size:1rem;">' + (m.colaborador || 'Colaborador não identificado') + '</div>' +
-              '<div style="margin-top:4px;"><strong>Departamento:</strong> ' + (m.departamento || '—') + '</div>' +
+              '<div style="margin-top:4px;"><strong>Departamento:</strong> ' + (m.departamento || '-') + '</div>' +
               maquinaLinha +
               osLinha +
               '<div style="margin-top:4px;color:var(--cor-texto-sec);font-size:var(--tamanho-sm);">Levantou em: ' + dataSaida + '</div>' +
@@ -379,7 +380,7 @@
            definitiva (que também cobre quantidade > 1) acontece ao submeter
            o formulário, contra a base de dados em tempo real. */
         var esgotadaProvavel = t.estado === 'emprestado' && (t.quantidade || 1) <= 1;
-        var aviso = esgotadaProvavel ? ' <span style="color:var(--cor-erro);font-weight:700;">— provavelmente indisponível</span>' : '';
+        var aviso = esgotadaProvavel ? ' <span style="color:var(--cor-erro);font-weight:700;">- provavelmente indisponível</span>' : '';
         html += '<div class="autocomplete-item" data-code="' + t.code + '" data-index="' + i + '">' + t.code + ' <small>' + t.nome + ' (' + t.estado + ')</small>' + aviso + '</div>';
       });
       fAutoList.innerHTML = html;
@@ -475,17 +476,17 @@
             ? '<span style="color: var(--cor-erro); font-weight: 700;">' + fmtDias(dias) + '</span>'
             : fmtDias(dias);
 
-          var prazoHtml = m.prazo_devolucao ? formatarData(m.prazo_devolucao) : '—';
+          var prazoHtml = m.prazo_devolucao ? formatarData(m.prazo_devolucao) : '-';
 
           var estadoBadge = atraso
             ? '<span class="badge badge-erro">ATRASADA</span>'
             : '<span class="badge badge-aviso">Pendente</span>';
 
           tr.innerHTML =
-            '<td>' + (tool.code || '—') + '</td>' +
-            '<td>' + (tool.nome || '—') + '</td>' +
-            '<td>' + (m.colaborador || '—') + '</td>' +
-            '<td>' + (m.departamento || '—') + '</td>' +
+            '<td>' + (tool.code || '-') + '</td>' +
+            '<td>' + (tool.nome || '-') + '</td>' +
+            '<td>' + (m.colaborador || '-') + '</td>' +
+            '<td>' + (m.departamento || '-') + '</td>' +
             '<td>' + formatarData(m.data_saida) + '</td>' +
             '<td>' + prazoHtml + '</td>' +
             '<td>' + diasHtml + '</td>' +
@@ -533,7 +534,7 @@
         return;
       }
 
-      /* Verificação REAL de disponibilidade — contra a base de dados,
+      /* Verificação REAL de disponibilidade - contra a base de dados,
          não contra a cache local (evita que duas pessoas "levem" a
          mesma ferramenta ao mesmo tempo). Cobre quantidade > 1 também. */
       var btnSubmit = this.querySelector('button[type="submit"]');
@@ -570,7 +571,7 @@
         });
 
         /* Só marcamos o estado global "emprestado" quando é a última unidade
-           a sair — para ferramentas com quantidade > 1 o 'estado' não é um
+           a sair - para ferramentas com quantidade > 1 o 'estado' não é um
            bom indicador de disponibilidade (não representa "3 de 5 fora"),
            por isso não o tocamos nesse caso. */
         if (quantidadeTotal - quantidadeEmprestada <= 1) {
@@ -616,7 +617,7 @@
       var toolCode = link.dataset.toolCode;
       var toolNome = link.dataset.toolNome;
       var colab = link.dataset.colab;
-      modalInfo.textContent = toolCode + ' — ' + toolNome + ' | Colaborador: ' + colab;
+      modalInfo.textContent = toolCode + ' - ' + toolNome + ' | Colaborador: ' + colab;
       document.getElementById('d-estado').value = '';
       document.getElementById('d-recebido').value = '';
       document.getElementById('d-obs').value = '';
@@ -701,7 +702,7 @@
             estado_reportado: estadoVoltar,
             status: 'reportado',
             colaborador: mov.colaborador,
-            observacoes: obsDev || 'Devolução com problema — ' + estadoVoltar,
+            observacoes: obsDev || 'Devolução com problema - ' + estadoVoltar,
             created_at: new Date().toISOString()
           });
         }
@@ -759,7 +760,7 @@
           var ordem = (ordens || [])[0];
 
           if (!ordem || !ordem.equipment_id) {
-            statusEl.textContent = 'OS não reconhecida — preencha o equipamento manualmente.';
+            statusEl.textContent = 'OS não reconhecida - preencha o equipamento manualmente.';
             equipEl.readOnly = false;
             return;
           }
@@ -767,17 +768,17 @@
           var equipamentos = await db.query('equipment', 'select=code,name&id=eq.' + ordem.equipment_id);
           var equip = (equipamentos || [])[0];
           if (equip) {
-            equipEl.value = equip.code + ' — ' + equip.name;
+            equipEl.value = equip.code + ' - ' + equip.name;
             equipEl.readOnly = true;
             equipEl.classList.add('campo-auto-preenchido');
-            statusEl.textContent = '✓ OS reconhecida — equipamento preenchido automaticamente.';
+            statusEl.textContent = '✓ OS reconhecida - equipamento preenchido automaticamente.';
             statusEl.style.color = 'var(--cor-sucesso)';
           }
         } catch (err) {
           console.error('Erro ao procurar OS:', err);
-          statusEl.textContent = 'Erro ao procurar OS — preencha o equipamento manualmente.';
+          statusEl.textContent = 'Erro ao procurar OS - preencha o equipamento manualmente.';
         }
-      }, 500); // debounce — só procura 500ms depois de parar de escrever
+      }, 500); // debounce - só procura 500ms depois de parar de escrever
     });
   </script>
 </body>

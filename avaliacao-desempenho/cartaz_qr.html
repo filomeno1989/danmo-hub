@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cartaz QR — Portal de Avaliação — Danmo Service System</title>
+  <title>Cartaz QR - Portal de Avaliação - Danmo Service System</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; background: #E5E7EB; color: #1E293B; }
@@ -64,7 +64,7 @@
 
   <div class="barra-controlo">
     <div>
-      <h1 id="titulo-barra">Cartaz QR — Portal de Avaliação</h1>
+      <h1 id="titulo-barra">Cartaz QR - Portal de Avaliação</h1>
       <p id="sub-barra">Imprime e cola na vitrine / mural, para qualquer colega poder ler com o telemóvel.</p>
     </div>
     <div style="display:flex;gap:10px;align-items:center;">
@@ -89,7 +89,7 @@
       <li>Aponte a câmara para o QR Code (não precisa de app extra)</li>
       <li>Escreva o seu <strong>código de colaborador</strong> (ex: DM0013)</li>
       <li>Escreva a sua <strong>data de nascimento</strong> (a mesma da sua ficha)</li>
-      <li>Preencha a sua avaliação — leva 2 a 3 minutos</li>
+      <li>Preencha a sua avaliação - leva 2 a 3 minutos</li>
     </ol>
 
     <div class="url-fallback" id="url-fallback"></div>
@@ -106,7 +106,7 @@
       var p = mes.split('-');
       var nomeMes = (mesesPt[p[1]] || p[1]) + ' ' + p[0];
       document.getElementById('mes-campanha').textContent = 'Campanha de ' + nomeMes;
-      document.getElementById('titulo-barra').textContent = 'Cartaz QR — ' + nomeMes;
+      document.getElementById('titulo-barra').textContent = 'Cartaz QR - ' + nomeMes;
     } else {
       document.getElementById('mes-campanha').textContent = 'Campanha em curso';
     }

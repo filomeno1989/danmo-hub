@@ -1,12 +1,12 @@
 /**
- * utils.js — Funções utilitárias unificadas (Danmo Hub)
+ * utils.js - Funções utilitárias unificadas (Danmo Hub)
  * Todas as 7 aplicações usam ESTE ficheiro.
  * Função de toast: mostrarToast (nome único, corrigido dos 3 nomes diferentes)
  * Última atualização: 2026-08-11
  */
 
 /* ═══════════════════════════════════════════════
-   TOAST — Notificações
+   TOAST - Notificações
    ═══════════════════════════════════════════════ */
 
 /**
@@ -83,7 +83,7 @@ function removerToast(el) {
  * @returns {string} Data formatada: '11/08/2026' ou '11/08/2026 14:30'
  */
 function formataData(dataISO, comHora) {
-  if (!dataISO) return '—';
+  if (!dataISO) return '-';
   var d = new Date(dataISO);
   if (isNaN(d.getTime())) return dataISO;
   var dia = String(d.getDate()).padStart(2, '0');
@@ -101,9 +101,9 @@ function formataData(dataISO, comHora) {
  * Formata hora only: '14:30'
  */
 function formataHora(dataISO) {
-  if (!dataISO) return '—';
+  if (!dataISO) return '-';
   var d = new Date(dataISO);
-  if (isNaN(d.getTime())) return '—';
+  if (isNaN(d.getTime())) return '-';
   return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
 
@@ -294,7 +294,7 @@ function hoje() { return dataHojeISO(); }
 // (intervenções, mudanças de estado, trocas de checklist) em os_detalhe.html.
 function dataHoje() { return dataHojeISO(); }
 function formatarDataHora(d) {
-  if (!d) return '—';
+  if (!d) return '-';
   var dt = new Date(d);
   if (isNaN(dt.getTime())) return d;
   return dt.toLocaleString('pt-MZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -403,7 +403,7 @@ function proximoNumero(tipo, lista) {
 
 /**
  * Seletor de Colaborador com pesquisa por nome ou código (autocomplete).
- * MESMO padrão já usado em oficina/os_detalhe.html — generalizado para
+ * MESMO padrão já usado em oficina/os_detalhe.html - generalizado para
  * poder ser usado em qualquer módulo do Hub.
  *
  * Requer no HTML:
@@ -468,7 +468,7 @@ async function criarSeletorColaborador({ inputId, dropdownId, hiddenId, chipId, 
       ? matches.map(function (c) {
           const nomeAttr = c.name.replace(/"/g, '&quot;');
           return '<div class="tech-option" data-nome="' + nomeAttr + '" data-codigo="' + (c.code || '') + '">' +
-                 c.name + (c.code ? ' (' + c.code + ')' : '') + (c.setor ? ' — ' + c.setor : '') + '</div>';
+                 c.name + (c.code ? ' (' + c.code + ')' : '') + (c.setor ? ' - ' + c.setor : '') + '</div>';
         }).join('')
       : '<div class="tech-option text-muted">Nenhum resultado.</div>';
     ddEl.classList.add('open');

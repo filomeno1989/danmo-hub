@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Relatorio de Acidente — HST — Danmo Hub</title>
+  <title>Relatorio de Acidente - HST - Danmo Hub</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 12px; color: #2C3E50; background: #F4F6F9; }
@@ -54,6 +54,7 @@
       @page { size: A4; margin: 10mm; }
     }
   </style>
+  <script src="../shared/guard.js" data-modulo="hst"></script>
 </head>
 <body>
   <div class="loading" id="loading">A carregar relatorio...</div>
@@ -69,7 +70,7 @@
   <script src="../shared/utils.js"></script>
 
   <script>
-  function formataData(d, h) { if (!d) return '—'; var dt = new Date(d); if (isNaN(dt)) return d; var dia = String(dt.getDate()).padStart(2,'0'); var mes = String(dt.getMonth()+1).padStart(2,'0'); var ano = dt.getFullYear(); if (h) return dia+'/'+mes+'/'+ano+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0'); return dia+'/'+mes+'/'+ano; }
+  function formataData(d, h) { if (!d) return '-'; var dt = new Date(d); if (isNaN(dt)) return d; var dia = String(dt.getDate()).padStart(2,'0'); var mes = String(dt.getMonth()+1).padStart(2,'0'); var ano = dt.getFullYear(); if (h) return dia+'/'+mes+'/'+ano+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0'); return dia+'/'+mes+'/'+ano; }
   function escaparHTML(s) { if (!s) return ''; var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
 
   (async function() {
@@ -88,7 +89,7 @@
           '<table class="tabela-acoes"><thead><tr><th>#</th><th>Accao</th><th>Responsavel</th><th>Prazo</th><th>Status</th></tr></thead><tbody>';
         acoes.forEach(function(ac, i) {
           var atrasada = ac.status !== 'Concluida' && ac.prazo && new Date(ac.prazo) < new Date();
-          acoesHtml += '<tr><td>' + (i+1) + '</td><td>' + escaparHTML(ac.descricao_acao) + '</td><td>' + escaparHTML(ac.responsavel) + '</td><td>' + formataData(ac.prazo) + (atrasada ? ' <strong style="color:red;">ATRASADA</strong>' : '') + '</td><td>' + (ac.status || '—') + '</td></tr>';
+          acoesHtml += '<tr><td>' + (i+1) + '</td><td>' + escaparHTML(ac.descricao_acao) + '</td><td>' + escaparHTML(ac.responsavel) + '</td><td>' + formataData(ac.prazo) + (atrasada ? ' <strong style="color:red;">ATRASADA</strong>' : '') + '</td><td>' + (ac.status || '-') + '</td></tr>';
         });
         acoesHtml += '</tbody></table></div>';
       }
@@ -109,18 +110,18 @@
           '<div class="cabecalho-centro"><div class="cabecalho-titulo">Relatorio de Investigacao</div><div class="cabecalho-empresa">DANMO SERVICE SYSTEM, LDA</div><div class="cabecalho-doc">Porto da Beira, Mocambique</div></div>' +
           '<img src="../shared/logos/MMM.png" alt="MMM" style="height:35px;" onerror="this.style.display=\'none\'" />' +
         '</div>' +
-        '<div class="relatorio-numero">' + escaparHTML(acc.numero || '—') + '</div>' +
+        '<div class="relatorio-numero">' + escaparHTML(acc.numero || '-') + '</div>' +
         '<div class="seccao"><div class="seccao-titulo">1. Dados do Colaborador</div>' +
           '<div class="campo"><div class="campo-label">Nome:</div><div class="campo-valor">' + escaparHTML(acc.colaborador_nome) + '</div></div>' +
         '</div>' +
         '<div class="seccao"><div class="seccao-titulo">2. Dados do Evento</div>' +
           '<div class="campo"><div class="campo-label">Data / Hora:</div><div class="campo-valor">' + formataData(acc.data_hora, true) + '</div></div>' +
           '<div class="campo"><div class="campo-label">Tipo:</div><div class="campo-valor">' + escaparHTML(acc.tipo_ocorrencia) + '</div></div>' +
-          '<div class="campo"><div class="campo-label">Local / Area:</div><div class="campo-valor">' + escaparHTML(acc.area_risco_nome || '—') + '</div></div>' +
-          '<div class="campo"><div class="campo-label">Tipo de Lesao:</div><div class="campo-valor">' + escaparHTML(acc.tipo_lesao || '—') + '</div></div>' +
-          '<div class="campo"><div class="campo-label">Parte do Corpo:</div><div class="campo-valor">' + escaparHTML(acc.parte_corpo || '—') + '</div></div>' +
+          '<div class="campo"><div class="campo-label">Local / Area:</div><div class="campo-valor">' + escaparHTML(acc.area_risco_nome || '-') + '</div></div>' +
+          '<div class="campo"><div class="campo-label">Tipo de Lesao:</div><div class="campo-valor">' + escaparHTML(acc.tipo_lesao || '-') + '</div></div>' +
+          '<div class="campo"><div class="campo-label">Parte do Corpo:</div><div class="campo-valor">' + escaparHTML(acc.parte_corpo || '-') + '</div></div>' +
           '<div class="campo"><div class="campo-label">Dias Afastamento:</div><div class="campo-valor">' + (acc.dias_afastamento || 0) + '</div></div>' +
-          '<div class="campo"><div class="campo-label">Atestado Medico:</div><div class="campo-valor">' + (acc.gerou_atestado ? 'Sim' + (acc.numero_atestado ? ' — ' + escaparHTML(acc.numero_atestado) : '') : 'Nao') + '</div></div>' +
+          '<div class="campo"><div class="campo-label">Atestado Medico:</div><div class="campo-valor">' + (acc.gerou_atestado ? 'Sim' + (acc.numero_atestado ? ' - ' + escaparHTML(acc.numero_atestado) : '') : 'Nao') + '</div></div>' +
           '<div class="campo"><div class="campo-label">Testemunhas:</div><div class="campo-valor">' + escaparHTML(acc.testemunhas || 'Nao indicadas') + '</div></div>' +
         '</div>' +
         '<div class="seccao"><div class="seccao-titulo">3. Descricao do Evento</div>' +
@@ -142,7 +143,7 @@
       document.getElementById('loading').style.display = 'none';
       document.getElementById('relatorio').style.display = 'block';
       document.getElementById('conteudo-relatorio').innerHTML = html;
-      document.title = 'Relatorio ' + (acc.numero || '') + ' — HST';
+      document.title = 'Relatorio ' + (acc.numero || '') + ' - HST';
 
     } catch(e) {
       document.getElementById('loading').textContent = 'Erro ao carregar: ' + (e.message || e);

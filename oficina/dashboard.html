@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard — Danmo Oficina</title>
+  <title>Dashboard - Danmo Oficina</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <link rel="stylesheet" href="../shared/oficina.css" />
   <style>
@@ -79,6 +79,7 @@
     }
     .modal-close-btn { float:right; background:none; border:none; color:var(--text2); font-size:20px; cursor:pointer; line-height:1; }
   </style>
+  <script src="../shared/guard.js" data-modulo="oficina"></script>
 </head>
 <body>
   <div id="navbar" class="navbar"></div>
@@ -129,26 +130,26 @@
 
     <!-- KPIs topo -->
     <div class="kpi-topo" id="kpi-topo">
-      <div class="kpi-card clicavel" id="kpi-oficina"><div class="kpi-label">Obras em Andamento (Oficina)</div><div class="kpi-value" id="v-oficina">—</div></div>
-      <div class="kpi-card red clicavel" id="kpi-sem-nr"><div class="kpi-label">Ordens Sem Nº de Obra</div><div class="kpi-value" id="v-sem-nr">—</div></div>
-      <div class="kpi-card blue clicavel" id="kpi-em-cdm"><div class="kpi-label">Na CdM (Aguarda Devolução)</div><div class="kpi-value" id="v-em-cdm">—</div></div>
-      <div class="kpi-card green clicavel" id="kpi-fechadas"><div class="kpi-label">Fechadas no Período</div><div class="kpi-value" id="v-fechadas">—</div></div>
-      <div class="kpi-card clicavel" id="kpi-checklist"><div class="kpi-label">Checklists Pendentes</div><div class="kpi-value" id="v-checklist">—</div></div>
-      <div class="kpi-card blue clicavel" id="kpi-total-equip"><div class="kpi-label">Total Equipamentos Ativos</div><div class="kpi-value" id="v-total-equip">—</div></div>
-      <div class="kpi-card green clicavel" id="kpi-disponiveis"><div class="kpi-label">Disponíveis</div><div class="kpi-value" id="v-disponiveis">—</div></div>
-      <div class="kpi-card red clicavel" id="kpi-equip-oficina"><div class="kpi-label">Equipamentos Na Oficina</div><div class="kpi-value" id="v-equip-oficina">—</div></div>
+      <div class="kpi-card clicavel" id="kpi-oficina"><div class="kpi-label">Obras em Andamento (Oficina)</div><div class="kpi-value" id="v-oficina">-</div></div>
+      <div class="kpi-card red clicavel" id="kpi-sem-nr"><div class="kpi-label">Ordens Sem Nº de Obra</div><div class="kpi-value" id="v-sem-nr">-</div></div>
+      <div class="kpi-card blue clicavel" id="kpi-em-cdm"><div class="kpi-label">Na CdM (Aguarda Devolução)</div><div class="kpi-value" id="v-em-cdm">-</div></div>
+      <div class="kpi-card green clicavel" id="kpi-fechadas"><div class="kpi-label">Fechadas no Período</div><div class="kpi-value" id="v-fechadas">-</div></div>
+      <div class="kpi-card clicavel" id="kpi-checklist"><div class="kpi-label">Checklists Pendentes</div><div class="kpi-value" id="v-checklist">-</div></div>
+      <div class="kpi-card blue clicavel" id="kpi-total-equip"><div class="kpi-label">Total Equipamentos Ativos</div><div class="kpi-value" id="v-total-equip">-</div></div>
+      <div class="kpi-card green clicavel" id="kpi-disponiveis"><div class="kpi-label">Disponíveis</div><div class="kpi-value" id="v-disponiveis">-</div></div>
+      <div class="kpi-card red clicavel" id="kpi-equip-oficina"><div class="kpi-label">Equipamentos Na Oficina</div><div class="kpi-value" id="v-equip-oficina">-</div></div>
     </div>
 
     <!-- Rastreio CdM -->
     <div class="card">
       <div class="card-title-flex">
-        <div class="card-title">Rastreio CdM — Envio, Devolução e Facturação</div>
+        <div class="card-title">Rastreio CdM - Envio, Devolução e Facturação</div>
         <button class="btn-toggle-card" data-target="corpo-cdm" onclick="toggleCardBody(this)" title="Expandir/Recolher" aria-expanded="true">−</button>
       </div>
       <div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
-        <div class="kpi-card"><div class="kpi-label">Total Enviadas à CdM</div><div class="kpi-value" id="v-cdm-total">—</div></div>
-        <div class="kpi-card blue"><div class="kpi-label">Ainda na CdM</div><div class="kpi-value" id="v-cdm-atual">—</div></div>
-        <div class="kpi-card green"><div class="kpi-label">Retornaram e Fecharam</div><div class="kpi-value" id="v-cdm-voltaram">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Total Enviadas à CdM</div><div class="kpi-value" id="v-cdm-total">-</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Ainda na CdM</div><div class="kpi-value" id="v-cdm-atual">-</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Retornaram e Fecharam</div><div class="kpi-value" id="v-cdm-voltaram">-</div></div>
       </div>
       <p class="text-muted" style="font-size:12px;margin-top:10px">
         "Ainda na CdM" são obras cujo estado actual continua "CdM", significa que a máquina já saiu da oficina mas ainda não foi facturada/devolvida.
@@ -228,7 +229,7 @@
   <div class="modal-overlay" id="modal-ordens">
     <div class="modal-box-lg">
       <button class="modal-close-btn" onclick="fecharModal('modal-ordens')">×</button>
-      <div class="card-title" id="modal-ordens-titulo">—</div>
+      <div class="card-title" id="modal-ordens-titulo">-</div>
       <div class="table-wrap mt-16">
         <table>
           <thead><tr><th>Nº Obra</th><th>Equipamento</th><th>Categoria</th><th>Sector</th><th>Abertura</th><th>Estado Físico</th><th>Estado Obra</th><th></th></tr></thead>
@@ -242,7 +243,7 @@
   <div class="modal-overlay" id="modal-equip">
     <div class="modal-box-lg">
       <button class="modal-close-btn" onclick="fecharModal('modal-equip')">×</button>
-      <div class="card-title" id="modal-equip-titulo">—</div>
+      <div class="card-title" id="modal-equip-titulo">-</div>
       <div class="table-wrap mt-16">
         <table>
           <thead><tr><th>Código</th><th>Categoria</th><th>Grupo</th><th>Estado Físico</th><th>Obra(s) Abertas</th></tr></thead>
@@ -342,11 +343,11 @@
         const badge = BADGE_FISICO[o.status_fisico] || 'badge-gray';
         return `<tr>
           <td>${o.numero_obra || '<span class="text-muted">s/nº</span>'}</td>
-          <td>${eq.code||'—'}</td>
-          <td>${eq.fleet_type||'—'}</td>
-          <td>${o.sector||'—'}</td>
+          <td>${eq.code||'-'}</td>
+          <td>${eq.fleet_type||'-'}</td>
+          <td>${o.sector||'-'}</td>
           <td>${formatarData(o.data_abertura)}</td>
-          <td><span class="badge ${badge}">${o.status_fisico||'—'}</span></td>
+          <td><span class="badge ${badge}">${o.status_fisico||'-'}</span></td>
           <td>${o.status_atual}</td>
           <td><a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">Abrir →</a></td>
         </tr>`;
@@ -364,11 +365,11 @@
         const osAb = abertas.filter(o => o.equipment_id === e.id);
         const obras = osAb.length
           ? osAb.map(o => `<a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">${o.numero_obra||'S/Nº'}</a>`).join(', ')
-          : '—';
+          : '-';
         return `<tr>
           <td>${e.code}</td>
-          <td>${e.fleet_type||'—'}</td>
-          <td>${e.group_name||'—'}</td>
+          <td>${e.fleet_type||'-'}</td>
+          <td>${e.group_name||'-'}</td>
           <td><span class="badge ${badge}">${est}</span></td>
           <td>${obras}</td>
         </tr>`;
@@ -407,7 +408,7 @@
       const fechadas   = todasOrdens.filter(o => o.status_atual === 'Fechada');
       const semNr      = naOficina.filter(o => !o.numero_obra);
 
-      // Equipamentos fisicamente na oficina = têm OS não fechada (inclui CdM ainda? Não — se está em CdM já saiu fisicamente)
+      // Equipamentos fisicamente na oficina = têm OS não fechada (inclui CdM ainda? Não - se está em CdM já saiu fisicamente)
       const equipComOSNaOficina = new Set(naOficina.map(o => o.equipment_id));
       const totalEquip   = equipFiltrados.length;
       const equipNaOfic  = equipFiltrados.filter(e => equipComOSNaOficina.has(e.id)).length;
@@ -438,7 +439,7 @@
           const lista = estado === 'Disponível'
             ? equipFiltrados.filter(e => estadoEquip(e.id, naOficina) === 'Disponível')
             : equipFiltrados.filter(e => estadoEquip(e.id, naOficina) === estado);
-          abrirModalEquip(`Equipamentos — ${estado}`, lista, naOficina);
+          abrirModalEquip(`Equipamentos - ${estado}`, lista, naOficina);
         };
       });
 
@@ -489,8 +490,8 @@
           const classe = dias > 30 ? 'grave' : dias > 14 ? 'medio' : '';
           return `<tr>
             <td><a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">${o.numero_obra||'S/Nº'}</a></td>
-            <td>${eq.code||'—'}</td>
-            <td>${o.sector||'—'}</td>
+            <td>${eq.code||'-'}</td>
+            <td>${o.sector||'-'}</td>
             <td>${formatarData(dataCdm)}</td>
             <td class="alerta-dias ${classe}">${dias} dia${dias!==1?'s':''}</td>
             <td><a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">Ver →</a></td>
@@ -526,14 +527,14 @@
         const ck = checklists.find(c => c.os_id === o.id);
         const eq = mapaEquip[o.equipment_id] || {};
         if (!ck) {
-          pendentes.push({ o, eq, nome: '—', situacao: 'Não iniciado', progresso: '0/0', urgente: true });
+          pendentes.push({ o, eq, nome: '-', situacao: 'Não iniciado', progresso: '0/0', urgente: true });
           return;
         }
         const itensDoCk = itens.filter(i => i.checklist_id === ck.id);
         const total = itensDoCk.length;
         const feitos = itensDoCk.filter(i => i.executado || i.estado).length;
         if (feitos < total) {
-          pendentes.push({ o, eq, nome: mapaTemplate[ck.template_id]||'—', situacao: 'Incompleto', progresso: `${feitos}/${total}`, urgente:false, checklistId: ck.id });
+          pendentes.push({ o, eq, nome: mapaTemplate[ck.template_id]||'-', situacao: 'Incompleto', progresso: `${feitos}/${total}`, urgente:false, checklistId: ck.id });
         }
       });
 
@@ -544,7 +545,7 @@
 
       tbody.innerHTML = pendentes.map(p => `<tr>
         <td>${p.o.numero_obra||'S/Nº'}</td>
-        <td>${p.eq.code||'—'}</td>
+        <td>${p.eq.code||'-'}</td>
         <td>${p.nome}</td>
         <td><span class="badge ${p.urgente?'badge-red':'badge-amber'}">${p.situacao}</span></td>
         <td>${p.progresso}</td>
@@ -621,7 +622,7 @@
             const pctG   = totalG > 0 ? Math.round(dispG/totalG*100) : 0;
 
             html += `<div class="grupo-section">
-              <div class="grupo-label">${grupo.nome} — ${totalG} equip. | ${dispG} disp. (${pctG}%)</div>`;
+              <div class="grupo-label">${grupo.nome} - ${totalG} equip. | ${dispG} disp. (${pctG}%)</div>`;
             if (totalG === 0) {
               html += `<p class="text-muted" style="font-size:12px">Sem equipamentos neste grupo.</p>`;
             } else {
@@ -683,10 +684,10 @@
         const est   = estadoEquip(e.id, abertas);
         const badge = BADGE_FISICO[est] || '';
         const osAb  = abertas.filter(o => o.equipment_id === e.id);
-        const obras = osAb.map(o => `<a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">${o.numero_obra||'S/Nº'}</a>`).join(', ') || '—';
+        const obras = osAb.map(o => `<a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">${o.numero_obra||'S/Nº'}</a>`).join(', ') || '-';
         html += `<tr>
           <td><a href="maquina_historico.html?id=${e.id}" target="_blank" style="color:var(--amber)" title="Ver histórico completo desta máquina">${e.code}</a></td>
-          <td>${e.group_name||'—'}</td>
+          <td>${e.group_name||'-'}</td>
           <td><span class="badge ${badge}">${est}</span></td>
           <td>${obras}</td>
         </tr>`;
@@ -745,12 +746,12 @@
           const cor  = dias>14?'color:var(--red);font-weight:700':dias>7?'color:var(--amber)':'';
           const avaria = o.descricao_avaria
             ? (o.descricao_avaria.length>50?o.descricao_avaria.slice(0,50)+'…':o.descricao_avaria)
-            : '—';
+            : '-';
           return `<tr>
-            <td><a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">${eq.code||'—'}</a></td>
-            <td>${eq.fleet_type||'—'}</td>
-            <td>${eq.group_name||'—'}</td>
-            <td>${o.sector||'—'}</td>
+            <td><a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">${eq.code||'-'}</a></td>
+            <td>${eq.fleet_type||'-'}</td>
+            <td>${eq.group_name||'-'}</td>
+            <td>${o.sector||'-'}</td>
             <td>${formatarData(o.data_abertura)}</td>
             <td style="${cor}">${dias} dia${dias!==1?'s':''}</td>
             <td title="${o.descricao_avaria||''}">${avaria}</td>

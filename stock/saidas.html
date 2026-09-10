@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Saídas — Gestão de Stock — Danmo Hub</title>
+  <title>Saídas - Gestão de Stock - Danmo Hub</title>
   <link rel="stylesheet" href="../shared/style.css" />
+  <script src="../shared/guard.js" data-modulo="stock"></script>
 </head>
 <body>
   <div id="navbar"></div>
@@ -22,7 +23,7 @@
         </div>
         <div class="form-grupo">
           <label class="form-label">Stock Disponível</label>
-          <input class="form-input" type="text" id="f-stock" readonly placeholder="—">
+          <input class="form-input" type="text" id="f-stock" readonly placeholder="-">
         </div>
         <div class="form-grupo">
           <label class="form-label">Quantidade *</label>
@@ -56,7 +57,7 @@
     </div>
 
     <div class="card" id="card-pendentes-oficina" style="display:none;">
-      <div class="form-label" style="font-size:1.1rem; margin-bottom:6px;">🔧 Saídas Pendentes — Vindas da Oficina</div>
+      <div class="form-label" style="font-size:1.1rem; margin-bottom:6px;">🔧 Saídas Pendentes - Vindas da Oficina</div>
       <p style="font-size:var(--tamanho-sm); color:var(--cor-texto-sec); margin-bottom:16px;">
         Material marcado como "Danmo (retirar do Stock)" numa Ordem de Serviço. Ao confirmar, o stock é abatido directamente.
       </p>
@@ -136,8 +137,8 @@
         colaboradores = resultados[1];
         finalidades = resultados[2];
 
-        preencherSelect('f-material', materiais, function (m) { return m.referencia + ' — ' + m.nome; }, function (m) { return m.id; }, '-- Seleccione --');
-        preencherSelect('f-colaborador', colaboradores, function (c) { return c.code + ' — ' + c.name; }, function (c) { return c.name; }, '-- Seleccione --');
+        preencherSelect('f-material', materiais, function (m) { return m.referencia + ' - ' + m.nome; }, function (m) { return m.id; }, '-- Seleccione --');
+        preencherSelect('f-colaborador', colaboradores, function (c) { return c.code + ' - ' + c.name; }, function (c) { return c.name; }, '-- Seleccione --');
         preencherSelect('f-finalidade', finalidades, function (f) { return f.nome; }, function (f) { return f.nome; }, '-- Seleccione --');
 
         await calcularStock();
@@ -155,7 +156,7 @@
       var pend = await db.query('stock_movimentos', 'tipo=eq.saida&estado=eq.pendente&order=criado_em.desc');
       pendentesOficina = pend.map(function (m) {
         var mat = materiais.find(function (x) { return x.id === m.material_id; });
-        m._mat = mat ? (mat.referencia + ' — ' + mat.nome) : '—';
+        m._mat = mat ? (mat.referencia + ' - ' + mat.nome) : '-';
         m._unid = mat ? mat.unidade : '';
         return m;
       });
@@ -175,8 +176,8 @@
           '<td><strong>' + m._mat + '</strong></td>' +
           '<td>' + fmtNum(m.quantidade) + ' ' + m._unid + '</td>' +
           '<td style="color:' + (insuficiente ? 'var(--cor-erro)' : 'var(--cor-sucesso)') + '; font-weight:700;">' + fmtNum(disp) + ' ' + m._unid + '</td>' +
-          '<td>' + (m.finalidade || '—') + '</td>' +
-          '<td>' + (m.colaborador_nome || '—') + '</td>' +
+          '<td>' + (m.finalidade || '-') + '</td>' +
+          '<td>' + (m.colaborador_nome || '-') + '</td>' +
           '<td><span class="badge badge-info">Oficina</span></td>' +
           '<td><div style="display:flex; gap:6px;">' +
             '<button class="btn btn-verde btn-sm" onclick="confirmarPendenteOficina(\'' + m.id + '\')">✅ Confirmar</button>' +
@@ -246,7 +247,7 @@
       var todos = await db.query('stock_movimentos', 'tipo=eq.saida&estado=eq.confirmado&order=criado_em.desc');
       saidas = todos.map(function (m) {
         var mat = materiais.find(function (x) { return x.id === m.material_id; });
-        m._mat = mat ? (mat.referencia + ' — ' + mat.nome) : '—';
+        m._mat = mat ? (mat.referencia + ' - ' + mat.nome) : '-';
         m._unid = mat ? mat.unidade : '';
         return m;
       });
@@ -277,10 +278,10 @@
           '<td><strong>' + m._mat + '</strong></td>' +
           '<td style="color:var(--cor-erro); font-weight:700;">-' + fmtNum(m.quantidade) + '</td>' +
           '<td>' + m._unid + '</td>' +
-          '<td>' + (m.colaborador_nome || '—') + '</td>' +
-          '<td>' + (m.finalidade || '—') + '</td>' +
-          '<td>' + (m.numero_requisicao || '—') + '</td>' +
-          '<td>' + (m.observacoes || '—') + '</td>' +
+          '<td>' + (m.colaborador_nome || '-') + '</td>' +
+          '<td>' + (m.finalidade || '-') + '</td>' +
+          '<td>' + (m.numero_requisicao || '-') + '</td>' +
+          '<td>' + (m.observacoes || '-') + '</td>' +
           '<td><button class="btn btn-secundario btn-sm" onclick="eliminar(\'' + m.id + '\')">🗑</button></td>' +
         '</tr>';
       }).join('');

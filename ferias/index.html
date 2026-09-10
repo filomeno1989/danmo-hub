@@ -3,21 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel do Plano de Férias — Danmo Hub</title>
+  <title>Painel do Plano de Férias - Danmo Hub</title>
   <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="../shared/style.css" />
   <script src="../shared/supabase.js"></script>
   <script src="../shared/auth.js"></script>
   <script src="../shared/tema.js"></script>
-  <script>
-    if (!verificarSessao()) {
-      localStorage.setItem('dss_user', JSON.stringify({
-        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
-        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
-      }));
-    }
-  </script>
-  <style>
+<style>
     .alerta-caixa { border-left: 4px solid var(--cor-info); background: var(--cor-info-bg);
       border-radius: var(--raio-md); padding: 14px 16px; margin-bottom: 12px; display: flex;
       gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
@@ -47,6 +39,7 @@
     .gap-1 { gap: 4px; } .gap-2 { gap: 8px; }
     .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
   </style>
+  <script src="../shared/guard.js" data-modulo="ferias"></script>
 </head>
 <body>
 
@@ -66,10 +59,10 @@
 
     <!-- ── KPIs ── -->
     <div class="kpi-grid" id="kpis">
-      <div class="kpi-card"><div class="kpi-icone">👥</div><div class="kpi-valor" id="kpi-activos">—</div><div class="kpi-label">Colaboradores activos</div></div>
-      <div class="kpi-card azul"><div class="kpi-icone">📋</div><div class="kpi-valor" id="kpi-planeados">—</div><div class="kpi-label">Com mês marcado no plano</div></div>
-      <div class="kpi-card amarelo"><div class="kpi-icone">🏖️</div><div class="kpi-valor" id="kpi-mes-actual">—</div><div class="kpi-label" id="kpi-mes-actual-label">De férias no mês actual</div></div>
-      <div class="kpi-card verde"><div class="kpi-icone">📅</div><div class="kpi-valor" id="kpi-dias">—</div><div class="kpi-label">Dias confirmados pelo RH</div></div>
+      <div class="kpi-card"><div class="kpi-icone">👥</div><div class="kpi-valor" id="kpi-activos">-</div><div class="kpi-label">Colaboradores activos</div></div>
+      <div class="kpi-card azul"><div class="kpi-icone">📋</div><div class="kpi-valor" id="kpi-planeados">-</div><div class="kpi-label">Com mês marcado no plano</div></div>
+      <div class="kpi-card amarelo"><div class="kpi-icone">🏖️</div><div class="kpi-valor" id="kpi-mes-actual">-</div><div class="kpi-label" id="kpi-mes-actual-label">De férias no mês actual</div></div>
+      <div class="kpi-card verde"><div class="kpi-icone">📅</div><div class="kpi-valor" id="kpi-dias">-</div><div class="kpi-label">Dias confirmados pelo RH</div></div>
     </div>
 
     <div style="height:20px;"></div>
@@ -83,12 +76,12 @@
     <!-- ── Atalhos ── -->
     <h3 style="margin-bottom:12px;">Ir para</h3>
     <div class="atalhos no-print" style="margin-bottom:20px;">
-      <a class="atalho" href="plano.html"><div class="ic">📋</div><div class="tt">Plano Anual</div><div class="ds">A folha de Outubro — marcar o mês de cada colaborador</div></a>
+      <a class="atalho" href="plano.html"><div class="ic">📋</div><div class="tt">Plano Anual</div><div class="ds">A folha de Outubro - marcar o mês de cada colaborador</div></a>
       <a class="atalho" href="rh-mensal.html"><div class="ic">✉️</div><div class="tt">Folha do RH</div><div class="ds">Extração mensal, lançar dias devolvidos e afixar</div></a>
       <a class="atalho" href="calendario.html"><div class="ic">🗓️</div><div class="tt">Calendário Visual</div><div class="ds">Quem está ausente em cada mês, por setor</div></a>
       <a class="atalho" href="alteracoes.html"><div class="ic">🔁</div><div class="tt">Adiamentos / Antecipações</div><div class="ds">Mudanças ao plano com aviso prévio de 30 dias</div></a>
       <a class="atalho" href="relatorios.html"><div class="ic">📊</div><div class="tt">Relatórios</div><div class="ds">Plano completo, ocupação por setor, exportações</div></a>
-      <a class="atalho" href="minhas-ferias.html"><div class="ic">🙋</div><div class="tt">O Meu Plano</div><div class="ds">Consulta do colaborador — o meu mês de férias</div></a>
+      <a class="atalho" href="minhas-ferias.html"><div class="ic">🙋</div><div class="tt">O Meu Plano</div><div class="ds">Consulta do colaborador - o meu mês de férias</div></a>
     </div>
 
   </main>
@@ -155,10 +148,10 @@
       html += `
         <div class="alerta-caixa ${emEpoca && pct < 100 ? 'ambar' : ''}">
           <div>
-            <div class="alerta-titulo">🍂 Folha de Outubro — Plano ${anoSeguinte}</div>
+            <div class="alerta-titulo">🍂 Folha de Outubro - Plano ${anoSeguinte}</div>
             <div class="alerta-texto">
               ${comMesSeg} de ${colaboradores.length} colaboradores já com mês marcado para ${anoSeguinte}.
-              ${emEpoca ? (pct < 100 ? 'Estamos na época de planeamento — complete a folha.' : 'Folha completa! ✔') : 'A época de planeamento começa em ' + MESES_PT[CONFIG.mes_planeamento - 1] + '.'}
+              ${emEpoca ? (pct < 100 ? 'Estamos na época de planeamento - complete a folha.' : 'Folha completa! ✔') : 'A época de planeamento começa em ' + MESES_PT[CONFIG.mes_planeamento - 1] + '.'}
             </div>
             <div class="progresso"><div style="width:${pct}%"></div></div>
           </div>
@@ -187,8 +180,8 @@
           html += `
           <div class="alerta-caixa verde">
             <div>
-              <div class="alerta-titulo">✉️ ${MESES_PT[mesAlvo - 1]} ${anoAlvo} — lista já enviada ao RH</div>
-              <div class="alerta-texto">${doMes.length} colaborador(es) · enviada em ${enviado.enviado_rh_em ? formatarData(enviado.enviado_rh_em) : '—'} por ${escaparHTML(enviado.enviado_rh_por || '—')}. Falta lançar a resposta do RH nos que ainda não têm dias.</div>
+              <div class="alerta-titulo">✉️ ${MESES_PT[mesAlvo - 1]} ${anoAlvo} - lista já enviada ao RH</div>
+              <div class="alerta-texto">${doMes.length} colaborador(es) · enviada em ${enviado.enviado_rh_em ? formatarData(enviado.enviado_rh_em) : '-'} por ${escaparHTML(enviado.enviado_rh_por || '-')}. Falta lançar a resposta do RH nos que ainda não têm dias.</div>
             </div>
             <a class="btn btn-secundario btn-sm" href="rh-mensal.html?ano=${anoAlvo}&mes=${mesAlvo}" style="align-self:center;">Abrir Folha do RH →</a>
           </div>`;
@@ -196,7 +189,7 @@
           html += `
           <div class="alerta-caixa vermelho">
             <div>
-              <div class="alerta-titulo">⚠️ ${MESES_PT[mesAlvo - 1]} ${anoAlvo} — enviar lista ao RH!</div>
+              <div class="alerta-titulo">⚠️ ${MESES_PT[mesAlvo - 1]} ${anoAlvo} - enviar lista ao RH!</div>
               <div class="alerta-texto">Faltam <strong>${diasParaMes} dia(s)</strong> para começar o mês e ainda há <strong>${porEnviar.length}</strong> colaborador(es) por enviar ao RH central (prazo: ${CONFIG.dias_antes_envio_rh} dias antes).</div>
             </div>
             <a class="btn btn-vermelho btn-sm" href="rh-mensal.html?ano=${anoAlvo}&mes=${mesAlvo}" style="align-self:center;">Fazer Extração Agora →</a>
@@ -229,7 +222,7 @@
           <div>
             <div class="alerta-titulo">⚠️ Limite ultrapassado em ${excedentes.length} setor(es)/mês(es)</div>
             <ul class="alerta-texto lista-excedentes" style="margin:4px 0 0 18px;">
-              ${excedentes.map(([k, n]) => { const [s, m] = k.split('||'); return `<li><strong>${escaparHTML(s)}</strong> — ${MESES_PT[m - 1]}: ${n} colaboradores (limite ${CONFIG.limite_departamento})</li>`; }).join('')}
+              ${excedentes.map(([k, n]) => { const [s, m] = k.split('||'); return `<li><strong>${escaparHTML(s)}</strong> - ${MESES_PT[m - 1]}: ${n} colaboradores (limite ${CONFIG.limite_departamento})</li>`; }).join('')}
             </ul>
             <div class="alerta-texto" style="margin-top:4px;">${CONFIG.permitir_excedente ? 'A exceção é permitida, mas fica sempre assinalada como aviso.' : 'Nas regras actuais o limite BLOQUEIA novas marcações.'}</div>
           </div>
@@ -248,7 +241,7 @@
               ${alter.map(a => {
                 const c = mapaCol[a.collaborator_id];
                 const nome = c ? c.name : '(colaborador #' + a.collaborator_id + ')';
-                return `<li>${formatarData(a.criado_em, true)} — <strong>${escaparHTML(nome)}</strong>: ${escaparHTML(a.tipo)} de ${a.mes_anterior ? MESES_PT[a.mes_anterior - 1] : '—'} para ${a.mes_novo ? MESES_PT[a.mes_novo - 1] : '—'} ${a.aviso_ok ? '' : '<span class="badge badge-aviso">aviso insuficiente</span>'}</li>`;
+                return `<li>${formatarData(a.criado_em, true)} - <strong>${escaparHTML(nome)}</strong>: ${escaparHTML(a.tipo)} de ${a.mes_anterior ? MESES_PT[a.mes_anterior - 1] : '-'} para ${a.mes_novo ? MESES_PT[a.mes_novo - 1] : '-'} ${a.aviso_ok ? '' : '<span class="badge badge-aviso">aviso insuficiente</span>'}</li>`;
               }).join('')}
             </ul>
           </div>`;

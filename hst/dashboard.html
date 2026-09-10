@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel HST — Danmo Hub</title>
+  <title>Painel HST - Danmo Hub</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <style>
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
@@ -38,13 +38,14 @@
     .tensao-limitrofe { background: var(--cor-aviso-bg); color: var(--cor-aviso); }
     .tensao-alta { background: var(--cor-erro-bg); color: var(--cor-erro); }
   </style>
+  <script src="../shared/guard.js" data-modulo="hst"></script>
 </head>
 <body>
   <div id="navbar"></div>
 
   <main class="main">
     <h1 class="pagina-titulo">Painel HST</h1>
-    <p class="pagina-subtitulo">Higiene e Seguranca do Trabalho — Visao Geral</p>
+    <p class="pagina-subtitulo">Higiene e Seguranca do Trabalho - Visao Geral</p>
 
     <!-- KPIs -->
     <div class="kpi-grid">
@@ -262,7 +263,7 @@
           '<td><a href="tensao_colaborador.html?colab=' + encodeURIComponent(m.colaborador_nome) + '" style="font-weight:600;">' + escaparHTML(m.colaborador_nome) + '</a></td>' +
           '<td>' + formataData(m.data_medicao, true) + '</td>' +
           '<td style="font-weight:700;">' + m.sistolica + '/' + m.diastolica + '</td>' +
-          '<td>' + (m.frequencia_cardiaca || '—') + '</td>' +
+          '<td>' + (m.frequencia_cardiaca || '-') + '</td>' +
           '<td><span class="classificacao-tensao ' + cla.cls + '">' + cla.texto + '</span></td>';
         tbody.appendChild(tr);
       });

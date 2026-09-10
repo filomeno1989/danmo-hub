@@ -3,21 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Responsáveis por Área — Admin. Oficinal — Danmo Hub</title>
+  <title>Responsáveis por Área - Admin. Oficinal - Danmo Hub</title>
   <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="../shared/style.css" />
   <script src="../shared/supabase.js"></script>
   <script src="../shared/auth.js"></script>
   <script src="../shared/tema.js"></script>
-  <script>
-    if (!verificarSessao()) {
-      localStorage.setItem('dss_user', JSON.stringify({
-        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
-        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
-      }));
-    }
-  </script>
-  <style>
+<style>
     .area-card { background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio-lg); padding: 18px 20px; margin-bottom: 14px; }
     .area-card .area-nome { font-weight: 700; font-size: var(--tamanho-lg); margin-bottom: 4px; }
     .area-card .area-atual { font-size: var(--tamanho-sm); color: var(--cor-texto-sec); margin-bottom: 12px; }
@@ -29,6 +21,7 @@
     .area-obs input { font-size: var(--tamanho-sm); }
     .btn-guardar-area { white-space: nowrap; }
   </style>
+  <script src="../shared/guard.js" data-modulo="avaliacao"></script>
 </head>
 <body>
 
@@ -36,7 +29,7 @@
 
   <main class="main">
     <h1 class="pagina-titulo">Responsáveis por Área</h1>
-    <p class="pagina-subtitulo">Define quem é o Responsável de cada área — usado na Avaliação de Desempenho e no futuro noutros módulos. Para substituir por férias, escolhe outra pessoa aqui e depois troca de volta.</p>
+    <p class="pagina-subtitulo">Define quem é o Responsável de cada área - usado na Avaliação de Desempenho e no futuro noutros módulos. Para substituir por férias, escolhe outra pessoa aqui e depois troca de volta.</p>
 
     <div class="painel" style="margin-bottom:20px;">
       <div class="form-grupo" style="max-width:360px;margin-bottom:0;">
@@ -104,14 +97,14 @@
           '</div>' +
           '<div id="' + uid + '-chip" class="chips-wrap"></div>' +
           '<div class="area-obs form-grupo">' +
-            '<input class="form-input" type="text" id="' + uid + '-obs" placeholder="Observações (opcional) — ex: Substituto de férias até 20/08" value="' + escapar(a.observacoes || '') + '" />' +
+            '<input class="form-input" type="text" id="' + uid + '-obs" placeholder="Observações (opcional) - ex: Substituto de férias até 20/08" value="' + escapar(a.observacoes || '') + '" />' +
           '</div>' +
         '</div>';
     }).join('');
 
     /* Ligar o seletor de colaborador a cada área.
        NOTA: o hiddenId do seletor guarda o NOME (é assim que o
-       shared/utils.js já funciona, igual ao ferramenteiros.html) —
+       shared/utils.js já funciona, igual ao ferramenteiros.html) -
        por isso o código vem à parte, pelo onSelect. */
     areas.forEach(async function(a) {
       var uid = 'area-' + a.id;
@@ -161,13 +154,13 @@
     var uid = 'area-' + id;
     var codigo = document.getElementById(uid + '-codigo').value.trim();
     /* Ler o nome do campo escondido do seletor (não do campo de
-       pesquisa visível — esse agora fica vazio depois de escolhido,
+       pesquisa visível - esse agora fica vazio depois de escolhido,
        só o chip por baixo mostra a seleção actual). */
     var nome = document.getElementById(uid + '-nome-oculto').value.trim();
     var obs = document.getElementById(uid + '-obs').value.trim() || null;
 
     if (!codigo && !nome) {
-      if (!confirm('Não escolheste ninguém — isto vai deixar esta área SEM responsável. Confirmas?')) return;
+      if (!confirm('Não escolheste ninguém - isto vai deixar esta área SEM responsável. Confirmas?')) return;
     } else if (!codigo || !nome) {
       mostrarToast('Escolha um colaborador da lista (clique numa sugestão) ou limpe tudo para deixar sem responsável.', 'erro');
       return;

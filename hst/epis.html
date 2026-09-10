@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EPIs — HST — Danmo Hub</title>
+  <title>EPIs - HST - Danmo Hub</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <style>
     .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--cor-borda); }
@@ -19,6 +19,7 @@
     .epi-sub { font-size: 0.82rem; color: var(--cor-texto-sec); margin-top: 2px; }
     .stock-baixo { color: var(--cor-erro); font-weight: 700; }
   </style>
+  <script src="../shared/guard.js" data-modulo="hst"></script>
 </head>
 <body>
   <div id="navbar"></div>
@@ -254,7 +255,7 @@
         '<td>' + escaparHTML(e.colaborador_nome) + '</td>' +
         '<td>' + escaparHTML(e.epi_nome) + '</td>' +
         '<td>' + (e.quantidade || 1) + '</td>' +
-        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escaparHTML(e.observacoes || '') + '">' + escaparHTML(e.observacoes || '—') + '</td>';
+        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escaparHTML(e.observacoes || '') + '">' + escaparHTML(e.observacoes || '-') + '</td>';
       tbody.appendChild(tr);
     });
   }

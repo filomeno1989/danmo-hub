@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventário — Ferramentaria — Danmo Hub</title>
+  <title>Inventário - Ferramentaria - Danmo Hub</title>
   
   <!-- CSS Global do Danmo Hub -->
   <link rel="stylesheet" href="../shared/style.css" />
@@ -72,6 +72,7 @@
       top: 0;
     }
   </style>
+  <script src="../shared/guard.js" data-modulo="ferramentaria"></script>
 </head>
 <body>
   <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
@@ -255,16 +256,16 @@
         emprestado: 'badge-aviso'
       };
       var cls = map[estado] || 'badge-secundario';
-      return '<span class="badge ' + cls + '">' + (estado || '—') + '</span>';
+      return '<span class="badge ' + cls + '">' + (estado || '-') + '</span>';
     }
 
     function formatValor(v) {
-      if (!v && v !== 0) return '—';
+      if (!v && v !== 0) return '-';
       return parseFloat(v).toLocaleString('pt-AO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     function truncarObs(texto, max) {
-      if (!texto) return '—';
+      if (!texto) return '-';
       if (texto.length <= max) return texto;
       return texto.substring(0, max) + '...';
     }
@@ -277,7 +278,7 @@
     function tipoBadge(tipo) {
       if (tipo === 'emprestimo') return '<span class="badge badge-aviso">empréstimo</span>';
       if (tipo === 'devolucao') return '<span class="badge badge-sucesso">devolução</span>';
-      return '<span class="badge badge-secundario">' + (tipo || '—') + '</span>';
+      return '<span class="badge badge-secundario">' + (tipo || '-') + '</span>';
     }
 
     /* ── Load Categories ── */
@@ -356,14 +357,14 @@
 
       tools.forEach(function(t) {
         var tr = document.createElement('tr');
-        var catName = categoriesMap[t.category_id] || '—';
+        var catName = categoriesMap[t.category_id] || '-';
         tr.innerHTML =
-          '<td>' + (t.code || '—') + '</td>' +
-          '<td>' + (t.nome || '—') + '</td>' +
+          '<td>' + (t.code || '-') + '</td>' +
+          '<td>' + (t.nome || '-') + '</td>' +
           '<td>' + catName + '</td>' +
-          '<td>' + (t.marca || '—') + '</td>' +
+          '<td>' + (t.marca || '-') + '</td>' +
           '<td>' + estadoBadge(t.estado) + '</td>' +
-          '<td>' + (t.localizacao || '—') + '</td>' +
+          '<td>' + (t.localizacao || '-') + '</td>' +
           '<td>' + (t.quantidade || 0) + '</td>' +
           '<td>' + formatValor(t.valor_unitario) + '</td>' +
           '<td>' +
@@ -514,7 +515,7 @@
 
     /* ── Modal Histórico ── */
     function openHistoricoModal(toolId, code, nome) {
-      document.getElementById('modal-historico-title').textContent = 'Histórico — ' + (code || '') + ' ' + (nome || '');
+      document.getElementById('modal-historico-title').textContent = 'Histórico - ' + (code || '') + ' ' + (nome || '');
       document.getElementById('historico-loading').style.display = 'block';
       document.getElementById('historico-empty').style.display = 'none';
       document.getElementById('tabela-historico').style.display = 'none';
@@ -543,14 +544,14 @@
 
         movs.forEach(function(m) {
           var tr = document.createElement('tr');
-          var pessoa = m.tipo === 'emprestimo' ? (m.entregue_por || '—') : (m.recebido_por || m.entregue_por || '—');
+          var pessoa = m.tipo === 'emprestimo' ? (m.entregue_por || '-') : (m.recebido_por || m.entregue_por || '-');
           var dataMov = m.tipo === 'emprestimo' ? (m.data_saida || m.created_at) : (m.data_devolucao || m.created_at);
-          var estado = m.tipo === 'emprestimo' ? (m.estado_ao_sair || '—') : (m.estado_ao_voltar || '—');
+          var estado = m.tipo === 'emprestimo' ? (m.estado_ao_sair || '-') : (m.estado_ao_voltar || '-');
           var obs = m.observacoes_saida || m.observacoes_devolucao || '';
 
           tr.innerHTML =
             '<td>' + tipoBadge(m.tipo) + '</td>' +
-            '<td>' + (m.colaborador || '—') + '</td>' +
+            '<td>' + (m.colaborador || '-') + '</td>' +
             '<td>' + pessoa + '</td>' +
             '<td>' + formatarData(dataMov, true) + '</td>' +
             '<td>' + estadoBadge(estado) + '</td>' +

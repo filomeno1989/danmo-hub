@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Detalhe da Obra — Danmo Oficina</title>
+  <title>Detalhe da Obra - Danmo Oficina</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <link rel="stylesheet" href="../shared/oficina.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap" />
@@ -53,16 +53,17 @@
 
     /* ── Reposição de tipografia/espaçamento da versão original (danmo-oficina),
        que se perderam na migração para o shared/style.css do Hub. Cores não
-       são alteradas — só fonte, altura de linha e largura dos cards de KPI. ── */
+       são alteradas - só fonte, altura de linha e largura dos cards de KPI. ── */
     body { font-family: 'Source Sans 3', sans-serif; line-height: normal; }
     .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
   </style>
+  <script src="../shared/guard.js" data-modulo="oficina"></script>
 </head>
 <body>
   <div id="navbar" class="navbar"></div>
   <main class="main">
     <div class="flex-between mt-16">
-      <h1 class="page-title" style="margin-bottom:0" id="titulo-os">Obra —</h1>
+      <h1 class="page-title" style="margin-bottom:0" id="titulo-os">Obra -</h1>
       <div style="display:flex;gap:8px">
         <button class="btn btn-ghost" onclick="window.open('os_print.html?id='+new URLSearchParams(location.search).get('id'))">🖨️ Imprimir Folha</button>
         <a href="ordens.html" class="btn btn-ghost">← Voltar</a>
@@ -71,14 +72,14 @@
 
     <!-- KPIs -->
     <div class="kpi-grid mt-24">
-      <div class="kpi-card"><div class="kpi-label">Equipamento</div><div class="kpi-value" id="info-equip" style="font-size:18px">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Categoria</div><div class="kpi-value" id="info-categoria" style="font-size:18px">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Sector</div><div class="kpi-value" id="info-sector" style="font-size:18px">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Abertura</div><div class="kpi-value" id="info-abertura" style="font-size:18px">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Fecho</div><div class="kpi-value" id="info-fecho" style="font-size:18px">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Contador</div><div class="kpi-value" id="info-horimetro" style="font-size:18px">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Estado Físico</div><div class="kpi-value" id="info-fisico" style="font-size:15px">—</div></div>
-      <div class="kpi-card blue"><div class="kpi-label">Estado da Obra</div><div class="kpi-value" id="info-workflow" style="font-size:15px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Equipamento</div><div class="kpi-value" id="info-equip" style="font-size:18px">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">Categoria</div><div class="kpi-value" id="info-categoria" style="font-size:18px">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">Sector</div><div class="kpi-value" id="info-sector" style="font-size:18px">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">Abertura</div><div class="kpi-value" id="info-abertura" style="font-size:18px">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">Fecho</div><div class="kpi-value" id="info-fecho" style="font-size:18px">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">Contador</div><div class="kpi-value" id="info-horimetro" style="font-size:18px">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">Estado Físico</div><div class="kpi-value" id="info-fisico" style="font-size:15px">-</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Estado da Obra</div><div class="kpi-value" id="info-workflow" style="font-size:15px">-</div></div>
     </div>
 
     <!-- Info da OS -->
@@ -88,7 +89,7 @@
           <div class="label" style="margin-bottom:0">Avaria / Motivo de entrada</div>
           <button class="btn btn-ghost edit-btn" id="btn-editar-avaria">Editar</button>
         </div>
-        <div id="info-avaria">—</div>
+        <div id="info-avaria">-</div>
         <div id="edit-avaria-wrap" style="display:none;margin-top:8px">
           <textarea id="edit-avaria-txt" rows="3" style="width:100%"></textarea>
           <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
@@ -103,7 +104,7 @@
           <div class="label" style="margin-bottom:0">Equipamento, Data e Contador</div>
           <button class="btn btn-ghost edit-btn" id="btn-editar-dados-base">Editar</button>
         </div>
-        <div id="info-dados-base">—</div>
+        <div id="info-dados-base">-</div>
         <div id="edit-dados-base-wrap" style="display:none;margin-top:8px">
           <div class="form-grid">
             <div class="form-group">
@@ -160,7 +161,7 @@
       <div id="info-observacoes-wrap" style="display:none">
         <div class="info-box">
           <div class="label">Observações</div>
-          <div id="info-observacoes">—</div>
+          <div id="info-observacoes">-</div>
         </div>
       </div>
     </div>
@@ -173,7 +174,7 @@
         <div class="form-grid">
           <div class="form-group">
             <label>Selecionar Checklist</label>
-            <select id="sel-checklist-template"><option value="">— Selecionar —</option></select>
+            <select id="sel-checklist-template"><option value="">- Selecionar -</option></select>
           </div>
           <div class="form-group" style="align-self:flex-end">
             <button class="btn btn-primary" id="btn-iniciar-checklist">Iniciar Checklist</button>
@@ -184,8 +185,8 @@
       <div id="checklist-com-registo" style="display:none">
         <div class="flex-between" style="align-items:center">
           <div>
-            <div style="font-weight:600" id="checklist-nome-atual">—</div>
-            <div class="text-muted" style="font-size:12px" id="checklist-ref-atual">—</div>
+            <div style="font-weight:600" id="checklist-nome-atual">-</div>
+            <div class="text-muted" style="font-size:12px" id="checklist-ref-atual">-</div>
           </div>
           <div class="badge badge-blue" id="checklist-progresso-badge">0/0</div>
         </div>
@@ -419,7 +420,7 @@
       </p>
       <div class="form-group">
         <label>Nova Revisão *</label>
-        <select id="tr-novo-template" required><option value="">— Selecionar —</option></select>
+        <select id="tr-novo-template" required><option value="">- Selecionar -</option></select>
       </div>
       <div class="form-group mt-16">
         <label>Motivo da Troca *</label>
@@ -484,7 +485,7 @@
 
     // Transforma ';' em quebra de linha na apresentação (',' e '.' continuam normais)
     function formatarDescricao(texto) {
-      if (!texto) return '—';
+      if (!texto) return '-';
       return texto.split(';').map(t => t.trim()).filter(Boolean).join('<br>');
     }
 
@@ -497,16 +498,16 @@
       equipAtual = eqLista[0];
 
       document.getElementById('titulo-os').textContent = osAtual.numero_obra
-        ? `Obra ${osAtual.numero_obra}` : `Obra s/nº — ${equipAtual ? equipAtual.code : ''}`;
-      document.getElementById('info-equip').textContent      = equipAtual ? equipAtual.code : '—';
-      document.getElementById('info-categoria').textContent  = equipAtual ? (equipAtual.fleet_type||'—') : '—';
-      document.getElementById('info-sector').textContent     = osAtual.sector || '—';
+        ? `Obra ${osAtual.numero_obra}` : `Obra s/nº - ${equipAtual ? equipAtual.code : ''}`;
+      document.getElementById('info-equip').textContent      = equipAtual ? equipAtual.code : '-';
+      document.getElementById('info-categoria').textContent  = equipAtual ? (equipAtual.fleet_type||'-') : '-';
+      document.getElementById('info-sector').textContent     = osAtual.sector || '-';
       document.getElementById('info-abertura').textContent   = formatarData(osAtual.data_abertura);
-      document.getElementById('info-fecho').textContent      = osAtual.data_fecho ? formatarData(osAtual.data_fecho) : '—';
-      document.getElementById('info-horimetro').textContent  = osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' ' + (osAtual.unidade_medida||'h') : '—';
+      document.getElementById('info-fecho').textContent      = osAtual.data_fecho ? formatarData(osAtual.data_fecho) : '-';
+      document.getElementById('info-horimetro').textContent  = osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' ' + (osAtual.unidade_medida||'h') : '-';
       document.getElementById('info-workflow').textContent   = osAtual.status_atual;
-      document.getElementById('info-fisico').textContent     = osAtual.status_fisico || '—';
-      document.getElementById('info-avaria').textContent     = osAtual.descricao_avaria || '—';
+      document.getElementById('info-fisico').textContent     = osAtual.status_fisico || '-';
+      document.getElementById('info-avaria').textContent     = osAtual.descricao_avaria || '-';
 
       const chipsWrap = document.getElementById('info-tipo-chips');
       if (osAtual.tipo_intervencao && osAtual.tipo_intervencao.length > 0) {
@@ -521,7 +522,7 @@
       }
 
       document.getElementById('info-dados-base').innerHTML =
-        `<strong>${equipAtual ? equipAtual.code : '—'}</strong> — Aberta em ${formatarData(osAtual.data_abertura)} — Contador: ${osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' ' + (osAtual.unidade_medida||'h') : '—'}`;
+        `<strong>${equipAtual ? equipAtual.code : '-'}</strong> - Aberta em ${formatarData(osAtual.data_abertura)} - Contador: ${osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' ' + (osAtual.unidade_medida||'h') : '-'}`;
 
       document.getElementById('sel-novo-status').value  = osAtual.status_atual;
       document.getElementById('sel-status-fisico').value = osAtual.status_fisico;
@@ -540,7 +541,7 @@
     document.getElementById('btn-editar-dados-base').addEventListener('click', async () => {
       const equips = await carregarEquipamentosParaEdicao();
       const sel = document.getElementById('edit-equipamento');
-      sel.innerHTML = equips.map(e => `<option value="${e.id}">${e.code} — ${e.fleet_type||''}</option>`).join('');
+      sel.innerHTML = equips.map(e => `<option value="${e.id}">${e.code} - ${e.fleet_type||''}</option>`).join('');
       sel.value = osAtual.equipment_id;
       document.getElementById('edit-data-abertura').value = osAtual.data_abertura || '';
       document.getElementById('edit-horimetro').value = osAtual.hora_equipamento != null ? osAtual.hora_equipamento : '';
@@ -600,7 +601,7 @@
         const template = tpl[0] || {};
         document.getElementById('checklist-sem-registo').style.display = 'none';
         document.getElementById('checklist-com-registo').style.display = 'block';
-        document.getElementById('checklist-nome-atual').textContent = template.nome || '—';
+        document.getElementById('checklist-nome-atual').textContent = template.nome || '-';
         document.getElementById('checklist-ref-atual').textContent = template.ref_versao || '';
         document.getElementById('btn-abrir-checklist').href = `checklist_preencher.html?id=${ck.id}`;
         document.getElementById('btn-imprimir-checklist').href = `checklist_print.html?id=${ck.id}`;
@@ -618,7 +619,7 @@
         const templates = await db.query('checklist_templates',
           `select=*&categoria_equipamento=eq.${encodeURIComponent(equipAtual.fleet_type||'')}&ativo=eq.true&order=intervalo_horas.asc`);
         const sel = document.getElementById('sel-checklist-template');
-        sel.innerHTML = '<option value="">— Selecionar —</option>' +
+        sel.innerHTML = '<option value="">- Selecionar -</option>' +
           templates.map(t => `<option value="${t.id}">${t.nome} (${t.intervalo_label||t.tipo})</option>`).join('');
       }
 
@@ -631,7 +632,7 @@
       if (!trocas.length) { wrap.style.display = 'none'; return; }
       wrap.style.display = 'block';
       document.getElementById('lista-trocas').innerHTML = trocas.map(t => `<li>
-        <strong>${t.template_anterior_nome || '—'} → ${t.template_novo_nome || '—'}</strong>
+        <strong>${t.template_anterior_nome || '-'} → ${t.template_novo_nome || '-'}</strong>
         <div>${t.motivo}</div>
         <div class="meta">${t.responsavel ? t.responsavel+' · ' : ''}${formatarDataHora(t.criado_em)}</div>
       </li>`).join('');
@@ -670,7 +671,7 @@
       const templates = await db.query('checklist_templates',
         `select=*&categoria_equipamento=eq.${encodeURIComponent(equipAtual.fleet_type||'')}&ativo=eq.true&order=intervalo_horas.asc`);
       const sel = document.getElementById('tr-novo-template');
-      sel.innerHTML = '<option value="">— Selecionar —</option>' +
+      sel.innerHTML = '<option value="">- Selecionar -</option>' +
         templates.map(t => `<option value="${t.id}">${t.nome} (${t.intervalo_label||t.tipo})</option>`).join('');
       document.getElementById('tr-motivo').value = '';
       seletorTrResponsavel.reset();
@@ -742,7 +743,7 @@
             <div class="flex-between" style="align-items:flex-start">
               <div>
                 <strong>${ev.status_anterior ? ev.status_anterior+' → ' : ''}${ev.status_novo}</strong>
-                ${ev.observacao ? ' — '+ev.observacao : ''}
+                ${ev.observacao ? ' - '+ev.observacao : ''}
                 <div class="meta">${ev.responsavel ? ev.responsavel+' · ' : '<span style="color:var(--red)">sem responsável · </span>'}${formatarDataHora(ev.data_mudanca)}</div>
               </div>
               <div style="display:flex;gap:4px;flex-shrink:0">
@@ -798,7 +799,7 @@
         if (!q) { ddEl.classList.remove('open'); ddEl.innerHTML=''; return; }
         const matches = collaboradoresAtivos.filter(c => c.name.toLowerCase().includes(q) || (c.code||'').toLowerCase().includes(q));
         ddEl.innerHTML = matches.length
-          ? matches.map(c => `<div class="tech-option" data-nome="${c.name}">${c.name}${c.code?' ('+c.code+')':''}${c.setor?' — '+c.setor:''}</div>`).join('')
+          ? matches.map(c => `<div class="tech-option" data-nome="${c.name}">${c.name}${c.code?' ('+c.code+')':''}${c.setor?' - '+c.setor:''}</div>`).join('')
           : '<div class="tech-option text-muted">Nenhum resultado.</div>';
         ddEl.classList.add('open');
       });
@@ -850,8 +851,8 @@
 
     // ── Linhas dinâmicas de peça (permite lançar várias de uma vez) ──
     function optionsMateriaisStock() {
-      return '<option value="">— Selecionar —</option>' +
-        materiaisStock.map(m => `<option value="${m.id}">${m.nome}${m.referencia?' ('+m.referencia+')':''} — ${m.unidade||'Und'}</option>`).join('');
+      return '<option value="">- Selecionar -</option>' +
+        materiaisStock.map(m => `<option value="${m.id}">${m.nome}${m.referencia?' ('+m.referencia+')':''} - ${m.unidade||'Und'}</option>`).join('');
     }
 
     function novaLinhaPeca() {
@@ -914,7 +915,7 @@
       );
       if (!matches.length) { dd.classList.remove('open'); dd.innerHTML='<div class="tech-option text-muted">Nenhum resultado.</div>'; dd.classList.add('open'); return; }
       dd.innerHTML = matches.map(c =>
-        `<div class="tech-option" data-id="${c.id}">${c.name}${c.code?' ('+c.code+')':''}${c.setor?' — '+c.setor:''}</div>`
+        `<div class="tech-option" data-id="${c.id}">${c.name}${c.code?' ('+c.code+')':''}${c.setor?' - '+c.setor:''}</div>`
       ).join('');
       dd.classList.add('open');
     }
@@ -965,7 +966,7 @@
         const idsColabs = relacoes.filter(rc => rc.record_id === r.id).map(rc => rc.collaborator_id);
         const tecnicos = idsColabs.map(id => {
           const c = collaboradoresAtivos.find(x => x.id === id);
-          return c ? `${c.name}${c.code?' ('+c.code+')':''}` : '—';
+          return c ? `${c.name}${c.code?' ('+c.code+')':''}` : '-';
         });
         const setores = [...new Set(idsColabs.map(id => {
           const c = collaboradoresAtivos.find(x => x.id === id);
@@ -978,12 +979,12 @@
         totalHorasTecnicos += horasArredondadas * nTecnicos;
 
         return `<tr>
-          <td>${r.shift_date ? formatarData(r.shift_date) : '—'}</td>
-          <td>${r.time_start||'—'}</td>
-          <td>${r.time_end||'—'}</td>
+          <td>${r.shift_date ? formatarData(r.shift_date) : '-'}</td>
+          <td>${r.time_start||'-'}</td>
+          <td>${r.time_end||'-'}</td>
           <td>${horasArredondadas}h${nTecnicos>1?' × '+nTecnicos:''}</td>
-          <td><div class="tecnicos-stack">${tecnicos.map(t=>`<span>${t}</span>`).join('')||'—'}</div></td>
-          <td><div class="tecnicos-stack">${setores.map(s=>`<span>${s}</span>`).join('')||'—'}</div></td>
+          <td><div class="tecnicos-stack">${tecnicos.map(t=>`<span>${t}</span>`).join('')||'-'}</div></td>
+          <td><div class="tecnicos-stack">${setores.map(s=>`<span>${s}</span>`).join('')||'-'}</div></td>
           <td>${formatarDescricao(r.description)}</td>
           <td><span class="badge ${r.status==='concluida'?'badge-green':'badge-amber'}">${r.status==='concluida'?'Concluída':'Em curso'}</span></td>
           <td>
@@ -1003,10 +1004,10 @@
       if (!pecas.length) { tbody.innerHTML='<tr><td colspan="6">Sem peças registadas.</td></tr>'; return; }
       tbody.innerHTML = pecas.map(p => `<tr>
         <td>${p.peca}</td>
-        <td>${p.data ? formatarData(p.data) : '—'}</td>
+        <td>${p.data ? formatarData(p.data) : '-'}</td>
         <td>${p.quantidade||1}</td>
         <td>${p.unidade||'Unidade'}</td>
-        <td>${p.colaborador||'—'}</td>
+        <td>${p.colaborador||'-'}</td>
         <td>
           <button class="btn btn-ghost btn-sm" onclick="editarPeca(${p.id})" style="margin-right:4px">Editar</button>
           <button class="btn btn-danger btn-sm" onclick="eliminarPeca(${p.id})">Apagar</button>
@@ -1161,7 +1162,7 @@
       }
     });
 
-    // Modal Intervenção — criar
+    // Modal Intervenção - criar
     const modalIntervencao = document.getElementById('modal-intervencao');
     document.getElementById('btn-nova-intervencao').addEventListener('click', () => {
       editandoRecordId = null;
@@ -1237,7 +1238,7 @@
       }
     });
 
-    // Modal Peça — criar
+    // Modal Peça - criar
     const modalPeca = document.getElementById('modal-peca');
     document.getElementById('btn-nova-peca').addEventListener('click', () => {
       document.getElementById('titulo-modal-peca').textContent = 'Adicionar Peça(s) Aplicada(s)';
@@ -1281,8 +1282,8 @@
             const movimento = await db.insert('stock_movimentos', {
               tipo: 'saida', estado: 'pendente', material_id: materialId, quantidade: qtd,
               data_movimento: dataAplicacao || dataHoje(), departamento: 'Oficina',
-              finalidade: `OS ${osAtual.numero_obra || 'S/Nº'} — ${equipAtual ? equipAtual.code : ''}`,
-              colaborador_nome: colaboradorNome || '', observacoes: `Avaria: ${osAtual.descricao_avaria || '—'}`,
+              finalidade: `OS ${osAtual.numero_obra || 'S/Nº'} - ${equipAtual ? equipAtual.code : ''}`,
+              colaborador_nome: colaboradorNome || '', observacoes: `Avaria: ${osAtual.descricao_avaria || '-'}`,
             });
             const movId = Array.isArray(movimento) ? movimento[0].id : movimento.id;
 

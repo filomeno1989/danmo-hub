@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Relatorios — HST — Danmo Hub</title>
+  <title>Relatorios - HST - Danmo Hub</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <style>
     .relatorio-card { background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio-md); padding: 20px; margin-bottom: 16px; transition: all var(--transicao); cursor: pointer; }
@@ -30,6 +30,7 @@
 
     .print-frame { display: none; }
   </style>
+  <script src="../shared/guard.js" data-modulo="hst"></script>
 </head>
 <body>
   <div id="navbar"></div>
@@ -168,7 +169,7 @@
         return classificarTensao(m.sistolica, m.diastolica).texto.indexOf('HTA') !== -1;
       });
 
-      var html = montarCabecalho('Resumo Mensal HST — ' + nomeMes + ' ' + ano);
+      var html = montarCabecalho('Resumo Mensal HST - ' + nomeMes + ' ' + ano);
       html += '<div class="relatorio-numero">Periodo: ' + nomeMes + ' ' + ano + '</div>';
 
       /* KPIs */
@@ -241,7 +242,7 @@
       html += '<div class="seccao"><div class="seccao-titulo">Registo de Entregas</div>' +
         '<table class="tabela-acoes"><thead><tr><th>#</th><th>Data</th><th>Colaborador</th><th>EPI</th><th>Qtd</th><th>Observacoes</th></tr></thead><tbody>';
       entregas.forEach(function(e, i) {
-        html += '<tr><td>' + (i + 1) + '</td><td>' + formataData(e.data_entrega) + '</td><td>' + escaparHTML(e.colaborador_nome) + '</td><td>' + escaparHTML(e.epi_nome) + '</td><td>' + (e.quantidade || 1) + '</td><td>' + escaparHTML(e.observacoes || '—') + '</td></tr>';
+        html += '<tr><td>' + (i + 1) + '</td><td>' + formataData(e.data_entrega) + '</td><td>' + escaparHTML(e.colaborador_nome) + '</td><td>' + escaparHTML(e.epi_nome) + '</td><td>' + (e.quantidade || 1) + '</td><td>' + escaparHTML(e.observacoes || '-') + '</td></tr>';
       });
       html += '</tbody></table></div>';
       html += montarRodape();
@@ -269,14 +270,14 @@
         return (ordem[ca.cls] || 3) - (ordem[cb.cls] || 3);
       });
 
-      var html = montarCabecalho('Relatorio de Tensao Arterial — Colaboradores');
+      var html = montarCabecalho('Relatorio de Tensao Arterial - Colaboradores');
       html += '<div class="relatorio-numero">Total de colaboradores monitorizados: ' + lista.length + '</div>';
       html += '<div class="seccao"><div class="seccao-titulo">Ultima Medicao por Colaborador</div>' +
         '<table class="tabela-acoes"><thead><tr><th>#</th><th>Colaborador</th><th>Data</th><th>Tensao</th><th>FC</th><th>Classificacao</th><th>Medido Por</th></tr></thead><tbody>';
       lista.forEach(function(m, i) {
         var c = classificarTensao(m.sistolica, m.diastolica);
         var cor = c.cls === 'tensao-alta' ? 'color:red;font-weight:700;' : c.cls === 'tensao-limitrofe' ? 'color:orange;font-weight:700;' : '';
-        html += '<tr><td>' + (i + 1) + '</td><td>' + escaparHTML(m.colaborador_nome) + '</td><td>' + formataData(m.data_medicao) + '</td><td style="' + cor + '">' + m.sistolica + '/' + m.diastolica + '</td><td>' + (m.frequencia_cardiaca || '—') + '</td><td style="' + cor + '">' + c.texto + '</td><td>' + escaparHTML(m.medido_por || '—') + '</td></tr>';
+        html += '<tr><td>' + (i + 1) + '</td><td>' + escaparHTML(m.colaborador_nome) + '</td><td>' + formataData(m.data_medicao) + '</td><td style="' + cor + '">' + m.sistolica + '/' + m.diastolica + '</td><td>' + (m.frequencia_cardiaca || '-') + '</td><td style="' + cor + '">' + c.texto + '</td><td>' + escaparHTML(m.medido_por || '-') + '</td></tr>';
       });
       html += '</tbody></table></div>';
       html += montarRodape();
@@ -345,8 +346,8 @@
         var statusBadge = { 'Em Investigacao': 'badge-aviso', 'Investigado': 'badge-info', 'Encerrado': 'badge-sucesso' };
         var badgeCls = statusBadge[a.status] || 'badge-secundario';
         html += '<div class="historico-linha" onclick="abrirRelatorioAcidente(' + a.id + ')" style="cursor:pointer;">' +
-          '<div class="historico-num">' + escaparHTML(a.numero || '—') + '</div>' +
-          '<div class="historico-info">' + formataData(a.data_hora, true) + ' — ' + escaparHTML(a.colaborador_nome) + '</div>' +
+          '<div class="historico-num">' + escaparHTML(a.numero || '-') + '</div>' +
+          '<div class="historico-info">' + formataData(a.data_hora, true) + ' - ' + escaparHTML(a.colaborador_nome) + '</div>' +
           '<div style="margin-right:12px;"><span class="badge ' + badgeCls + '">' + (a.status || '') + '</span></div>' +
           '<div class="historico-accao"><button class="btn btn-secundario btn-sm" onclick="event.stopPropagation();abrirRelatorioAcidente(' + a.id + ')">Ver</button></div>' +
         '</div>';

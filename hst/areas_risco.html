@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Areas de Risco — HST — Danmo Hub</title>
+  <title>Areas de Risco - HST - Danmo Hub</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <style>
     .filtro-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
@@ -33,6 +33,7 @@
     .badge-nivel-Alto { background: var(--cor-aviso-bg); color: var(--cor-aviso); }
     .badge-nivel-Critico { background: var(--cor-erro-bg); color: var(--cor-erro); }
   </style>
+  <script src="../shared/guard.js" data-modulo="hst"></script>
 </head>
 <body>
   <div id="navbar"></div>
@@ -188,7 +189,7 @@
       var inativa = a.ativo === false;
       html += '<div class="area-card area-nivel-' + a.nivel_risco + (inativa ? ' inativa' : '') + '">' +
         '<div class="area-topo"><span class="area-nome">' + escaparHTML(a.nome) + '</span>' +
-          '<span class="classificacao-tensao badge-nivel-' + a.nivel_risco + '" style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;">' + a.nivel_risco + (inativa ? ' — Inactiva' : '') + '</span></div>' +
+          '<span class="classificacao-tensao badge-nivel-' + a.nivel_risco + '" style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;">' + a.nivel_risco + (inativa ? ' - Inactiva' : '') + '</span></div>' +
         (a.descricao ? '<div class="area-desc">' + escaparHTML(a.descricao) + '</div>' : '') +
         (a.medidas_controlo ? '<div class="area-medidas"><strong>Medidas de Controlo:</strong> ' + escaparHTML(a.medidas_controlo) + '</div>' : '') +
         '<div class="area-acoes">' +

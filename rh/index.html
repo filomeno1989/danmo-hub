@@ -3,21 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fichas de Colaboradores — RH — Danmo Hub</title>
+  <title>Fichas de Colaboradores - RH - Danmo Hub</title>
   <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="../shared/style.css" />
   <script src="../shared/supabase.js"></script>
   <script src="../shared/auth.js"></script>
   <script src="../shared/tema.js"></script>
-  <script>
-    if (!verificarSessao()) {
-      localStorage.setItem('dss_user', JSON.stringify({
-        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
-        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
-      }));
-    }
-  </script>
-  <style>
+<style>
     .barra-pesquisa { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
     .pesquisa-input { flex: 1; min-width: 220px; padding: 10px 14px; border: 1px solid var(--cor-borda); border-radius: var(--raio-md); background: var(--cor-superficie); color: var(--cor-texto); font-size: var(--tamanho-base); }
     .pesquisa-input:focus { outline: none; border-color: var(--cor-ambar); }
@@ -48,6 +40,7 @@
     .linha-detalhe .lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--cor-texto-sec); }
     .linha-detalhe .val { font-weight: 600; }
   </style>
+  <script src="../shared/guard.js" data-modulo="rh"></script>
 </head>
 <body>
 
@@ -107,7 +100,7 @@
   </main>
 
   <!-- ══════════════════════════════════════════
-       MODAL — FORMULÁRIO (novo / editar)
+       MODAL - FORMULÁRIO (novo / editar)
   ══════════════════════════════════════════ -->
   <div class="modal-fundo" id="modal-ficha">
     <div class="modal" style="max-width:720px;max-height:90vh;overflow-y:auto;">
@@ -215,7 +208,7 @@
           <div class="form-grupo" style="margin-bottom:0;">
             <label class="form-label">Mês de Férias</label>
             <select id="f-mes-ferias" class="form-select">
-              <option value="">— Seleccionar —</option>
+              <option value="">- Seleccionar -</option>
               <option>Janeiro</option><option>Fevereiro</option><option>Março</option>
               <option>Abril</option><option>Maio</option><option>Junho</option>
               <option>Julho</option><option>Agosto</option><option>Setembro</option>
@@ -318,12 +311,12 @@
 
         <!-- Saúde -->
         <hr class="sep" style="margin:0.75rem 0 1rem" />
-        <p class="form-label mb-1" style="font-size:0.9rem;color:var(--cor-ambar)">▸ Saúde (básico — o Portal HST trata do resto)</p>
+        <p class="form-label mb-1" style="font-size:0.9rem;color:var(--cor-ambar)">▸ Saúde (básico - o Portal HST trata do resto)</p>
         <div class="form-grid-3">
           <div class="form-grupo" style="margin-bottom:0;">
             <label class="form-label">Grupo Sanguíneo</label>
             <select id="f-grupo-sanguineo" class="form-select">
-              <option value="">— Desconhecido —</option>
+              <option value="">- Desconhecido -</option>
               <option>A+</option><option>A-</option>
               <option>B+</option><option>B-</option>
               <option>AB+</option><option>AB-</option>
@@ -337,7 +330,7 @@
         </div>
         <div class="form-grid-2">
           <div class="form-grupo" style="margin-bottom:0;">
-            <label class="form-label">Altura (cm) — do B.I.</label>
+            <label class="form-label">Altura (cm) - do B.I.</label>
             <input type="number" id="f-altura" class="form-input" placeholder="Ex: 172" min="140" max="220" />
           </div>
         </div>
@@ -359,12 +352,12 @@
   </div>
 
   <!-- ══════════════════════════════════════════
-       MODAL — DETALHE (só leitura)
+       MODAL - DETALHE (só leitura)
   ══════════════════════════════════════════ -->
   <div class="modal-fundo" id="modal-detalhe">
     <div class="modal" style="max-width:680px;max-height:90vh;overflow-y:auto;">
       <div class="modal-cabecalho">
-        <span class="modal-titulo" id="det-nome-titulo">—</span>
+        <span class="modal-titulo" id="det-nome-titulo">-</span>
         <button class="modal-fechar" onclick="fecharModal('modal-detalhe')">✕</button>
       </div>
       <div class="modal-corpo" id="modal-detalhe-corpo"></div>
@@ -436,12 +429,12 @@
 
         return `
           <tr>
-            <td class="bold texto-acento">${c.code ?? '—'}</td>
+            <td class="bold texto-acento">${c.code ?? '-'}</td>
             <td>
-              <div class="bold">${c.name ?? '—'}</div>
+              <div class="bold">${c.name ?? '-'}</div>
               ${c.doenca_cronica ? `<div style="font-size:0.75rem;color:var(--cor-texto-sec)">${c.doenca_cronica}</div>` : ''}
             </td>
-            <td>${c.categoria ?? '—'}</td>
+            <td>${c.categoria ?? '-'}</td>
             <td>${tipoBadge}</td>
             <td>${formatarData(dataInicio)}</td>
             <td style="font-size:0.82rem">${tempoCasa}</td>
@@ -488,7 +481,7 @@
 
     // ── Cálculo de tempos ─────────────────────────────────
     function calcularTempoServico(dataInicio, dataFim) {
-      if (!dataInicio) return '—';
+      if (!dataInicio) return '-';
       const inicio = new Date(dataInicio);
       const fim    = dataFim ? new Date(dataFim) : new Date();
       let anos  = fim.getFullYear() - inicio.getFullYear();
@@ -498,7 +491,7 @@
     }
 
     function calcularTempoLongo(dataInicio, dataFim) {
-      if (!dataInicio) return '—';
+      if (!dataInicio) return '-';
       const inicio = new Date(dataInicio);
       const fim    = dataFim ? new Date(dataFim) : new Date();
       let anos  = fim.getFullYear() - inicio.getFullYear();
@@ -524,7 +517,7 @@
       const c = colaboradores.find(x => x.id === id);
       if (!c) return;
       preencherFormulario(c);
-      document.getElementById('modal-ficha-titulo').textContent = `✏️ Editar — ${c.name}`;
+      document.getElementById('modal-ficha-titulo').textContent = `✏️ Editar - ${c.name}`;
       document.getElementById('btn-apagar').style.display = 'inline-flex';
       abrirModal('modal-ficha');
     }
@@ -791,12 +784,12 @@
         <div class="flex justify-between items-center mb-2">
           <div>
             <span class="bold" style="font-size:1.1rem">${c.name}</span>
-            <span class="texto-muted" style="margin-left:0.5rem">· ${c.code ?? '—'}</span>
+            <span class="texto-muted" style="margin-left:0.5rem">· ${c.code ?? '-'}</span>
           </div>
           ${statusBadge}
         </div>
         <div class="flex gap-1 mb-3 flex-wrap">
-          <span class="badge badge-secundario">${c.categoria ?? '—'}</span>
+          <span class="badge badge-secundario">${c.categoria ?? '-'}</span>
           ${isEstagiario
             ? '<span class="badge badge-laranja">🎓 Estagiário</span>'
             : (c.tipo_vinculo === 'transferido'
@@ -808,7 +801,7 @@
 
         <hr class="sep" />
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 1.5rem;font-size:0.875rem;margin-top:10px;">
-          ${linha('Nascimento', c.data_nascimento ? `${formatarData(c.data_nascimento)} (${calcularIdade(c.data_nascimento)} anos)` : '—')}
+          ${linha('Nascimento', c.data_nascimento ? `${formatarData(c.data_nascimento)} (${calcularIdade(c.data_nascimento)} anos)` : '-')}
           ${linha('Naturalidade', c.naturalidade)}
           ${linha('Área/Departamento', c.setor)}
           ${linha('Mês de Férias', c.mes_ferias)}
@@ -866,7 +859,7 @@
     }
 
     function linha(label, valor) {
-      return `<div class="linha-detalhe"><div class="lbl">${label}</div><div class="val">${valor || '—'}</div></div>`;
+      return `<div class="linha-detalhe"><div class="lbl">${label}</div><div class="val">${valor || '-'}</div></div>`;
     }
   </script>
 

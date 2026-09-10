@@ -3,21 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Alterações ao Plano de Férias — Danmo Hub</title>
+  <title>Alterações ao Plano de Férias - Danmo Hub</title>
   <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="../shared/style.css" />
   <script src="../shared/supabase.js"></script>
   <script src="../shared/auth.js"></script>
   <script src="../shared/tema.js"></script>
-  <script>
-    if (!verificarSessao()) {
-      localStorage.setItem('dss_user', JSON.stringify({
-        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
-        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
-      }));
-    }
-  </script>
-  <style>
+<style>
     .caixa-info { border-left: 4px solid var(--cor-info); background: var(--cor-info-bg);
       border-radius: var(--raio-md); padding: 10px 14px; margin: 10px 0; font-size: var(--tamanho-sm); }
     .caixa-info.ok { border-left-color: var(--cor-sucesso); background: var(--cor-sucesso-bg); }
@@ -34,6 +26,7 @@
     .gap-1 { gap: 4px; } .gap-2 { gap: 8px; }
     .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
   </style>
+  <script src="../shared/guard.js" data-modulo="ferias"></script>
 </head>
 <body>
 
@@ -43,7 +36,7 @@
 
     <div style="margin-bottom:20px;">
       <h1 class="pagina-titulo">🔁 Adiamentos &amp; Antecipações</h1>
-      <p class="pagina-subtitulo">Mudanças ao mês já marcado — com aviso prévio mínimo e histórico permanente</p>
+      <p class="pagina-subtitulo">Mudanças ao mês já marcado - com aviso prévio mínimo e histórico permanente</p>
     </div>
 
     <!-- ── Nova alteração ── -->
@@ -70,7 +63,7 @@
         <div class="form-grupo">
           <label class="form-label">Novo mês de férias *</label>
           <select id="sel-novo-mes" class="form-select">
-            <option value="">— escolher mês —</option>
+            <option value="">- escolher mês -</option>
             <option value="1">Janeiro</option><option value="2">Fevereiro</option>
             <option value="3">Março</option><option value="4">Abril</option>
             <option value="5">Maio</option><option value="6">Junho</option>
@@ -88,7 +81,7 @@
       <div id="caixa-aviso"></div>
 
       <div class="form-grupo">
-        <label class="form-label">Motivo da alteração * <span class="text-muted" style="font-weight:400">(obrigatório — fica no histórico)</span></label>
+        <label class="form-label">Motivo da alteração * <span class="text-muted" style="font-weight:400">(obrigatório - fica no histórico)</span></label>
         <textarea id="f-motivo" class="form-textarea" placeholder="Ex.: pedido do colaborador por motivo familiar / antecipado a pedido do chefe de oficina..."></textarea>
       </div>
 
@@ -100,7 +93,7 @@
 
     <!-- ── Histórico ── -->
     <div class="card">
-      <h3 style="margin-bottom:12px;">📜 Histórico de alterações (<span id="hist-ano">—</span>)</h3>
+      <h3 style="margin-bottom:12px;">📜 Histórico de alterações (<span id="hist-ano">-</span>)</h3>
       <div class="tabela-container">
         <table>
           <thead>
@@ -158,7 +151,7 @@
 
     function preencherColabs() {
       const sel = document.getElementById('sel-colab');
-      sel.innerHTML = '<option value="">— escolher colaborador —</option>';
+      sel.innerHTML = '<option value="">- escolher colaborador -</option>';
       plano.sort((a, b) => {
         const na = mapaCol[a.collaborator_id] ? mapaCol[a.collaborator_id].name : '';
         const nb = mapaCol[b.collaborator_id] ? mapaCol[b.collaborator_id].name : '';
@@ -168,7 +161,7 @@
         const c = mapaCol[r.collaborator_id];
         const nome = c ? c.name : '(#' + r.collaborator_id + ')';
         sel.insertAdjacentHTML('beforeend',
-          `<option value="${r.id}">${escaparHTML(nome)} — ${MESES_PT[r.mes_previsto - 1]}${c ? ' (' + escaparHTML(setorDe(c)) + ')' : ''}</option>`);
+          `<option value="${r.id}">${escaparHTML(nome)} - ${MESES_PT[r.mes_previsto - 1]}${c ? ' (' + escaparHTML(setorDe(c)) + ')' : ''}</option>`);
       });
       document.getElementById('info-colab').textContent = '';
       document.getElementById('caixa-aviso').innerHTML = '';
@@ -189,9 +182,9 @@
       const base = r.data_inicio || primeiroDiaMes(ano, r.mes_previsto);
       const aviso = diasEntre(hojeISO(), base);
       if (aviso >= CONFIG.dias_aviso_alteracao) {
-        caixa.innerHTML = `<div class="caixa-info ok">✔ Aviso prévio OK — faltam <strong>${aviso} dias</strong> para o início previsto (mínimo: ${CONFIG.dias_aviso_alteracao}).</div>`;
+        caixa.innerHTML = `<div class="caixa-info ok">✔ Aviso prévio OK - faltam <strong>${aviso} dias</strong> para o início previsto (mínimo: ${CONFIG.dias_aviso_alteracao}).</div>`;
       } else if (aviso >= 0) {
-        caixa.innerHTML = `<div class="caixa-info ruim">⚠ Aviso prévio INSUFICIENTE — faltam <strong>${aviso} dias</strong> para o início previsto e o mínimo é <strong>${CONFIG.dias_aviso_alteracao}</strong>. Ainda pode registar, mas o histórico ficará com a marca de aviso insuficiente.</div>`;
+        caixa.innerHTML = `<div class="caixa-info ruim">⚠ Aviso prévio INSUFICIENTE - faltam <strong>${aviso} dias</strong> para o início previsto e o mínimo é <strong>${CONFIG.dias_aviso_alteracao}</strong>. Ainda pode registar, mas o histórico ficará com a marca de aviso insuficiente.</div>`;
       } else {
         caixa.innerHTML = `<div class="caixa-info ruim">⚠ As férias previstas já começaram/passaram (${Math.abs(aviso)} dia(s)). Registe só se faz sentido (ex.: interrupção e remarcação).</div>`;
       }
@@ -206,7 +199,7 @@
       const novaInicio = document.getElementById('f-nova-inicio').value || null;
 
       if (!novoMes) { mostrarToast('Escolha o novo mês.', 'aviso'); return; }
-      if (novoMes === r.mes_previsto) { mostrarToast('O novo mês é igual ao actual — nada a alterar.', 'aviso'); return; }
+      if (novoMes === r.mes_previsto) { mostrarToast('O novo mês é igual ao actual - nada a alterar.', 'aviso'); return; }
       if (tipo === 'Adiamento' && novoMes < r.mes_previsto) {
         mostrarToast('Adiamento exige um mês POSTERIOR a ' + MESES_PT[r.mes_previsto - 1] + '. Para mês anterior use "Antecipação".', 'erro');
         return;
@@ -258,7 +251,7 @@
           aviso_ok: avisoOk,
           registado_por: user ? user.nome : 'Administração'
         });
-        // 2) actualizar o plano — o mês muda e o processo volta ao início
+        // 2) actualizar o plano - o mês muda e o processo volta ao início
         await db.update('ferias_plano', r.id, {
           mes_previsto: novoMes,
           data_inicio: novaInicio,
@@ -298,10 +291,10 @@
             <td style="white-space:nowrap">${formatarData(a.criado_em, true)}</td>
             <td class="bold">${escaparHTML(nome)}</td>
             <td>${a.tipo === 'Adiamento' ? '⏩ Adiamento' : '⏪ Antecipação'}</td>
-            <td style="white-space:nowrap">${a.mes_anterior ? MESES_PT[a.mes_anterior - 1] : '—'} → <strong>${a.mes_novo ? MESES_PT[a.mes_novo - 1] : '—'}</strong></td>
-            <td style="max-width:280px">${escaparHTML(a.motivo || '—')}</td>
+            <td style="white-space:nowrap">${a.mes_anterior ? MESES_PT[a.mes_anterior - 1] : '-'} → <strong>${a.mes_novo ? MESES_PT[a.mes_novo - 1] : '-'}</strong></td>
+            <td style="max-width:280px">${escaparHTML(a.motivo || '-')}</td>
             <td>${avisoBadge}</td>
-            <td>${escaparHTML(a.registado_por || '—')}</td>
+            <td>${escaparHTML(a.registado_por || '-')}</td>
           </tr>`;
         }).join('');
       } catch (e) {

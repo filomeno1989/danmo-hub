@@ -85,6 +85,7 @@
       table.ck-table tr { page-break-inside: avoid; }
     }
   </style>
+  <script src="../shared/guard.js" data-modulo="oficina"></script>
 </head>
 <body>
 
@@ -97,22 +98,22 @@
     <img src="../shared/logos/CORNELDER.png" alt="Cornelder de Moçambique" />
     <div class="ck-cab-titulo">
       <div class="ck-doc-tipo">Documento de Manutenção</div>
-      <div class="ck-doc-nome" id="ck-nome-doc">—</div>
+      <div class="ck-doc-nome" id="ck-nome-doc">-</div>
     </div>
-    <div class="ck-ref" id="ck-ref">—</div>
+    <div class="ck-ref" id="ck-ref">-</div>
   </div>
 
   <div class="ck-titles-linha">
-    <div class="esq" id="ck-categoria-tipo">—</div>
+    <div class="esq" id="ck-categoria-tipo">-</div>
     <div class="dir">Gabinete técnico</div>
   </div>
 
   <div class="ck-fields">
-    <div><span>Número da obra</span><span id="f-numero-obra">—</span></div>
-    <div><span>Horas do equipamento</span><span id="f-horas-equip">—</span></div>
-    <div><span>Data de revisão</span><span id="f-data-revisao">—</span></div>
-    <div><span>Horas de trabalho</span><span id="f-horas-trabalho">—</span></div>
-    <div><span>Folha número</span><span id="f-folha">—</span></div>
+    <div><span>Número da obra</span><span id="f-numero-obra">-</span></div>
+    <div><span>Horas do equipamento</span><span id="f-horas-equip">-</span></div>
+    <div><span>Data de revisão</span><span id="f-data-revisao">-</span></div>
+    <div><span>Horas de trabalho</span><span id="f-horas-trabalho">-</span></div>
+    <div><span>Folha número</span><span id="f-folha">-</span></div>
   </div>
 
   <div class="ck-intervalo" id="ck-intervalo-box" style="display:none"></div>
@@ -127,19 +128,19 @@
 
   <div class="ck-comentarios">
     <div class="lbl">Informações Complementares</div>
-    <div id="f-comentarios">—</div>
+    <div id="f-comentarios">-</div>
   </div>
 
   <div class="ck-assinaturas">
     <div class="ck-ass-box">
       <div class="assinatura-slot" id="slot-executante"></div>
       <div class="cargo">Executante</div>
-      <div class="info" id="f-executante">—</div>
+      <div class="info" id="f-executante">-</div>
     </div>
     <div class="ck-ass-box">
       <div class="assinatura-slot" id="slot-encarregado"></div>
       <div class="cargo">Encarregado</div>
-      <div class="info" id="f-encarregado">—</div>
+      <div class="info" id="f-encarregado">-</div>
     </div>
   </div>
 </div>
@@ -152,7 +153,7 @@
   if (!checklistId) { alert('Checklist não especificado.'); window.location.href = 'ordens.html'; }
 
   function fData(str) {
-    if (!str) return '—';
+    if (!str) return '-';
     const d = new Date(str);
     return d.toLocaleDateString('pt-PT', { day:'2-digit', month:'2-digit', year:'numeric' });
   }
@@ -172,16 +173,16 @@
 
     document.getElementById('ck-nome-doc').textContent = tpl.nome;
     document.getElementById('ck-ref').textContent = tpl.ref_versao || '';
-    document.getElementById('ck-categoria-tipo').textContent = `${tpl.categoria_equipamento} — ${tituloTipo}`;
+    document.getElementById('ck-categoria-tipo').textContent = `${tpl.categoria_equipamento} - ${tituloTipo}`;
 
-    document.getElementById('f-numero-obra').textContent   = ck.numero_obra || '—';
-    document.getElementById('f-horas-equip').textContent   = ck.horas_equipamento != null ? ck.horas_equipamento + ' h' : '—';
+    document.getElementById('f-numero-obra').textContent   = ck.numero_obra || '-';
+    document.getElementById('f-horas-equip').textContent   = ck.horas_equipamento != null ? ck.horas_equipamento + ' h' : '-';
     document.getElementById('f-data-revisao').textContent  = fData(ck.data_revisao);
-    document.getElementById('f-horas-trabalho').textContent = ck.horas_trabalho != null ? ck.horas_trabalho + ' h' : '—';
-    document.getElementById('f-folha').textContent         = ck.folha_numero || '—';
-    document.getElementById('f-comentarios').textContent   = ck.observacoes_gerais || '—';
-    document.getElementById('f-executante').textContent    = ck.executante ? `${ck.executante} — ${ck.executante_data ? fData(ck.executante_data) : '___/___/___'}` : '—';
-    document.getElementById('f-encarregado').textContent   = ck.encarregado ? `${ck.encarregado} — ${ck.encarregado_data ? fData(ck.encarregado_data) : '___/___/___'}` : '—';
+    document.getElementById('f-horas-trabalho').textContent = ck.horas_trabalho != null ? ck.horas_trabalho + ' h' : '-';
+    document.getElementById('f-folha').textContent         = ck.folha_numero || '-';
+    document.getElementById('f-comentarios').textContent   = ck.observacoes_gerais || '-';
+    document.getElementById('f-executante').textContent    = ck.executante ? `${ck.executante} - ${ck.executante_data ? fData(ck.executante_data) : '___/___/___'}` : '-';
+    document.getElementById('f-encarregado').textContent   = ck.encarregado ? `${ck.encarregado} - ${ck.encarregado_data ? fData(ck.encarregado_data) : '___/___/___'}` : '-';
 
     // Tenta carregar assinatura digital (bucket "assinaturas" no Supabase Storage, nome = code.png)
     const colabsList = await db.query('collaborators', 'select=name,code');
@@ -192,7 +193,7 @@
       const url = `https://czgnbzxoeylicrqjvncd.supabase.co/storage/v1/object/public/assinaturas/${colab.code}.png`;
       const img = new Image();
       img.onload = () => { document.getElementById(slotId).innerHTML = `<img src="${url}" alt="Assinatura" />`; };
-      img.onerror = () => {}; // não existe ainda — mantém espaço em branco para assinar à mão
+      img.onerror = () => {}; // não existe ainda - mantém espaço em branco para assinar à mão
       img.src = url;
     }
     tentarAssinatura(ck.executante, 'slot-executante');

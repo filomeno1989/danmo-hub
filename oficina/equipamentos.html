@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Equipamentos — Danmo Oficina</title>
+  <title>Equipamentos - Danmo Oficina</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <link rel="stylesheet" href="../shared/oficina.css" />
   <style>
@@ -18,6 +18,7 @@
       max-height: 90vh; overflow-y: auto;
     }
   </style>
+  <script src="../shared/guard.js" data-modulo="oficina"></script>
 </head>
 <body>
   <div id="navbar" class="navbar"></div>
@@ -150,7 +151,7 @@
       const selGroup = document.getElementById('e-group');
       const gruposFiltrados = cat ? grupos.filter((g) => g.categoria_id === cat.id) : [];
       selGroup.innerHTML =
-        '<option value="">— Sem grupo —</option>' +
+        '<option value="">- Sem grupo -</option>' +
         gruposFiltrados.map((g) => `<option value="${g.nome}">${g.nome}</option>`).join('');
     }
 
@@ -182,10 +183,10 @@
           (e) => `
         <tr>
           <td>${e.code}</td>
-          <td>${e.fleet_type || '—'}</td>
-          <td>${e.group_name || '—'}</td>
-          <td>${e.model || '—'}</td>
-          <td>${e.year_acquired || '—'}</td>
+          <td>${e.fleet_type || '-'}</td>
+          <td>${e.group_name || '-'}</td>
+          <td>${e.model || '-'}</td>
+          <td>${e.year_acquired || '-'}</td>
           <td><span class="badge ${e.active ? 'badge-green' : 'badge-gray'}">${e.active ? 'Ativo' : 'Inativo'}</span></td>
           <td>
   <button class="btn btn-ghost btn-sm" onclick="window.location.href='maquina_historico.html?id=${e.id}'" style="margin-right:4px">📊 Histórico</button>
@@ -223,7 +224,7 @@
       document.getElementById('e-ano-aq').value = e.year_acquired || '';
       document.getElementById('e-ano-abate').value = e.year_decommissioned || '';
       document.getElementById('e-active').value = String(e.active);
-      document.getElementById('titulo-modal-equip').textContent = `Editar — ${e.code}`;
+      document.getElementById('titulo-modal-equip').textContent = `Editar - ${e.code}`;
       modal.classList.add('aberto');
     }
 

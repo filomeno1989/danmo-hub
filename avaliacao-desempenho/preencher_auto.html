@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Auto-Avaliação de Desempenho — Danmo Service System</title>
+  <title>Auto-Avaliação de Desempenho - Danmo Service System</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; background: #F4F6F9; color: #2C3E50; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
@@ -101,7 +101,7 @@
 
       <div class="resumo-final" id="resumo-final" style="display:none;">
         <div style="font-size:0.82rem;color:#7F8C8D;">Média da sua Auto-Avaliação</div>
-        <div class="media" id="resumo-media">—</div>
+        <div class="media" id="resumo-media">-</div>
         <div style="font-size:0.85rem;" id="resumo-classificacao"></div>
       </div>
 
@@ -164,9 +164,9 @@
       document.getElementById('colab-periodo').textContent = 'Período: ' + nomeMes;
 
       document.getElementById('colab-info').innerHTML =
-        '<div><strong>Cargo</strong>' + escaparHTML(avaliacao.colaborador_cargo || '—') + '</div>' +
-        '<div><strong>Departamento</strong>' + escaparHTML(avaliacao.colaborador_departamento || '—') + '</div>' +
-        '<div><strong>Responsável</strong>' + escaparHTML(avaliacao.supervisor_nome || '—') + '</div>' +
+        '<div><strong>Cargo</strong>' + escaparHTML(avaliacao.colaborador_cargo || '-') + '</div>' +
+        '<div><strong>Departamento</strong>' + escaparHTML(avaliacao.colaborador_departamento || '-') + '</div>' +
+        '<div><strong>Responsável</strong>' + escaparHTML(avaliacao.supervisor_nome || '-') + '</div>' +
         '<div><strong>Prazo</strong>' + formataData(campanha.data_inicio) + ' a ' + formataData(campanha.data_fim) + '</div>';
 
       renderCriterios();
@@ -190,7 +190,7 @@
   }
 
   function formataData(dataISO, comHora) {
-    if (!dataISO) return '—';
+    if (!dataISO) return '-';
     var d = new Date(dataISO); if (isNaN(d.getTime())) return dataISO;
     var dia = String(d.getDate()).padStart(2, '0');
     var mes = String(d.getMonth() + 1).padStart(2, '0');

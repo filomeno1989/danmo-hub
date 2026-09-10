@@ -3,22 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Avaliação de Desempenho — Admin. Oficinal — Danmo Hub</title>
+  <title>Avaliação de Desempenho - Admin. Oficinal - Danmo Hub</title>
   <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="../shared/style.css" />
   <script src="../shared/supabase.js"></script>
   <script src="../shared/auth.js"></script>
   <script src="../shared/tema.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script>
-    if (!verificarSessao()) {
-      localStorage.setItem('dss_user', JSON.stringify({
-        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
-        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
-      }));
-    }
-  </script>
-  <style>
+<style>
     .kpi-grid-aval { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px; }
     .kpi-mini { background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio-md); padding: 14px 16px; text-align: center; }
     .kpi-mini .num { font-size: 1.6rem; font-weight: 800; color: var(--cor-texto); }
@@ -47,6 +39,7 @@
     .ref-tabela-detalhe th, .ref-tabela-detalhe td { padding: 6px 8px; font-size: var(--tamanho-sm); border-bottom: 1px solid var(--cor-borda); text-align: center; }
     .ref-tabela-detalhe th:first-child, .ref-tabela-detalhe td:first-child { text-align: left; }
   </style>
+  <script src="../shared/guard.js" data-modulo="avaliacao"></script>
 </head>
 <body>
 
@@ -56,7 +49,7 @@
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
       <div>
         <h1 class="pagina-titulo">Avaliação de Desempenho</h1>
-        <p class="pagina-subtitulo">Admin. Oficinal — Gestão de Campanhas Mensais</p>
+        <p class="pagina-subtitulo">Admin. Oficinal - Gestão de Campanhas Mensais</p>
       </div>
       <div style="display:flex;gap:10px;">
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -78,11 +71,11 @@
     </div>
 
     <div class="kpi-grid-aval" id="kpi-grid">
-      <div class="kpi-mini"><div class="num" id="kpi-total">—</div><div class="lbl">Total</div></div>
-      <div class="kpi-mini pendente"><div class="num" id="kpi-pendente">—</div><div class="lbl">Sem Auto-Avaliação</div></div>
-      <div class="kpi-mini auto"><div class="num" id="kpi-auto">—</div><div class="lbl">À espera do Responsável</div></div>
-      <div class="kpi-mini supervisor"><div class="num" id="kpi-supervisor">—</div><div class="lbl">À espera do Director</div></div>
-      <div class="kpi-mini completo"><div class="num" id="kpi-completo">—</div><div class="lbl">Completas</div></div>
+      <div class="kpi-mini"><div class="num" id="kpi-total">-</div><div class="lbl">Total</div></div>
+      <div class="kpi-mini pendente"><div class="num" id="kpi-pendente">-</div><div class="lbl">Sem Auto-Avaliação</div></div>
+      <div class="kpi-mini auto"><div class="num" id="kpi-auto">-</div><div class="lbl">À espera do Responsável</div></div>
+      <div class="kpi-mini supervisor"><div class="num" id="kpi-supervisor">-</div><div class="lbl">À espera do Director</div></div>
+      <div class="kpi-mini completo"><div class="num" id="kpi-completo">-</div><div class="lbl">Completas</div></div>
     </div>
 
     <div class="painel">
@@ -145,7 +138,7 @@
           <label class="form-label" for="nc-obs">Observações (opcional)</label>
           <textarea class="form-textarea" id="nc-obs" rows="2"></textarea>
         </div>
-        <p style="font-size:var(--tamanho-xs);color:var(--cor-texto-sec);">Ao criar, o sistema gera automaticamente uma avaliação para cada colaborador activo — não precisas de copiar nada manualmente.</p>
+        <p style="font-size:var(--tamanho-xs);color:var(--cor-texto-sec);">Ao criar, o sistema gera automaticamente uma avaliação para cada colaborador activo - não precisas de copiar nada manualmente.</p>
       </div>
       <div class="modal-rodape">
         <button class="btn btn-secundario" id="btn-cancelar-nova">Cancelar</button>
@@ -337,13 +330,13 @@
       var e = estadoLabel(a);
       return '<tr>' +
         '<td>' + escapar(a.colaborador_nome) + '</td>' +
-        '<td>' + escapar(a.colaborador_departamento || '—') + '</td>' +
-        '<td>' + escapar(a.supervisor_nome || '—') + '</td>' +
+        '<td>' + escapar(a.colaborador_departamento || '-') + '</td>' +
+        '<td>' + escapar(a.supervisor_nome || '-') + '</td>' +
         '<td><span class="badge ' + e.cls + ' estado-badge">' + e.texto + '</span></td>' +
-        '<td>' + (a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos.toFixed(1) : '—') + '</td>' +
-        '<td>' + (a.avaliacao_supervisor_pontos != null ? a.avaliacao_supervisor_pontos.toFixed(1) : '—') + '</td>' +
-        '<td>' + (a.pontuacao_final != null ? '<strong>' + a.pontuacao_final.toFixed(1) + '</strong>' : '—') + '</td>' +
-        '<td>' + (a.classificacao || '—') + '</td>' +
+        '<td>' + (a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos.toFixed(1) : '-') + '</td>' +
+        '<td>' + (a.avaliacao_supervisor_pontos != null ? a.avaliacao_supervisor_pontos.toFixed(1) : '-') + '</td>' +
+        '<td>' + (a.pontuacao_final != null ? '<strong>' + a.pontuacao_final.toFixed(1) + '</strong>' : '-') + '</td>' +
+        '<td>' + (a.classificacao || '-') + '</td>' +
         '<td><span class="link-detalhe" onclick="verDetalhe(' + a.id + ')">Ver</span></td>' +
         '</tr>';
     }).join('');
@@ -361,18 +354,18 @@
     document.getElementById('detalhe-titulo').textContent = a.colaborador_nome;
 
     var html = '<p style="font-size:var(--tamanho-sm);color:var(--cor-texto-sec);margin-bottom:12px;">' +
-      (a.colaborador_cargo || '—') + ' · ' + (a.colaborador_departamento || '—') + ' · Responsável: ' + (a.supervisor_nome || '—') + '</p>';
+      (a.colaborador_cargo || '-') + ' · ' + (a.colaborador_departamento || '-') + ' · Responsável: ' + (a.supervisor_nome || '-') + '</p>';
 
     html += '<table class="ref-tabela-detalhe"><thead><tr><th>Critério</th><th>Auto</th><th>Responsável</th><th>Director</th></tr></thead><tbody>';
     CRITERIOS.forEach(function(cr) {
       var va = a.auto_avaliacao ? a.auto_avaliacao[cr.id] : null;
       var vs = a.avaliacao_supervisor ? a.avaliacao_supervisor[cr.id] : null;
       var vd = a.avaliacao_director ? a.avaliacao_director[cr.id] : null;
-      html += '<tr><td>' + cr.nome + '</td><td>' + (va != null ? va : '—') + '</td><td>' + (vs != null ? vs : '—') + '</td><td>' + (vd != null ? vd : '—') + '</td></tr>';
+      html += '<tr><td>' + cr.nome + '</td><td>' + (va != null ? va : '-') + '</td><td>' + (vs != null ? vs : '-') + '</td><td>' + (vd != null ? vd : '-') + '</td></tr>';
     });
-    html += '<tr style="font-weight:700;"><td>Média</td><td>' + (a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos.toFixed(1) : '—') +
-      '</td><td>' + (a.avaliacao_supervisor_pontos != null ? a.avaliacao_supervisor_pontos.toFixed(1) : '—') +
-      '</td><td>' + (a.avaliacao_director_pontos != null ? a.avaliacao_director_pontos.toFixed(1) : '—') + '</td></tr>';
+    html += '<tr style="font-weight:700;"><td>Média</td><td>' + (a.auto_avaliacao_pontos != null ? a.auto_avaliacao_pontos.toFixed(1) : '-') +
+      '</td><td>' + (a.avaliacao_supervisor_pontos != null ? a.avaliacao_supervisor_pontos.toFixed(1) : '-') +
+      '</td><td>' + (a.avaliacao_director_pontos != null ? a.avaliacao_director_pontos.toFixed(1) : '-') + '</td></tr>';
     html += '</tbody></table>';
 
     if (a.pontuacao_final != null) {
@@ -455,7 +448,7 @@
 
       /* 3. Gerar uma avaliação por colaborador (código = campo 'code').
          O Responsável vem de rh_responsaveis_area, casado pela área
-         (collaborators.setor) — não da tabela collaborators. */
+         (collaborators.setor) - não da tabela collaborators. */
       var linhas = colaboradores.map(function(c) {
         var area = (c.setor || c.departamento || '').trim();
         var resp = mapaResponsaveis[area.toLowerCase()];
@@ -508,7 +501,7 @@
     }
   }
 
-  /* ═══ Exportar Excel — resumo de toda a campanha, 1 linha por colaborador ═══ */
+  /* ═══ Exportar Excel - resumo de toda a campanha, 1 linha por colaborador ═══ */
   function exportarExcel() {
     if (!campanhaActual) { mostrarToast('Escolhe uma campanha primeiro.', 'erro'); return; }
     if (!avaliacoesAtuais.length) { mostrarToast('Não há avaliações nesta campanha.', 'erro'); return; }

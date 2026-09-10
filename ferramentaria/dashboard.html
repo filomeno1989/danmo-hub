@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel — Ferramentaria — Danmo Hub</title>
+  <title>Painel - Ferramentaria - Danmo Hub</title>
   
   <!-- CSS Global do Danmo Hub -->
   <link rel="stylesheet" href="../shared/style.css" />
@@ -84,13 +84,14 @@
       text-align: right; 
     }
   </style>
+  <script src="../shared/guard.js" data-modulo="ferramentaria"></script>
 </head>
 <body>
   <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
   <div id="navbar"></div>
   
   <main class="main">
-    <h1 class="pagina-titulo">Painel Principal — Ferramentaria</h1>
+    <h1 class="pagina-titulo">Painel Principal - Ferramentaria</h1>
     <p class="pagina-subtitulo">Visão geral executiva: ferramentas na rua, atrasos e registo de danos</p>
 
     <!-- KPI Cards -->
@@ -198,7 +199,7 @@
   <script>
     /* ---------- helpers ---------- */
     function diasDesde(dateStr) {
-      if (!dateStr) return '—';
+      if (!dateStr) return '-';
       return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
     }
 
@@ -226,7 +227,7 @@
         'perdido': 'badge-secundario'
       };
       var cls = map[estado.toLowerCase()] || 'badge-secundario';
-      return '<span class="badge ' + cls + '">' + (estado || '—').toUpperCase() + '</span>';
+      return '<span class="badge ' + cls + '">' + (estado || '-').toUpperCase() + '</span>';
     }
 
     /* ---------- KPI click → scroll ---------- */
@@ -265,7 +266,7 @@
 
     /* ---------- data loading ---------- */
     (async function init() {
-      /* Cada fonte de dados carrega de forma INDEPENDENTE — se uma falhar
+      /* Cada fonte de dados carrega de forma INDEPENDENTE - se uma falhar
          (ex: tool_damage com erro de rede), as outras duas continuam e o
          painel mostra o que conseguir, em vez de ficar tudo preso em
          "A processar..." por causa de uma única falha (era o que o
@@ -390,17 +391,17 @@
               ? '<span class="red-bold">' + fmtDias(dias) + '</span>'
               : fmtDias(dias);
 
-            var prazoHtml = m.prazo_devolucao ? formatarData(m.prazo_devolucao) : '—';
+            var prazoHtml = m.prazo_devolucao ? formatarData(m.prazo_devolucao) : '-';
 
             var estadoBadge = atraso
               ? '<span class="badge badge-erro">ATRASADA</span>'
               : '<span class="badge badge-info">NO PRAZO</span>';
 
             tr.innerHTML =
-              '<td>' + (tool.code || '—') + '</td>' +
-              '<td>' + (tool.nome || '—') + '</td>' +
-              '<td>' + (m.colaborador || '—') + '</td>' +
-              '<td>' + (m.departamento || '—') + '</td>' +
+              '<td>' + (tool.code || '-') + '</td>' +
+              '<td>' + (tool.nome || '-') + '</td>' +
+              '<td>' + (m.colaborador || '-') + '</td>' +
+              '<td>' + (m.departamento || '-') + '</td>' +
               '<td>' + diasHtml + '</td>' +
               '<td>' + prazoHtml + '</td>' +
               '<td>' + estadoBadge + '</td>';
@@ -433,11 +434,11 @@
             var tool = toolMap[m.tool_id] || {};
             var tr = document.createElement('tr');
             tr.innerHTML =
-              '<td>' + (tool.code || '—') + '</td>' +
-              '<td>' + (tool.nome || '—') + '</td>' +
-              '<td>' + (m.colaborador || '—') + '</td>' +
+              '<td>' + (tool.code || '-') + '</td>' +
+              '<td>' + (tool.nome || '-') + '</td>' +
+              '<td>' + (m.colaborador || '-') + '</td>' +
               '<td>' + badgeEstadoDev(m.estado_ao_voltar) + '</td>' +
-              '<td>' + (m.recebido_por || '—') + '</td>' +
+              '<td>' + (m.recebido_por || '-') + '</td>' +
               '<td>' + formatarData(m.data_devolucao, true) + '</td>';
             ptbody.appendChild(tr);
           });

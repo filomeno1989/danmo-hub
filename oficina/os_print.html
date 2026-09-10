@@ -252,6 +252,7 @@
       .assinaturas-wrap { page-break-inside: avoid; }
     }
   </style>
+  <script src="../shared/guard.js" data-modulo="oficina"></script>
 </head>
 <body>
 
@@ -277,11 +278,11 @@
     <div class="cab-dir">
       <div class="id-box">
         <div class="lbl">Nº Ordem</div>
-        <div class="val" id="p-nr-ordem">—</div>
+        <div class="val" id="p-nr-ordem">-</div>
       </div>
       <div class="id-box">
         <div class="lbl">Data</div>
-        <div class="val" id="p-data">—</div>
+        <div class="val" id="p-data">-</div>
       </div>
       <img src="../shared/logos/MMM.png" alt="Made in Mozambique" />
     </div>
@@ -308,11 +309,11 @@
               <div class="info-block">
                 <div class="info-block-title">Identificação</div>
                 <div class="info-row"><div class="info-key">Cliente</div><div class="info-val" id="p-cliente">CdM</div></div>
-                <div class="info-row"><div class="info-key">Equipamento</div><div class="info-val" id="p-equipamento">—</div></div>
-                <div class="info-row"><div class="info-key">Sector</div><div class="info-val" id="p-sector">—</div></div>
+                <div class="info-row"><div class="info-key">Equipamento</div><div class="info-val" id="p-equipamento">-</div></div>
+                <div class="info-row"><div class="info-key">Sector</div><div class="info-val" id="p-sector">-</div></div>
                 <div class="info-row"><div class="info-key">Conta Horas</div><div class="info-val" id="p-conta-horas"></div></div>
-                <div class="info-row"><div class="info-key">Abertura</div><div class="info-val" id="p-data-abertura">—</div></div>
-                <div class="info-row"><div class="info-key">Colaborador</div><div class="info-val" id="p-aberto-por">—</div></div>
+                <div class="info-row"><div class="info-key">Abertura</div><div class="info-val" id="p-data-abertura">-</div></div>
+                <div class="info-row"><div class="info-key">Colaborador</div><div class="info-val" id="p-aberto-por">-</div></div>
               </div>
 
               <div class="info-block">
@@ -335,7 +336,7 @@
 
             <div class="diag-box">
               <div class="diag-lbl">Diagnóstico / Motivo de Entrada</div>
-              <div class="diag-txt" id="p-diagnostico">—</div>
+              <div class="diag-txt" id="p-diagnostico">-</div>
             </div>
 
             <div class="funcoes-bar">
@@ -355,7 +356,7 @@
                 <tr>
                   <th class="col-desc">Descrição do Trabalho</th>
                   <th class="col-nome">Técnico</th>
-                  <th class="col-hora">Hora (Início — Fim)</th>
+                  <th class="col-hora">Hora (Início - Fim)</th>
                   <th class="col-total">Tempo Total</th>
                   <th class="col-nr">Nº</th>
                 </tr>
@@ -486,12 +487,12 @@
     document.getElementById('p-nr-ordem').textContent     = os.numero_obra || 'S/Nº';
     document.getElementById('p-data').textContent         = fData(os.data_abertura);
     document.getElementById('p-cliente').textContent      = os.nome_cliente || 'CdM';
-    document.getElementById('p-equipamento').textContent  = eq.code || '—';
-    document.getElementById('p-sector').textContent       = os.sector || '—';
+    document.getElementById('p-equipamento').textContent  = eq.code || '-';
+    document.getElementById('p-sector').textContent       = os.sector || '-';
     document.getElementById('p-conta-horas').textContent = os.hora_equipamento != null ? os.hora_equipamento + ' ' + (os.unidade_medida || 'h') : '';
     document.getElementById('p-data-abertura').textContent = fData(os.data_abertura);
-    document.getElementById('p-diagnostico').textContent  = os.descricao_avaria || '—';
-    document.getElementById('p-aberto-por').textContent = Array.isArray(os.aberto_por) ? os.aberto_por.join(', ') : (os.aberto_por || '—');
+    document.getElementById('p-diagnostico').textContent  = os.descricao_avaria || '-';
+    document.getElementById('p-aberto-por').textContent = Array.isArray(os.aberto_por) ? os.aberto_por.join(', ') : (os.aberto_por || '-');
 
     const mapaTipo = {
       'Inspeção Geral':'cb-ig','Reparação Pneus':'cb-rp','Lubrificação':'cb-lb',
@@ -528,7 +529,7 @@
       const hArr  = arredondar(r.hours != null ? parseFloat(r.hours) : 0);
       totalHoras += hArr * (tecnicos.length || 1);
 
-      const descBase = r.shift_date ? fData(r.shift_date) + ' — ' + (r.description || '') : (r.description || '');
+      const descBase = r.shift_date ? fData(r.shift_date) + ' - ' + (r.description || '') : (r.description || '');
 
       if (tecnicos.length === 0) {
         linhas.push({ desc: descBase, nome: '', ini: r.time_start||'', fim: r.time_end||'', total: hArr>0?hArr+'h':'', nr: '' });
@@ -549,7 +550,7 @@
       tr.innerHTML = `
         <td class="col-desc">${l.desc}</td>
         <td class="col-nome">${l.nome}</td>
-        <td class="col-hora">${l.ini && l.fim ? l.ini+' — '+l.fim : ''}</td>
+        <td class="col-hora">${l.ini && l.fim ? l.ini+' - '+l.fim : ''}</td>
         <td class="col-total">${l.total}</td>
         <td class="col-nr">${l.nr}</td>`;
       tbody.appendChild(tr);

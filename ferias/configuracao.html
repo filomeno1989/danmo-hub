@@ -3,21 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Configurações do Plano de Férias — Danmo Hub</title>
+  <title>Configurações do Plano de Férias - Danmo Hub</title>
   <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png">
   <link rel="stylesheet" href="../shared/style.css" />
   <script src="../shared/supabase.js"></script>
   <script src="../shared/auth.js"></script>
   <script src="../shared/tema.js"></script>
-  <script>
-    if (!verificarSessao()) {
-      localStorage.setItem('dss_user', JSON.stringify({
-        id: 'mock', usuario: 'DM0069', nome: 'Filomeno Alexandre',
-        cargo: 'Assistente Administrativo', nivel: 'admin', ativo: true
-      }));
-    }
-  </script>
-  <style>
+<style>
     .zona-perigo { border: 2px solid var(--cor-erro); border-radius: var(--raio-md); padding: 16px; margin-top: 20px; }
     .zona-perigo h3 { color: var(--cor-erro); }
     .feriado-form { display: grid; grid-template-columns: 170px 1fr auto auto; gap: 10px; align-items: end; margin-bottom: 14px; }
@@ -34,6 +26,7 @@
     .gap-1 { gap: 4px; } .gap-2 { gap: 8px; }
     .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
   </style>
+  <script src="../shared/guard.js" data-modulo="ferias"></script>
 </head>
 <body>
 
@@ -42,7 +35,7 @@
   <main class="main">
 
     <div style="margin-bottom:20px;">
-      <h1 class="pagina-titulo">⚙️ Configurações — Plano de Férias</h1>
+      <h1 class="pagina-titulo">⚙️ Configurações - Plano de Férias</h1>
       <p class="pagina-subtitulo">Regras gerais, feriados e manutenção do módulo</p>
     </div>
 
@@ -180,7 +173,7 @@
           setVal('c-mes-plan', c.mes_planeamento ?? 10);
         }
       } catch (e) {
-        console.warn('Config ainda não existe — serão usados os valores por omissão ao guardar.', e);
+        console.warn('Config ainda não existe - serão usados os valores por omissão ao guardar.', e);
       }
     }
 

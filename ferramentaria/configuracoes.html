@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Configurações — Ferramentaria — Danmo Hub</title>
+  <title>Configurações - Ferramentaria - Danmo Hub</title>
 
   <!-- CSS Global do Danmo Hub -->
   <link rel="stylesheet" href="../shared/style.css" />
@@ -36,6 +36,7 @@
       .config-grid { grid-template-columns: 1fr; }
     }
   </style>
+  <script src="../shared/guard.js" data-modulo="ferramentaria"></script>
 </head>
 <body>
   <!-- O nosso nav.js injeta a topbar e sidebar aqui automaticamente -->
@@ -43,7 +44,7 @@
 
   <main class="main">
     <h1 class="pagina-titulo">Configurações da Ferramentaria</h1>
-    <p class="pagina-subtitulo">Gerir as listas usadas nos formulários — categorias de ferramentas e departamentos</p>
+    <p class="pagina-subtitulo">Gerir as listas usadas nos formulários - categorias de ferramentas e departamentos</p>
 
     <div class="config-grid">
 
@@ -72,7 +73,7 @@
           <div class="form-label" style="font-size: 1.1rem; margin: 0;">Departamentos</div>
           <button class="btn btn-primario btn-sm" id="dep-btn-novo">+ Novo</button>
         </div>
-        <p style="font-size:var(--tamanho-sm);color:var(--cor-texto-sec);margin-bottom:16px;">Usados nos Empréstimos (lista partilhada — outros módulos podem vir a usá-la também)</p>
+        <p style="font-size:var(--tamanho-sm);color:var(--cor-texto-sec);margin-bottom:16px;">Usados nos Empréstimos (lista partilhada - outros módulos podem vir a usá-la também)</p>
         <div class="tabela-container">
           <div id="dep-loading" class="spinner" style="padding:32px;text-align:center;">A carregar...</div>
           <div id="dep-empty" class="tabela-vazia" style="display:none;">Nenhum departamento registado.</div>
@@ -137,7 +138,7 @@
 
   <script>
     /**
-     * Gestor genérico de lista simples (nome + active) — usado tanto para
+     * Gestor genérico de lista simples (nome + active) - usado tanto para
      * tool_categories como para departamentos. Evita duplicar a mesma
      * lógica de CRUD duas vezes.
      */
@@ -185,7 +186,7 @@
             var acaoTexto = item.active ? 'Desactivar' : 'Reactivar';
 
             tr.innerHTML =
-              '<td>' + (item.nome || '—') + '</td>' +
+              '<td>' + (item.nome || '-') + '</td>' +
               '<td><span class="badge badge-info">' + count + '</span></td>' +
               '<td>' + estadoBadge + '</td>' +
               '<td>' +

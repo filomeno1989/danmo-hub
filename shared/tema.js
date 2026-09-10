@@ -1,5 +1,5 @@
 /**
- * tema.js — Tema claro/escuro unificado (Danmo Hub)
+ * tema.js - Tema claro/escuro unificado (Danmo Hub)
  * Todas as 7 aplicações usam ESTE ficheiro.
  * Chave única no localStorage: dss_tema
  * Última atualização: 2026-08-11

@@ -1,5 +1,5 @@
 /**
- * nav.js — Topbar + Sidebar unificados (Danmo Hub)
+ * nav.js - Topbar + Sidebar unificados (Danmo Hub)
  * Injeta a navegação completa dentro de <div id="navbar"></div>.
  * Todas as aplicações do Hub usam ESTE ficheiro.
  * Última atualização: 2026-08-11
@@ -13,9 +13,9 @@
   const BASE = srcAttr.replace(/shared\/nav\.js.*$/, '');
 
   const MODULOS = [
-    { id: 'inicio', label: 'Painel Principal', icon: '&#127968;', href: 'index.html' },
+    { id: 'inicio', label: 'Painel Principal', icon: '&#127968;', href: 'index.html', perm: 'inicio' },
 
-    { id: 'oficina', label: 'Oficina & Manutenção', icon: '&#9881;', pasta: 'oficina',
+    { id: 'oficina', label: 'Oficina & Manutenção', icon: '&#9881;', pasta: 'oficina', perm: 'oficina',
       sub: [
         { label: 'Visão Geral',        href: 'oficina/dashboard.html' },
         { label: 'Ordens de Serviço',  href: 'oficina/ordens.html' },
@@ -28,22 +28,22 @@
 
     { id: 'admin', label: 'Admin. Oficinal', icon: '&#128188;', pasta: 'rh|avaliacao-desempenho|aquisicao|ferias',
       sub: [
-        { label: 'RH & Quadro de Pessoal',   href: 'rh/index.html' },
-        { label: 'Avaliação de Desempenho',  id: 'aval-desempenho',
+        { label: 'RH & Quadro de Pessoal',   href: 'rh/index.html', perm: 'rh' },
+        { label: 'Avaliação de Desempenho',  id: 'aval-desempenho', perm: 'avaliacao',
           itens: [
             { label: 'Painel (Campanhas)',       href: 'avaliacao-desempenho/avaliacoes.html' },
             { label: 'Responsáveis por Área',    href: 'avaliacao-desempenho/gerir_responsaveis.html' },
             { label: 'Directores',               href: 'avaliacao-desempenho/gerir_diretores.html' },
             { label: 'Portal de Avaliação',      href: 'avaliacao-desempenho/portal.html', novaAba: true }
           ] },
-        { label: 'Pedidos de Aquisição',     id: 'aquisicao-grupo',
+        { label: 'Pedidos de Aquisição',     id: 'aquisicao-grupo', perm: 'aquisicao',
           itens: [
             { label: 'Painel',        href: 'aquisicao/dashboard.html' },
             { label: 'Novo Pedido',   href: 'aquisicao/novo.html' },
             { label: 'Histórico',     href: 'aquisicao/lista.html' },
             { label: 'Configurações', href: 'aquisicao/configuracoes.html' }
           ] },
-        { label: 'Plano de Férias',          id: 'ferias-grupo',
+        { label: 'Plano de Férias',          id: 'ferias-grupo', perm: 'ferias',
           itens: [
             { label: 'Painel',                   href: 'ferias/index.html' },
             { label: 'Plano Anual',              href: 'ferias/plano.html' },
@@ -56,7 +56,7 @@
           ] }
       ] },
 
-    { id: 'stock', label: 'Gestão de Stock', icon: '&#128230;', pasta: 'stock',
+    { id: 'stock', label: 'Gestão de Stock', icon: '&#128230;', pasta: 'stock', perm: 'stock',
       sub: [
         { label: 'Painel',          href: 'stock/dashboard.html' },
         { label: 'Entradas',        href: 'stock/entradas.html' },
@@ -66,7 +66,7 @@
         { label: 'Configurações',   href: 'stock/configuracoes.html' }
       ] },
 
-    { id: 'hst', label: 'Portal HST', icon: '&#9888;', pasta: 'hst',
+    { id: 'hst', label: 'Portal HST', icon: '&#9888;', pasta: 'hst', perm: 'hst',
       sub: [
         { label: 'Painel',            href: 'hst/dashboard.html' },
         { label: 'Acidentes',         href: 'hst/acidentes.html' },
@@ -77,7 +77,7 @@
         { label: 'Configuracao',      href: 'hst/config.html' }
       ] },
 
-    { id: 'ferramentaria', label: 'Ferramentaria', icon: '&#128295;', pasta: 'ferramentaria',
+    { id: 'ferramentaria', label: 'Ferramentaria', icon: '&#128295;', pasta: 'ferramentaria', perm: 'ferramentaria',
       sub: [
         { label: 'Painel',          href: 'ferramentaria/dashboard.html' },
         { label: 'Inventário',      href: 'ferramentaria/inventario.html' },
@@ -89,8 +89,33 @@
         { label: 'Configurações',   href: 'ferramentaria/configuracoes.html' }
       ] },
 
+    { id: 'permissoes', label: 'Permissões', icon: '&#128273;', href: 'permissoes/index.html', perm: 'permissoes' },
+
     { id: 'gestao', label: 'Gestão & Registos', icon: '&#128203;', href: '#', dev: true }
   ];
+
+  /* Filtro por permissões: cada módulo só aparece se o utilizador
+     atual puder "ver" esse módulo (admin vê sempre tudo). */
+  function comPermissao(perm) {
+    if (!perm) return true;
+    if (typeof window.dhPode !== 'function') return true; /* página sem guard: não filtrar */
+    return window.dhPode(perm, 'ver');
+  }
+
+  function filtrarPorPermissao(lista) {
+    return lista.filter(function (mod) {
+      if (mod.dev) return true; /* itens em desenvolvimento são só um cartaz */
+      if (mod.sub) {
+        mod.sub = mod.sub.filter(function (s) {
+          if (!comPermissao(s.perm)) return false;
+          if (s.itens && !comPermissao(s.perm)) return false;
+          return true;
+        });
+        return mod.sub.length > 0;
+      }
+      return comPermissao(mod.perm);
+    });
+  }
 
   const caminhoAtual = window.location.pathname;
   function ehAtivo(mod) {
@@ -102,7 +127,7 @@
     if (mod.sub) {
       const aberto = ehAtivo(mod);
       const subHtml = mod.sub.map(s => {
-        // Grupo aninhado (ex: "Avaliação de Desempenho" dentro de "Admin. Oficinal") —
+        // Grupo aninhado (ex: "Avaliação de Desempenho" dentro de "Admin. Oficinal") -
         // tem as suas próprias páginas lá dentro, escondidas atrás de um +/-,
         // para o submenu principal não ficar gigante à medida que se acrescentam módulos.
         if (s.itens) {
@@ -161,7 +186,7 @@
   const sidebarHtml = `
     <nav class="sidebar" id="sidebar" aria-label="Menu principal">
       <ul class="sidebar-nav" role="menubar">
-        ${MODULOS.map(htmlModulo).join('')}
+        ${filtrarPorPermissao(MODULOS).map(htmlModulo).join('')}
         <div class="sidebar-separador"></div>
         <li class="sidebar-modulo">
           <button class="sidebar-modulo-btn sidebar-sair-btn" id="btn-sair" title="Terminar Sessão">
@@ -270,7 +295,7 @@
     const user = obterUtilizador();
     if (!user) return;
 
-    const nivelLabel = { admin: 'Admin', gestor: 'Gestor', operador: 'Operador' };
+    const nivelLabel = { admin: 'Admin', gestor: 'Gestor', operador: 'Operador', consulta: 'Consulta' };
 
     const avatar = document.getElementById('topbar-avatar');
     const nomeEl = document.getElementById('topbar-nome');
@@ -283,10 +308,10 @@
     const pCodigo = document.getElementById('perfil-codigo-detalhe');
     const pCargo = document.getElementById('perfil-cargo-detalhe');
     const pNivel = document.getElementById('perfil-nivel-detalhe');
-    if (pNome) pNome.textContent = user.nome || '—';
-    if (pCodigo) pCodigo.textContent = user.usuario || '—';
-    if (pCargo) pCargo.textContent = user.cargo || '—';
-    if (pNivel) pNivel.textContent = nivelLabel[user.nivel] || user.nivel || '—';
+    if (pNome) pNome.textContent = user.nome || '-';
+    if (pCodigo) pCodigo.textContent = user.usuario || '-';
+    if (pCargo) pCargo.textContent = user.cargo || '-';
+    if (pNivel) pNivel.textContent = nivelLabel[user.nivel] || user.nivel || '-';
   }
 
   function ativarEventos() {
@@ -378,7 +403,7 @@
     }
 
     // Hambúrguer: só existe (visualmente) em ecrãs <900px, para abrir/fechar
-    // a sidebar como overlay a toda a largura — nada a ver com o modo
+    // a sidebar como overlay a toda a largura - nada a ver com o modo
     // "expandida" do desktop, que é automático ao clicar num módulo.
     const btnMenu = document.getElementById('btn-menu-mobile');
     if (btnMenu) {
@@ -389,9 +414,24 @@
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', montar);
-  } else {
-    montar();
+  /* A sidebar só monta depois do guard.js confirmar a sessão no servidor
+     (evento dh:autorizado), para as permissões já estarem carregadas. */
+  function arrancar() {
+    if (window.__DH__ || typeof window.dhPode !== 'function') {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', montar);
+      } else {
+        montar();
+      }
+    } else {
+      document.addEventListener('dh:autorizado', function () {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', montar);
+        } else {
+          montar();
+        }
+      });
+    }
   }
+  arrancar();
 })();

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Configuracao — HST — Danmo Hub</title>
+  <title>Configuracao - HST - Danmo Hub</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <style>
     .config-section { background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio-md); padding: 24px; margin-bottom: 20px; }
@@ -19,6 +19,7 @@
     .danger-zone { border-color: var(--cor-erro); }
     .danger-zone h2 { color: var(--cor-erro); border-bottom-color: var(--cor-erro-bg); }
   </style>
+  <script src="../shared/guard.js" data-modulo="hst"></script>
 </head>
 <body>
   <div id="navbar"></div>
@@ -125,7 +126,7 @@
     var statsHtml = '';
     TABELAS_HST.forEach(function(tabela, i) {
       var r = resultados[i];
-      var count = '—';
+      var count = '-';
       if (r.status === 'fulfilled') {
         var range = r.value; // com count=exact
         // Try a count query

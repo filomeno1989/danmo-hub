@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Histórico da Máquina — Danmo Oficina</title>
+  <title>Histórico da Máquina - Danmo Oficina</title>
   <link rel="stylesheet" href="../shared/style.css" />
   <link rel="stylesheet" href="../shared/oficina.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,6 +14,7 @@
     .timeline .meta { color:var(--text2); font-size:11px; margin-top:2px; }
     .chart-wrap { position:relative; height:300px; margin-bottom:24px; }
   </style>
+  <script src="../shared/guard.js" data-modulo="oficina"></script>
 </head>
 <body>
   <div id="navbar" class="navbar"></div>
@@ -21,8 +22,8 @@
   <main class="main">
     <div class="flex-between mt-16">
       <div>
-        <h1 class="page-title" style="margin-bottom:4px" id="titulo-equip">—</h1>
-        <p class="page-sub" id="subtitulo-equip">—</p>
+        <h1 class="page-title" style="margin-bottom:4px" id="titulo-equip">-</h1>
+        <p class="page-sub" id="subtitulo-equip">-</p>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-primary" id="btn-imprimir">🖨️ Imprimir</button>
@@ -33,11 +34,11 @@
 
     <!-- KPIs -->
     <div class="kpi-grid">
-      <div class="kpi-card"><div class="kpi-label">Total Ordens de Serviço</div><div class="kpi-value" id="kpi-os">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Total Intervenções</div><div class="kpi-value" id="kpi-intervencoes">—</div></div>
-      <div class="kpi-card blue"><div class="kpi-label">Total Horas</div><div class="kpi-value" id="kpi-horas">—</div></div>
-      <div class="kpi-card red"><div class="kpi-label">Dias na Oficina</div><div class="kpi-value" id="kpi-dias">—</div></div>
-      <div class="kpi-card green"><div class="kpi-label">Peças Aplicadas</div><div class="kpi-value" id="kpi-pecas">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Ordens de Serviço</div><div class="kpi-value" id="kpi-os">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Intervenções</div><div class="kpi-value" id="kpi-intervencoes">-</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Total Horas</div><div class="kpi-value" id="kpi-horas">-</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Dias na Oficina</div><div class="kpi-value" id="kpi-dias">-</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Peças Aplicadas</div><div class="kpi-value" id="kpi-pecas">-</div></div>
     </div>
 
     <!-- Gráfico Horas ao Longo do Tempo -->
@@ -137,9 +138,9 @@
         equip = eqList[0];
         if (!equip) { alert('Máquina não encontrada.'); window.location.href='equipamentos.html'; return; }
 
-        document.getElementById('titulo-equip').textContent = equip.code || '—';
+        document.getElementById('titulo-equip').textContent = equip.code || '-';
         document.getElementById('subtitulo-equip').textContent = 
-          `${equip.fleet_type||'—'} — ${equip.group_name||'—'} — Adquirido em ${equip.year_acquired||'—'}`;
+          `${equip.fleet_type||'-'} - ${equip.group_name||'-'} - Adquirido em ${equip.year_acquired||'-'}`;
 
         // Todas as OS desta máquina
         todasOS = await db.query('ordens_servico', `select=*&equipment_id=eq.${equipId}&order=data_abertura.desc`);
@@ -199,11 +200,11 @@
       ul.innerHTML = todasOS.map(os => {
         const dias = Math.floor((new Date(os.data_fecho||new Date()) - new Date(os.data_abertura)) / 86400000);
         return `<li>
-          <strong>${os.numero_obra || 'S/Nº'}</strong> — ${os.status_atual}
+          <strong>${os.numero_obra || 'S/Nº'}</strong> - ${os.status_atual}
           <div style="font-size:12px;color:var(--text2);margin-top:3px">
-            Abertura: ${formatarData(os.data_abertura)} | Duração: ${dias} dias | Sector: ${os.sector||'—'}
+            Abertura: ${formatarData(os.data_abertura)} | Duração: ${dias} dias | Sector: ${os.sector||'-'}
           </div>
-          <div style="font-size:12px;color:var(--amber);margin-top:2px">${os.descricao_avaria||'—'}</div>
+          <div style="font-size:12px;color:var(--amber);margin-top:2px">${os.descricao_avaria||'-'}</div>
         </li>`;
       }).join('');
     }
@@ -219,7 +220,7 @@
       };
       const mapa = {};
       todasOS.forEach(os => {
-        const est = os.status_fisico || '—';
+        const est = os.status_fisico || '-';
         const dias = Math.floor((new Date(os.data_fecho || new Date()) - new Date(os.data_abertura)) / 86400000);
         if (!mapa[est]) mapa[est] = { qtd: 0, dias: 0 };
         mapa[est].qtd += 1;
@@ -253,16 +254,16 @@
         const idsColabs = relacoes.filter(rc => rc.record_id === r.id).map(rc => rc.collaborator_id);
         const nomesColabs = idsColabs.map(id => {
           const c = colabs.find(x => x.id === id);
-          return c ? c.name : '—';
-        }).join(', ') || '—';
+          return c ? c.name : '-';
+        }).join(', ') || '-';
 
         return `<tr>
-          <td>${r.shift_date ? formatarData(r.shift_date) : '—'}</td>
+          <td>${r.shift_date ? formatarData(r.shift_date) : '-'}</td>
           <td><a href="os_detalhe.html?id=${r.os_id}" style="color:var(--amber)">${os.numero_obra||'S/Nº'}</a></td>
-          <td>${r.description||'—'}</td>
+          <td>${r.description||'-'}</td>
           <td>${nomesColabs}</td>
-          <td>${r.hours||'—'}h</td>
-          <td>${os.sector||'—'}</td>
+          <td>${r.hours||'-'}h</td>
+          <td>${os.sector||'-'}</td>
         </tr>`;
       }).join('');
     }
@@ -286,7 +287,7 @@
       tbody.innerHTML = Object.entries(mapa).map(([peca, info]) => `<tr>
         <td>${peca}</td>
         <td>${info.qtd}</td>
-        <td>${info.ultima ? formatarData(info.ultima) : '—'}</td>
+        <td>${info.ultima ? formatarData(info.ultima) : '-'}</td>
       </tr>`).join('');
     }
 
@@ -314,8 +315,8 @@
         .sort((a,b) => b.horas - a.horas)
         .map(m => `<tr>
           <td>${m.colab.name}</td>
-          <td>${m.colab.code||'—'}</td>
-          <td>${m.colab.setor||'—'}</td>
+          <td>${m.colab.code||'-'}</td>
+          <td>${m.colab.setor||'-'}</td>
           <td>${m.intervencoes}</td>
           <td>${Math.round(m.horas*100)/100}h</td>
         </tr>`).join('');
