@@ -15,14 +15,14 @@
   const MODULOS = [
     { id: 'inicio', label: 'Painel Principal', icon: '&#127968;', href: 'index.html', perm: 'inicio' },
 
-    { id: 'oficina', label: 'Oficina & Manutenção', icon: '&#9881;', pasta: 'oficina', perm: 'oficina',
-      sub: [
-        { label: 'Visão Geral',        href: 'oficina/dashboard.html' },
-        { label: 'Ordens de Serviço',  href: 'oficina/ordens.html' },
-        { label: 'Checklist',          href: 'oficina/checklist_gestao.html' },
-        { label: 'Equipamentos',       href: 'oficina/equipamentos.html' },
-        { label: 'Configurações',      href: 'oficina/config.html' }
-      ] },
+    { id: 'oficina', label: 'Oficina & Manutenção', icon: '&#9881;', pasta: 'oficina',
+  sub: [
+    { label: 'Visão Geral',        href: 'oficina/dashboard.html' },
+    { label: 'Ordens de Serviço',  href: 'oficina/ordens.html' },
+    { label: 'Checklist',          href: 'oficina/checklist_gestao.html' },
+    { label: 'Equipamentos',       href: 'oficina/equipamentos.html' },
+    { label: 'Relatórios',         href: 'oficina/relatorios.html' }
+  ] },
 
     { id: 'disponibilidade', label: 'Disponibilidade Equip.', icon: '&#128666;', href: '#', dev: true },
 
