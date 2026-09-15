@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatórios da Oficina - Danmo Oficina</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231c2733'/%3E%3Ctext x='16' y='23' font-size='18' font-family='Arial' font-weight='bold' fill='%23f0a63a' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="../shared/style.css" />
+  <link rel="stylesheet" href="../shared/oficina.css" />
+  <style>
+    /* Estilos só desta página */
+    .linha-topo { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; }
+    .grupo-botoes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    .abas { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+    .aba-btn {
+      border: 1px solid var(--cor-borda); background: var(--cor-superficie);
+      color: var(--cor-texto-sec); padding: 9px 16px; border-radius: 20px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+    }
+    .aba-btn:hover { border-color: var(--cor-ambar); color: var(--cor-texto); }
+    .aba-btn.ativo { background: var(--cor-ambar); border-color: var(--cor-ambar); color: #1c2733; }
+
+    .card-rel { margin-top: 14px; display: none; }
+    .card-rel.visivel { display: block; }
+    .card-rel-cabecalho { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+    .card-rel-titulo { font-size: 15px; font-weight: 700; color: var(--cor-texto); }
+    .card-rel-sub { font-size: 12.5px; color: var(--cor-texto-sec); margin-top: 2px; }
+    .contagem-registos { font-size: 12.5px; color: var(--cor-texto-sec); white-space: nowrap; }
+    .contagem-registos strong { color: var(--cor-ambar); font-size: 15px; }
+
+    /* Tabela: cabeçalhos ordenáveis */
+    .tabela thead th.ordenavel { cursor: pointer; user-select: none; white-space: nowrap; }
+    .tabela thead th.ordenavel:hover { color: var(--cor-ambar); }
+    .seta-ordem { font-size: 10px; margin-left: 4px; color: var(--cor-ambar); }
+
+    /* Resumo por sector */
+    .resumo-sector td.num, .resumo-sector th.num { text-align: right; }
+    .resumo-sector tr.clicavel { cursor: pointer; }
+    .resumo-sector tr.ativa td { background: rgba(240, 166, 58, 0.12); }
+    .resumo-sector tr.linha-total td { font-weight: 700; border-top: 2px solid var(--cor-ambar); background: rgba(240,166,58,0.06); }
+    .dias-vermelho { color: var(--cor-erro); font-weight: 700; }
+    .dias-normal { color: var(--cor-texto-sec); }
+    .badge-sem-nr { background: rgba(156,163,175,0.15); color: #9ca3af; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+
+    .nota-pequena { font-size: 12px; color: var(--cor-texto-sec); margin-top: 8px; font-style: italic; }
+    .check-linha { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--cor-texto); }
+    .check-linha input { width: 16px; height: 16px; accent-color: var(--cor-ambar); cursor: pointer; }
+
+    /* Modal de colunas */
+    .lista-colunas { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; padding: 2px; }
+    .lista-colunas label { display: flex; align-items: center; gap: 10px; font-size: 13.5px; cursor: pointer; color: var(--cor-texto); padding: 6px 8px; border-radius: 6px; }
+    .lista-colunas label:hover { background: rgba(255,255,255,0.04); }
+    .lista-colunas input { width: 16px; height: 16px; accent-color: var(--cor-ambar); cursor: pointer; }
+    .lista-acoes { display: flex; gap: 14px; margin-bottom: 10px; }
+    .lista-acoes button { background: none; border: none; color: var(--cor-info); font-size: 12.5px; cursor: pointer; padding: 0; text-decoration: underline; }
+
+    /* Cabeçalho que só aparece na impressão / PDF */
+    .cabecalho-impresso { display: none; }
+
+    /* Impressão / PDF: só a tabela da aba ativa sai no papel */
+    @media print {
+      @page { size: A4 landscape; margin: 10mm; }
+      .topbar, .sidebar, .navbar { display: none !important; }
+      .layout { display: block !important; }
+      .main { margin: 0 !important; padding: 0 !important; }
+      body { background: #fff !important; color: #000 !important; }
+      .kpi-grid, .abas, .card-filtros, .grupo-botoes, .nota-pequena, .nao-imprimir { display: none !important; }
+      .card { border: none !important; box-shadow: none !important; background: #fff !important; padding: 0 !important; margin: 0 !important; }
+      .card-rel { display: none !important; }
+      .card-rel.visivel { display: block !important; }
+      .cabecalho-impresso { display: block !important; margin-bottom: 12px; border-bottom: 2px solid #1c2733; padding-bottom: 10px; }
+      .imp-empresa { font-size: 16px; font-weight: 700; color: #1c2733; }
+      .imp-titulo { font-size: 14px; font-weight: 700; color: #f0a63a; margin-top: 2px; }
+      .imp-meta { font-size: 10.5px; color: #444; margin-top: 4px; }
+      .tabela { color: #000 !important; font-size: 10.5px !important; width: 100% !important; }
+      .tabela thead th { background: #1c2733 !important; color: #fff !important; border: 1px solid #1c2733 !important; padding: 5px 6px !important; }
+      .tabela tbody td { border: 1px solid #bbb !important; color: #000 !important; background: #fff !important; padding: 4px 6px !important; }
+      .tabela tbody tr:hover td { background: #fff !important; }
+      .badge { border: 1px solid #555 !important; background: #fff !important; color: #000 !important; border-radius: 8px !important; padding: 1px 6px !important; font-size: 9.5px !important; }
+      .tabela-container { overflow: visible !important; max-height: none !important; }
+      .card-rel-cabecalho, .check-linha { display: none !important; }
+      .rodape-impresso { display: block !important; margin-top: 10px; font-size: 9.5px; color: #555; }
+    }
+    .rodape-impresso { display: none; }
+  </style>
+</head>
+<body>
+  <div id="navbar" class="navbar"></div>
+
+  <main class="main">
+    <div class="linha-topo">
+      <div>
+        <h1 class="pagina-titulo">Relatórios da Oficina</h1>
+        <p class="pagina-subtitulo">Obras na CDM, devoluções, obras sem número e distribuição por sector</p>
+      </div>
+      <div class="grupo-botoes nao-imprimir">
+        <button class="btn btn-secundario" id="btn-atualizar" title="Recarregar dados do sistema">Atualizar</button>
+        <button class="btn btn-secundario" id="btn-colunas" title="Escolher colunas que saem na tabela e nas exportações">Colunas</button>
+        <button class="btn btn-primario" id="btn-excel" title="Exportar o relatório atual para Excel (.xlsx)">Exportar Excel</button>
+        <button class="btn btn-secundario" id="btn-pdf" title="Guardar o relatório atual em PDF">Guardar PDF</button>
+        <button class="btn btn-secundario" id="btn-imprimir" title="Imprimir o relatório atual">Imprimir</button>
+      </div>
+    </div>
+
+    <!-- KPIs resumo -->
+    <div class="kpi-grid nao-imprimir" style="margin-top: 18px;">
+      <div class="kpi-card amarelo">
+        <div class="kpi-valor" id="kpi-cdm">-</div>
+        <div class="kpi-label">Na CDM agora</div>
+      </div>
+      <div class="kpi-card azul">
+        <div class="kpi-valor" id="kpi-volta">-</div>
+        <div class="kpi-label">De volta da CDM</div>
+      </div>
+      <div class="kpi-card vermelho">
+        <div class="kpi-valor" id="kpi-sem">-</div>
+        <div class="kpi-label">Sem nº de obra (em andamento)</div>
+      </div>
+      <div class="kpi-card verde">
+        <div class="kpi-valor" id="kpi-fechadas">-</div>
+        <div class="kpi-label">Obras fechadas</div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card card-filtros nao-imprimir" style="margin-top: 18px;">
+      <div class="form-grid">
+        <div class="form-grupo">
+          <label class="form-label">Abertura de</label>
+          <input class="form-input" type="date" id="f-de" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Abertura até</label>
+          <input class="form-input" type="date" id="f-ate" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Máquina</label>
+          <select class="form-select" id="f-maquina"><option value="">Todas as máquinas</option></select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Sector</label>
+          <select class="form-select" id="f-sector"><option value="">Todos os sectores</option></select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Estado Físico</label>
+          <select class="form-select" id="f-fisico"><option value="">Todos</option></select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Procurar</label>
+          <input class="form-input" type="text" id="f-busca" placeholder="Nº obra, máquina ou trabalho..." />
+        </div>
+      </div>
+      <p class="nota-pequena">Os filtros valem para os quatro relatórios. Para limpar, basta apagar os campos.</p>
+    </div>
+
+    <!-- Abas dos relatórios -->
+    <div class="abas nao-imprimir" id="abas-relatorios">
+      <button class="aba-btn ativo" data-aba="r1">Obras na CDM agora</button>
+      <button class="aba-btn" data-aba="r2">Obras de volta da CDM</button>
+      <button class="aba-btn" data-aba="r3">Sem nº de obra</button>
+      <button class="aba-btn" data-aba="r4">Por sector</button>
+    </div>
+
+    <!-- Cabeçalho que só sai no papel -->
+    <div class="cabecalho-impresso">
+      <div class="imp-empresa">Danmo Service System, Lda · Oficina</div>
+      <div class="imp-titulo" id="imp-titulo">Relatório</div>
+      <div class="imp-meta" id="imp-meta"></div>
+    </div>
+
+    <!-- RELATÓRIO 1: Na CDM agora -->
+    <div class="card card-rel visivel" id="card-r1">
+      <div class="card-rel-cabecalho">
+        <div>
+          <div class="card-rel-titulo">Obras na CDM agora</div>
+          <div class="card-rel-sub">Obras que estão neste momento no Centro de Manutenção.</div>
+        </div>
+        <div class="contagem-registos"><strong id="cont-r1">0</strong> obras</div>
+      </div>
+      <div class="tabela-container">
+        <table class="tabela">
+          <thead><tr id="thead-r1"></tr></thead>
+          <tbody id="tbody-r1"><tr><td class="tabela-vazia">A carregar dados...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RELATÓRIO 2: De volta da CDM -->
+    <div class="card card-rel" id="card-r2">
+      <div class="card-rel-cabecalho">
+        <div>
+          <div class="card-rel-titulo">Obras de volta da CDM</div>
+          <div class="card-rel-sub">Obras que já passaram pela CDM e saíram. As fechadas também aparecem aqui.</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+          <label class="check-linha"><input type="checkbox" id="r2-so-fechadas" /> Mostrar só as já fechadas</label>
+          <div class="contagem-registos"><strong id="cont-r2">0</strong> obras</div>
+        </div>
+      </div>
+      <div class="tabela-container">
+        <table class="tabela">
+          <thead><tr id="thead-r2"></tr></thead>
+          <tbody id="tbody-r2"><tr><td class="tabela-vazia">A carregar dados...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RELATÓRIO 3: Sem nº de obra -->
+    <div class="card card-rel" id="card-r3">
+      <div class="card-rel-cabecalho">
+        <div>
+          <div class="card-rel-titulo">Obras sem nº de obra (em andamento)</div>
+          <div class="card-rel-sub">Obras abertas que ainda não receberam número da CDM, com os dias que já levam.</div>
+        </div>
+        <div class="contagem-registos"><strong id="cont-r3">0</strong> obras</div>
+      </div>
+      <div class="tabela-container">
+        <table class="tabela">
+          <thead><tr id="thead-r3"></tr></thead>
+          <tbody id="tbody-r3"><tr><td class="tabela-vazia">A carregar dados...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RELATÓRIO 4: Por sector -->
+    <div class="card card-rel" id="card-r4">
+      <div class="card-rel-cabecalho">
+        <div>
+          <div class="card-rel-titulo">Distribuição por sector</div>
+          <div class="card-rel-sub">Clica numa linha da tabela para ver as obras desse sector.</div>
+        </div>
+        <div class="contagem-registos"><strong id="cont-r4">0</strong> sectores</div>
+      </div>
+      <div class="tabela-container">
+        <table class="tabela resumo-sector">
+          <thead>
+            <tr>
+              <th>Sector</th>
+              <th class="num">Em aberto</th>
+              <th class="num">Na CDM</th>
+              <th class="num">De volta da CDM</th>
+              <th class="num">Sem nº de obra</th>
+              <th class="num">Fechadas</th>
+              <th class="num">Total</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-resumo"><tr><td colspan="7" class="tabela-vazia">A carregar dados...</td></tr></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top: 22px;">
+        <div class="card-rel-cabecalho">
+          <div>
+            <div class="card-rel-titulo" id="titulo-sector">Obras do sector</div>
+            <div class="card-rel-sub" id="subtitulo-sector"></div>
+          </div>
+          <div class="contagem-registos"><strong id="cont-r4-det">0</strong> obras</div>
+        </div>
+        <div class="tabela-container">
+          <table class="tabela">
+            <thead><tr id="thead-r4"></tr></thead>
+            <tbody id="tbody-r4"><tr><td class="tabela-vazia">A carregar dados...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="rodape-impresso" id="rodape-impresso"></div>
+  </main>
+
+  <!-- Modal: escolha de colunas -->
+  <div class="modal-fundo" id="modal-colunas">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-cabecalho">
+        <span class="modal-titulo" style="font-size: 16px; color: var(--cor-ambar);">Colunas do relatório</span>
+        <button type="button" class="modal-fechar" id="btn-fechar-colunas-x" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="lista-acoes">
+          <button type="button" id="colunas-todas">Marcar todas</button>
+          <button type="button" id="colunas-nenhuma">Limpar todas</button>
+        </div>
+        <div class="lista-colunas" id="lista-colunas"></div>
+        <p class="nota-pequena">A escolha fica guardada neste navegador e vale para a tabela, o Excel, o PDF e a impressão.</p>
+      </div>
+      <div class="modal-rodape">
+        <button type="button" class="btn btn-primario" id="btn-fechar-colunas-ok" style="width:100%;">Pronto</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/supabase.js"></script>
+  <script src="../shared/auth.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="../shared/tema.js"></script>
+  <script src="../shared/nav.js"></script>
+  <script>
+    'use strict';
+
+    /* ============================================================
+       RELATÓRIOS DA OFICINA
+       Fontes de dados:
+       - ordens_servico: as obras (nº, máquina, datas, estados)
+       - equipment: máquinas (code = nº de máquina)
+       - os_status_log: mudanças de estado, daqui saem a ida à CDM
+         (status_novo = CdM), quem mandou (responsavel) e a volta
+         (status_anterior = CdM).
+       ============================================================ */
+
+    const utilizadorActual = protegerPagina();
+
+    const SECTORES = ['Elétrica', 'Mecânica', 'Serralharia', 'Pneumática', 'Lubrificação', 'Piquete', 'Máquinas e Ferramentas'];
+
+    const BADGE_FISICO = {
+      'Avariada': 'badge-erro',
+      'Acidentada': 'badge-erro',
+      'Pneumático': 'badge-info',
+      'Revisão/Manutenção': 'badge-aviso',
+      'Inspeção': 'badge-aviso',
+      'Aguarda Acessório': 'badge-secundario',
+      'Concluído': 'badge-sucesso'
+    };
+
+    const BADGE_ESTADO = {
+      'Aberta (DTEC)': 'badge-info',
+      'Supervisão': 'badge-aviso',
+      'Chefe da Oficina': 'badge-aviso',
+      'Departamento Técnico': 'badge-info',
+      'CdM': 'badge-aviso',
+      'Fechada': 'badge-sucesso'
+    };
+
+    let ORDENS = [];
+    let EQUIPS = {};   // id -> { code, fleet_type }
+    let MAPA_OS = {};  // id -> obra
+
+    const TITULOS_ABAS = {
+      r1: 'Obras na CDM agora',
+      r2: 'Obras de volta da CDM',
+      r3: 'Obras sem nº de obra (em andamento)',
+      r4: 'Distribuição das obras por sector'
+    };
+
+    let abaAtiva = 'r1';
+    let sectorSelecionado = null;
+    let ordenacao = { r1: null, r2: null, r3: null, r4: null }; // { i: índice da coluna, dir: 1 ou -1 }
+
+    /* ---------- Colunas de cada relatório ----------
+       v(o) devolve o texto; num = coluna de dias (valor inteiro);
+       badge = mostrar como etiqueta colorida; ordemKey = valor usado na ordenação. */
+    const COLS = {
+      r1: [
+        { id: 'obra',      t: 'Nº Obra',              v: o => o.numero_obra || '-' },
+        { id: 'maquina',   t: 'Nº Máquina',           v: o => o._eq ? o._eq.code : '-' },
+        { id: 'tipo',      t: 'Tipo de Máquina',      v: o => o._eq ? (o._eq.fleet_type || '-') : '-' },
+        { id: 'trabalho',  t: 'Descrição do Trabalho', v: o => o.descricao_avaria || '-' },
+        { id: 'abertura',  t: 'Abertura',             v: o => o.data_abertura ? formatarData(o.data_abertura) : '-', ordemKey: o => o.data_abertura || '' },
+        { id: 'data_cdm',  t: 'Foi à CDM em',         v: o => o._cdmData ? formatarData(o._cdmData) : '-', ordemKey: o => o._cdmData ? o._cdmData.getTime() : 0 },
+        { id: 'mandou',    t: 'Mandado por',          v: o => o._cdmResp || '-' },
+        { id: 'estado',    t: 'Estado da Obra',       v: o => o.status_atual || '-', badge: 'estado' },
+        { id: 'fisico',    t: 'Estado Físico',        v: o => o.status_fisico || '-', badge: 'fisico' },
+        { id: 'dias_cdm',  t: 'Dias na CDM',          num: true, v: o => o._cdmData ? diasAteHojeDe(o._cdmData) : '' }
+      ],
+      r2: [
+        { id: 'obra',      t: 'Nº Obra',              v: o => o.numero_obra || '-' },
+        { id: 'maquina',   t: 'Nº Máquina',           v: o => o._eq ? o._eq.code : '-' },
+        { id: 'tipo',      t: 'Tipo de Máquina',      v: o => o._eq ? (o._eq.fleet_type || '-') : '-' },
+        { id: 'trabalho',  t: 'Descrição do Trabalho', v: o => o.descricao_avaria || '-' },
+        { id: 'abertura',  t: 'Abertura',             v: o => o.data_abertura ? formatarData(o.data_abertura) : '-', ordemKey: o => o.data_abertura || '' },
+        { id: 'data_cdm',  t: 'Foi à CDM em',         v: o => o._cdmData ? formatarData(o._cdmData) : '-', ordemKey: o => o._cdmData ? o._cdmData.getTime() : 0 },
+        { id: 'mandou',    t: 'Mandado por',          v: o => o._cdmResp || '-' },
+        { id: 'data_volta', t: 'Voltou em',           v: o => o._voltaData ? formatarData(o._voltaData) : '-', ordemKey: o => o._voltaData ? o._voltaData.getTime() : 0 },
+        { id: 'estado',    t: 'Estado da Obra',       v: o => o.status_atual || '-', badge: 'estado' },
+        { id: 'fisico',    t: 'Estado Físico',        v: o => o.status_fisico || '-', badge: 'fisico' }
+      ],
+      r3: [
+        { id: 'maquina',  t: 'Nº Máquina',            v: o => o._eq ? o._eq.code : '-' },
+        { id: 'tipo',     t: 'Tipo de Máquina',       v: o => o._eq ? (o._eq.fleet_type || '-') : '-' },
+        { id: 'trabalho', t: 'Descrição do Trabalho', v: o => o.descricao_avaria || '-' },
+        { id: 'abertura', t: 'Abertura',              v: o => o.data_abertura ? formatarData(o.data_abertura) : '-', ordemKey: o => o.data_abertura || '' },
+        { id: 'dias_sem', t: 'Dias sem nº',           num: true, v: o => diasAteHojeDe(dataLocal(o.data_abertura)) ?? '' },
+        { id: 'sector',   t: 'Sector',                v: o => o.sector || '-' },
+        { id: 'estado',   t: 'Estado da Obra',        v: o => o.status_atual || '-', badge: 'estado' },
+        { id: 'fisico',   t: 'Estado Físico',         v: o => o.status_fisico || '-', badge: 'fisico' },
+        { id: 'abriu',    t: 'Quem abriu',            v: o => textoAbertoPor(o) }
+      ],
+      r4: [
+        { id: 'obra',     t: 'Nº Obra',              v: o => o.numero_obra || '-' },
+        { id: 'maquina',  t: 'Nº Máquina',           v: o => o._eq ? o._eq.code : '-' },
+        { id: 'tipo',     t: 'Tipo de Máquina',      v: o => o._eq ? (o._eq.fleet_type || '-') : '-' },
+        { id: 'trabalho', t: 'Descrição do Trabalho', v: o => o.descricao_avaria || '-' },
+        { id: 'abertura', t: 'Abertura',             v: o => o.data_abertura ? formatarData(o.data_abertura) : '-', ordemKey: o => o.data_abertura || '' },
+        { id: 'estado',   t: 'Estado da Obra',       v: o => o.status_atual || '-', badge: 'estado' },
+        { id: 'fisico',   t: 'Estado Físico',        v: o => o.status_fisico || '-', badge: 'fisico' }
+      ]
+    };
+
+    /* Colunas visíveis: por defeito todas; fica guardado no navegador */
+    const CHAVE_COLS = 'rel_oficina_colunas_v1';
+    let VISIVEIS = { r1: null, r2: null, r3: null, r4: null };
+    (function carregarColunasGuardadas() {
+      try {
+        const bruto = localStorage.getItem(CHAVE_COLS);
+        if (bruto) VISIVEIS = Object.assign(VISIVEIS, JSON.parse(bruto));
+      } catch (e) { /* se estiver estragado, usa o defeito */ }
+      Object.keys(COLS).forEach(aba => {
+        if (!Array.isArray(VISIVEIS[aba]) || !VISIVEIS[aba].length) {
+          VISIVEIS[aba] = COLS[aba].map(c => c.id);
+        }
+      });
+    })();
+
+    function guardarColunas() {
+      try { localStorage.setItem(CHAVE_COLS, JSON.stringify(VISIVEIS)); } catch (e) { /* sem localStorage, segue em frente */ }
+    }
+
+    /* ---------- Utilitários de data (com fuso local, sem bug da meia-noite) ---------- */
+    function dataLocal(s) {
+      if (!s) return null;
+      const partes = String(s).split('T')[0].split('-');
+      if (partes.length < 3) return null;
+      const d = new Date(+partes[0], +partes[1] - 1, +partes[2]);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function diasAteHojeDe(data) {
+      if (!data) return null;
+      const ini = (data instanceof Date) ? data : dataLocal(data);
+      if (!ini) return null;
+      const fim = new Date();
+      fim.setHours(0, 0, 0, 0);
+      const dias = Math.floor((fim - ini) / 86400000);
+      return isNaN(dias) ? null : dias;
+    }
+
+    function textoAbertoPor(o) {
+      if (Array.isArray(o.aberto_por)) return o.aberto_por.join(', ') || '-';
+      if (o.aberto_por) return String(o.aberto_por);
+      return '-';
+    }
+
+    function dataDoEvento(ev) {
+      return ev.data_mudanca || ev.criado_em || null;
+    }
+
+    function mensagemErro(err) {
+      if (!err) return 'erro desconhecido';
+      if (err.message) return err.message;
+      if (typeof err === 'string') return err;
+      try { return JSON.stringify(err); } catch (e) { return 'erro desconhecido'; }
+    }
+
+    /* ---------- Carregamento de dados ---------- */
+    async function carregarEquipamentos() {
+      const lista = await db.query('equipment', 'select=*&order=code.asc');
+      EQUIPS = {};
+      lista.forEach(e => { EQUIPS[String(e.id)] = e; });
+      const sel = document.getElementById('f-maquina');
+      lista.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = String(e.id);
+        opt.textContent = e.code + (e.fleet_type ? ' · ' + e.fleet_type : '');
+        sel.appendChild(opt);
+      });
+    }
+
+    async function carregarOrdens() {
+      ORDENS = await db.query('ordens_servico', 'select=*');
+      MAPA_OS = {};
+      ORDENS.forEach(o => {
+        MAPA_OS[String(o.id)] = o;
+        o._eq = EQUIPS[String(o.equipment_id)] || null;
+        o._cdmData = null;
+        o._cdmResp = '';
+        o._voltaData = null;
+        o._voltaDestino = '';
+      });
+    }
+
+    async function carregarLogs() {
+      let logs = [];
+      try {
+        logs = await db.query('os_status_log', 'select=*&order=data_mudanca.asc');
+      } catch (e) {
+        // Se a coluna data_mudanca não existir, traz sem ordem e ordena em JS
+        logs = await db.query('os_status_log', 'select=*');
+      }
+      logs.sort((a, b) => new Date(dataDoEvento(a) || 0) - new Date(dataDoEvento(b) || 0));
+      logs.forEach(ev => {
+        const o = MAPA_OS[String(ev.os_id)];
+        if (!o) return;
+        const quando = dataDoEvento(ev) ? new Date(dataDoEvento(ev)) : null;
+        if (ev.status_novo === 'CdM') {
+          o._cdmData = quando;
+          o._cdmResp = ev.responsavel || '';
+        }
+        if (ev.status_anterior === 'CdM') {
+          o._voltaData = quando;
+          o._voltaDestino = ev.status_novo || '';
+        }
+      });
+    }
+
+    /* ---------- Filtros ---------- */
+    function obraPassaFiltros(o, ignorarSector) {
+      const de = document.getElementById('f-de').value;
+      const ate = document.getElementById('f-ate').value;
+      const maq = document.getElementById('f-maquina').value;
+      const fis = document.getElementById('f-fisico').value;
+      const sec = document.getElementById('f-sector').value;
+      const busca = document.getElementById('f-busca').value.trim().toLowerCase();
+
+      if (de || ate) {
+        if (!o.data_abertura) return false;
+        if (de && o.data_abertura < de) return false;
+        if (ate && o.data_abertura > ate) return false;
+      }
+      if (maq && String(o.equipment_id) !== maq) return false;
+      if (fis && o.status_fisico !== fis) return false;
+      if (!ignorarSector && sec && o.sector !== sec) return false;
+      if (busca) {
+        const alvo = ((o.numero_obra || '') + ' ' + (o._eq ? o._eq.code : '') + ' ' + (o.descricao_avaria || '')).toLowerCase();
+        if (!alvo.includes(busca)) return false;
+      }
+      return true;
+    }
+
+    /* Lista de cada relatório (com filtros aplicados) */
+    function dadosDaAba(aba) {
+      if (aba === 'r1') {
+        return ORDENS.filter(o => o.status_atual === 'CdM' && obraPassaFiltros(o, false));
+      }
+      if (aba === 'r2') {
+        const soFechadas = document.getElementById('r2-so-fechadas').checked;
+        return ORDENS.filter(o =>
+          o._cdmData && o.status_atual !== 'CdM' &&
+          (!soFechadas || o.status_atual === 'Fechada') &&
+          obraPassaFiltros(o, false)
+        );
+      }
+      if (aba === 'r3') {
+        return ORDENS.filter(o => !o.numero_obra && o.status_atual !== 'Fechada' && obraPassaFiltros(o, false));
+      }
+      return [];
+    }
+
+    /* ---------- Ordenação ---------- */
+    function listaOrdenada(aba) {
+      const lista = dadosDaAba(aba);
+      const cols = COLS[aba].filter(c => VISIVEIS[aba].includes(c.id));
+      const ord = ordenacao[aba];
+
+      let base;
+      if (aba === 'r1') {
+        base = [...lista].sort((a, b) => (b._cdmData ? b._cdmData.getTime() : 0) - (a._cdmData ? a._cdmData.getTime() : 0));
+      } else if (aba === 'r2') {
+        base = [...lista].sort((a, b) => (b._voltaData ? b._voltaData.getTime() : 0) - (a._voltaData ? a._voltaData.getTime() : 0));
+      } else if (aba === 'r3') {
+        base = [...lista].sort((a, b) => String(a.data_abertura || '').localeCompare(String(b.data_abertura || '')));
+      } else {
+        base = [...lista].sort((a, b) => String(b.data_abertura || '').localeCompare(String(a.data_abertura || '')));
+      }
+
+      if (!ord || ord.i < 0 || !cols[ord.i]) return base;
+      const c = cols[ord.i];
+      return base.sort((a, b) => {
+        if (c.num) {
+          const va = c.v(a), vb = c.v(b);
+          return ((va === '' ? -1 : va) - (vb === '' ? -1 : vb)) * ord.dir;
+        }
+        const va = c.ordemKey ? c.ordemKey(a) : c.v(a);
+        const vb = c.ordemKey ? c.ordemKey(b) : c.v(b);
+        if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * ord.dir;
+        return String(va).localeCompare(String(vb), 'pt') * ord.dir;
+      });
+    }
+
+    /* ---------- Renderização das tabelas ---------- */
+    function celulaHTML(c, o) {
+      const val = c.v(o);
+      if (c.num) {
+        if (val === '' || val === null || val === undefined) return '-';
+        const cor = val >= 15 ? 'dias-vermelho' : 'dias-normal';
+        return '<span class="' + cor + '">' + val + ' d</span>';
+      }
+      if (c.badge) {
+        const mapa = c.badge === 'fisico' ? BADGE_FISICO : BADGE_ESTADO;
+        const cls = mapa[val] || 'badge-secundario';
+        return '<span class="badge ' + cls + '">' + escaparHTML(String(val)) + '</span>';
+      }
+      const txt = String(val);
+      if (c.id === 'trabalho' && txt.length > 90) {
+        return '<span title="' + escaparHTML(txt) + '">' + escaparHTML(txt.slice(0, 90)) + '...</span>';
+      }
+      return escaparHTML(txt);
+    }
+
+    function renderTabela(aba) {
+      const cols = COLS[aba].filter(c => VISIVEIS[aba].includes(c.id));
+      const lista = listaOrdenada(aba);
+      const thead = document.getElementById('thead-' + aba);
+      const tbody = document.getElementById('tbody-' + aba);
+      const cont = document.getElementById('cont-' + aba);
+
+      if (cont) cont.textContent = lista.length;
+
+      thead.innerHTML = cols.map((c, i) => {
+        const ord = ordenacao[aba];
+        const seta = (ord && ord.i === i) ? '<span class="seta-ordem">' + (ord.dir === 1 ? '▲' : '▼') + '</span>' : '';
+        return '<th class="ordenavel" data-aba="' + aba + '" data-i="' + i + '">' + escaparHTML(c.t) + seta + '</th>';
+      }).join('');
+
+      if (!lista.length) {
+        tbody.innerHTML = '<tr><td colspan="' + cols.length + '" class="tabela-vazia">Nenhuma obra encontrada com estes filtros.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = lista.map(o => {
+        const numero = o.numero_obra
+          ? '<strong>' + escaparHTML(o.numero_obra) + '</strong>'
+          : '<span class="badge-sem-nr">s/nº</span>';
+        const tds = cols.map(c => '<td>' + (c.id === 'obra' ? numero : celulaHTML(c, o)) + '</td>').join('');
+        return '<tr>' + tds + '</tr>';
+      }).join('');
+    }
+
+    /* ---------- Resumo por sector (relatório 4) ---------- */
+    function dadosResumoSector() {
+      const lista = ORDENS.filter(o => obraPassaFiltros(o, true));
+      const nomes = [];
+      SECTORES.forEach(s => nomes.push(s));
+      lista.forEach(o => {
+        if (o.sector && !nomes.includes(o.sector)) nomes.push(o.sector);
+      });
+      if (lista.some(o => !o.sector)) nomes.push('Sem sector');
+
+      const linhas = nomes.map(nome => {
+        const doSector = lista.filter(o => (o.sector || 'Sem sector') === nome);
+        return {
+          sector: nome,
+          aberto: doSector.filter(o => o.status_atual !== 'Fechada').length,
+          cdm: doSector.filter(o => o.status_atual === 'CdM').length,
+          volta: doSector.filter(o => o._cdmData && o.status_atual !== 'CdM').length,
+          semN: doSector.filter(o => !o.numero_obra && o.status_atual !== 'Fechada').length,
+          fechadas: doSector.filter(o => o.status_atual === 'Fechada').length,
+          total: doSector.length
+        };
+      }).filter(l => l.total > 0);
+
+      linhas.sort((a, b) => b.total - a.total);
+      return linhas;
+    }
+
+    function renderResumoSector() {
+      const linhas = dadosResumoSector();
+      const tbody = document.getElementById('tbody-resumo');
+      document.getElementById('cont-r4').textContent = linhas.length;
+
+      if (!linhas.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="tabela-vazia">Nenhuma obra encontrada com estes filtros.</td></tr>';
+        return;
+      }
+
+      const tot = { aberto: 0, cdm: 0, volta: 0, semN: 0, fechadas: 0, total: 0 };
+      linhas.forEach(l => { tot.aberto += l.aberto; tot.cdm += l.cdm; tot.volta += l.volta; tot.semN += l.semN; tot.fechadas += l.fechadas; tot.total += l.total; });
+
+      let html = linhas.map(l =>
+        '<tr class="clicavel' + (sectorSelecionado === l.sector ? ' ativa' : '') + '" data-sector="' + escaparHTML(l.sector) + '">' +
+        '<td>' + escaparHTML(l.sector) + '</td>' +
+        '<td class="num">' + l.aberto + '</td>' +
+        '<td class="num">' + l.cdm + '</td>' +
+        '<td class="num">' + l.volta + '</td>' +
+        '<td class="num">' + l.semN + '</td>' +
+        '<td class="num">' + l.fechadas + '</td>' +
+        '<td class="num"><strong>' + l.total + '</strong></td>' +
+        '</tr>'
+      ).join('');
+
+      html += '<tr class="linha-total">' +
+        '<td>TOTAL GERAL</td>' +
+        '<td class="num">' + tot.aberto + '</td>' +
+        '<td class="num">' + tot.cdm + '</td>' +
+        '<td class="num">' + tot.volta + '</td>' +
+        '<td class="num">' + tot.semN + '</td>' +
+        '<td class="num">' + tot.fechadas + '</td>' +
+        '<td class="num"><strong>' + tot.total + '</strong></td>' +
+        '</tr>';
+
+      tbody.innerHTML = html;
+
+      if (!sectorSelecionado || !linhas.some(l => l.sector === sectorSelecionado)) {
+        sectorSelecionado = linhas[0].sector;
+      }
+      renderDetalheSector();
+    }
+
+    function renderDetalheSector() {
+      const doSector = ORDENS.filter(o =>
+        (o.sector || 'Sem sector') === sectorSelecionado &&
+        obraPassaFiltros(o, false)
+      );
+      const lista = doSector.sort((a, b) => String(b.data_abertura || '').localeCompare(String(a.data_abertura || '')));
+
+      document.getElementById('titulo-sector').textContent = 'Obras do sector: ' + sectorSelecionado;
+      document.getElementById('subtitulo-sector').textContent = 'Obras registadas neste sector, com os filtros de cima aplicados.';
+      document.getElementById('cont-r4-det').textContent = lista.length;
+
+      const cols = COLS.r4.filter(c => VISIVEIS.r4.includes(c.id));
+      const thead = document.getElementById('thead-r4');
+      const tbody = document.getElementById('tbody-r4');
+
+      const ord = ordenacao.r4;
+      thead.innerHTML = cols.map((c, i) => {
+        const seta = (ord && ord.i === i) ? '<span class="seta-ordem">' + (ord.dir === 1 ? '▲' : '▼') + '</span>' : '';
+        return '<th class="ordenavel" data-aba="r4" data-i="' + i + '">' + escaparHTML(c.t) + seta + '</th>';
+      }).join('');
+
+      if (!lista.length) {
+        tbody.innerHTML = '<tr><td colspan="' + cols.length + '" class="tabela-vazia">Nenhuma obra neste sector com estes filtros.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = lista.map(o => {
+        const numero = o.numero_obra
+          ? '<strong>' + escaparHTML(o.numero_obra) + '</strong>'
+          : '<span class="badge-sem-nr">s/nº</span>';
+        const tds = cols.map(c => '<td>' + (c.id === 'obra' ? numero : celulaHTML(c, o)) + '</td>').join('');
+        return '<tr>' + tds + '</tr>';
+      }).join('');
+    }
+
+    /* ---------- KPIs ---------- */
+    function atualizarKPIs() {
+      const lista = ORDENS.filter(o => obraPassaFiltros(o, true));
+      document.getElementById('kpi-cdm').textContent = lista.filter(o => o.status_atual === 'CdM').length;
+      document.getElementById('kpi-volta').textContent = lista.filter(o => o._cdmData && o.status_atual !== 'CdM').length;
+      document.getElementById('kpi-sem').textContent = lista.filter(o => !o.numero_obra && o.status_atual !== 'Fechada').length;
+      document.getElementById('kpi-fechadas').textContent = lista.filter(o => o.status_atual === 'Fechada').length;
+    }
+
+    function atualizarTudo() {
+      atualizarKPIs();
+      renderTabela('r1');
+      renderTabela('r2');
+      renderTabela('r3');
+      renderResumoSector();
+    }
+
+    /* ---------- Abas ---------- */
+    function mostrarAba(aba) {
+      abaAtiva = aba;
+      document.querySelectorAll('.aba-btn').forEach(b => b.classList.toggle('ativo', b.dataset.aba === aba));
+      document.querySelectorAll('.card-rel').forEach(c => c.classList.remove('visivel'));
+      document.getElementById('card-' + aba).classList.add('visivel');
+    }
+
+    document.getElementById('abas-relatorios').addEventListener('click', e => {
+      const btn = e.target.closest('.aba-btn');
+      if (btn) mostrarAba(btn.dataset.aba);
+    });
+
+    /* ---------- Ordenação ao clicar no cabeçalho ---------- */
+    document.addEventListener('click', e => {
+      const th = e.target.closest('th.ordenavel');
+      if (!th) return;
+      const aba = th.dataset.aba;
+      const i = parseInt(th.dataset.i, 10);
+      const atual = ordenacao[aba];
+      if (atual && atual.i === i) {
+        if (atual.dir === 1) ordenacao[aba] = { i: i, dir: -1 };
+        else ordenacao[aba] = null; // terceiro clique volta à ordem natural
+      } else {
+        ordenacao[aba] = { i: i, dir: 1 };
+      }
+      if (aba === 'r4') renderDetalheSector();
+      else renderTabela(aba);
+    });
+
+    /* ---------- Filtros ---------- */
+    ['f-de', 'f-ate', 'f-maquina', 'f-sector', 'f-fisico'].forEach(id =>
+      document.getElementById(id).addEventListener('change', atualizarTudo)
+    );
+    document.getElementById('f-busca').addEventListener('input', atualizarTudo);
+    document.getElementById('r2-so-fechadas').addEventListener('change', () => renderTabela('r2'));
+
+    /* ---------- Resumo por sector: clicar numa linha ---------- */
+    document.getElementById('tbody-resumo').addEventListener('click', e => {
+      const tr = e.target.closest('tr.clicavel');
+      if (!tr) return;
+      sectorSelecionado = tr.dataset.sector;
+      document.querySelectorAll('#tbody-resumo tr').forEach(x => x.classList.remove('ativa'));
+      tr.classList.add('ativa');
+      renderDetalheSector();
+    });
+
+    /* ---------- Modal de colunas ---------- */
+    function abrirModalColunas() {
+      const lista = document.getElementById('lista-colunas');
+      lista.innerHTML = COLS[abaAtiva].map(c =>
+        '<label><input type="checkbox" value="' + c.id + '"' +
+        (VISIVEIS[abaAtiva].includes(c.id) ? ' checked' : '') + ' /> ' + escaparHTML(c.t) + '</label>'
+      ).join('');
+      abrirModal('modal-colunas');
+    }
+
+    document.getElementById('btn-colunas').addEventListener('click', abrirModalColunas);
+    document.getElementById('btn-fechar-colunas-x').addEventListener('click', () => fecharModal('modal-colunas'));
+    document.getElementById('btn-fechar-colunas-ok').addEventListener('click', () => fecharModal('modal-colunas'));
+
+    document.getElementById('colunas-todas').addEventListener('click', () => {
+      VISIVEIS[abaAtiva] = COLS[abaAtiva].map(c => c.id);
+      guardarColunas();
+      abrirModalColunas();
+      redesenharAbaAtiva();
+    });
+
+    document.getElementById('colunas-nenhuma').addEventListener('click', () => {
+      VISIVEIS[abaAtiva] = [];
+      guardarColunas();
+      abrirModalColunas();
+      redesenharAbaAtiva();
+    });
+
+    document.getElementById('lista-colunas').addEventListener('change', e => {
+      const cb = e.target;
+      if (cb.type !== 'checkbox') return;
+      let vis = VISIVEIS[abaAtiva].slice();
+      if (cb.checked) {
+        if (!vis.includes(cb.value)) vis.push(cb.value);
+      } else {
+        vis = vis.filter(id => id !== cb.value);
+      }
+      // mantém a ordem original das colunas do relatório
+      VISIVEIS[abaAtiva] = COLS[abaAtiva].map(c => c.id).filter(id => vis.includes(id));
+      guardarColunas();
+      redesenharAbaAtiva();
+    });
+
+    function redesenharAbaAtiva() {
+      if (abaAtiva === 'r4') renderResumoSector();
+      else renderTabela(abaAtiva);
+    }
+
+    /* ---------- Exportar Excel ---------- */
+    function nomeFicheiro(slug) {
+      return 'Relatorio_Oficina_' + slug + '_' + dataHojeISO() + '.xlsx';
+    }
+
+    function linhasParaExcel(aba, lista) {
+      const cols = COLS[aba].filter(c => VISIVEIS[aba].includes(c.id));
+      const aoa = [cols.map(c => c.t)];
+      lista.forEach(o => {
+        aoa.push(cols.map(c => {
+          const val = c.v(o);
+          return (val === '' || val === null || val === undefined) ? '' : val;
+        }));
+      });
+      return { aoa: aoa, cols: cols };
+    }
+
+    function exportarExcel() {
+      if (!window.XLSX || !window.XLSX.writeFile) {
+        mostrarToast('A biblioteca de Excel não carregou. Confirma a internet e atualiza a página.', 'erro');
+        return;
+      }
+      const wb = XLSX.utils.book_new();
+
+      if (abaAtiva === 'r4') {
+        // Folha 1: resumo por sector
+        const resumo = [['Sector', 'Em aberto', 'Na CDM', 'De volta da CDM', 'Sem nº de obra', 'Fechadas', 'Total']];
+        const linhas = dadosResumoSector();
+        const tot = { aberto: 0, cdm: 0, volta: 0, semN: 0, fechadas: 0, total: 0 };
+        linhas.forEach(l => {
+          resumo.push([l.sector, l.aberto, l.cdm, l.volta, l.semN, l.fechadas, l.total]);
+          tot.aberto += l.aberto; tot.cdm += l.cdm; tot.volta += l.volta;
+          tot.semN += l.semN; tot.fechadas += l.fechadas; tot.total += l.total;
+        });
+        resumo.push(['TOTAL GERAL', tot.aberto, tot.cdm, tot.volta, tot.semN, tot.fechadas, tot.total]);
+        const wsRes = XLSX.utils.aoa_to_sheet(resumo);
+        wsRes['!cols'] = [{ wch: 24 }, { wch: 10 }, { wch: 10 }, { wch: 16 }, { wch: 15 }, { wch: 10 }, { wch: 8 }];
+        XLSX.utils.book_append_sheet(wb, wsRes, 'Resumo');
+
+        // Folha 2: obras de todos os sectores, uma a uma
+        const lista = ORDENS.filter(o => obraPassaFiltros(o, true))
+          .sort((a, b) => String(a.sector || '').localeCompare(String(b.sector || ''), 'pt'));
+        const cols = COLS.r4.filter(c => VISIVEIS.r4.includes(c.id));
+        const det = [['Sector'].concat(cols.map(c => c.t))];
+        lista.forEach(o => {
+          det.push([(o.sector || 'Sem sector')].concat(cols.map(c => {
+            const val = c.v(o);
+            return (val === '' || val === null || val === undefined) ? '' : val;
+          })));
+        });
+        const wsDet = XLSX.utils.aoa_to_sheet(det);
+        wsDet['!cols'] = [{ wch: 20 }].concat(cols.map(c => ({ wch: c.id === 'trabalho' ? 50 : 15 })));
+        XLSX.utils.book_append_sheet(wb, wsDet, 'Detalhe');
+        XLSX.writeFile(wb, nomeFicheiro('Por_sector'));
+        mostrarToast('Excel exportado com resumo e detalhe por sector.', 'sucesso');
+        return;
+      }
+
+      const lista = listaOrdenada(abaAtiva);
+      if (!lista.length) {
+        mostrarToast('Não há obras para exportar neste relatório.', 'aviso');
+        return;
+      }
+      const { aoa, cols } = linhasParaExcel(abaAtiva, lista);
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = cols.map(c => ({ wch: c.id === 'trabalho' ? 50 : (c.id === 'mandou' || c.id === 'abriu' ? 24 : 15) }));
+      const nomes = {
+        r1: ['Na CDM', 'Obras_na_CDM'],
+        r2: ['De volta', 'De_volta_da_CDM'],
+        r3: ['Sem nº obra', 'Sem_numero_de_obra']
+      };
+      const abaInfo = nomes[abaAtiva];
+      XLSX.utils.book_append_sheet(wb, ws, abaInfo[0]);
+      XLSX.writeFile(wb, nomeFicheiro(abaInfo[1]));
+      mostrarToast('Excel exportado: ' + lista.length + ' obras.', 'sucesso');
+    }
+
+    document.getElementById('btn-excel').addEventListener('click', exportarExcel);
+
+    /* ---------- PDF e impressão ---------- */
+    function metaImpressao() {
+      const de = document.getElementById('f-de').value;
+      const ate = document.getElementById('f-ate').value;
+      const maq = document.getElementById('f-maquina');
+      const sec = document.getElementById('f-sector');
+      const fis = document.getElementById('f-fisico');
+      const partes = [];
+      partes.push('Abertura: ' + (de || ate ? (de ? formatarData(de) : 'inicio') + ' a ' + (ate ? formatarData(ate) : 'hoje') : 'todas as datas'));
+      partes.push('Máquina: ' + (maq.value ? (maq.options[maq.selectedIndex] || {}).textContent || maq.value : 'todas'));
+      partes.push('Sector: ' + (sec.value || 'todos'));
+      partes.push('Estado físico: ' + (fis.value || 'todos'));
+      const agora = new Date();
+      partes.push('Emitido em ' + formatarDataHora(agora) + ' por ' + ((utilizadorActual && utilizadorActual.nome) || '-'));
+      return partes.join(' · ');
+    }
+
+    function prepararImpressao() {
+      document.getElementById('imp-titulo').textContent = 'Relatório: ' + TITULOS_ABAS[abaAtiva];
+      document.getElementById('imp-meta').textContent = metaImpressao();
+      const rodape = document.getElementById('rodape-impresso');
+      const n = abaAtiva === 'r4'
+        ? (parseInt(document.getElementById('cont-r4-det').textContent, 10) || 0)
+        : (parseInt(document.getElementById('cont-' + abaAtiva).textContent, 10) || 0);
+      rodape.textContent = 'Danmo Service System, Lda · Sistema Danmo Hub · ' + n + ' obra' + (n === 1 ? '' : 's') + ' neste relatório';
+    }
+
+    document.getElementById('btn-pdf').addEventListener('click', () => {
+      prepararImpressao();
+      window.print();
+    });
+    document.getElementById('btn-imprimir').addEventListener('click', () => {
+      prepararImpressao();
+      window.print();
+    });
+
+    /* ---------- Atualizar ---------- */
+    document.getElementById('btn-atualizar').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-atualizar');
+      btn.disabled = true;
+      btn.textContent = 'A carregar...';
+      try {
+        await carregarOrdens();
+        await carregarLogs();
+        atualizarTudo();
+        mostrarToast('Dados atualizados.', 'sucesso');
+      } catch (err) {
+        mostrarToast('Erro ao atualizar: ' + mensagemErro(err), 'erro');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Atualizar';
+    });
+
+    /* ---------- Arranque ---------- */
+    (async function init() {
+      try {
+        await carregarEquipamentos();
+        await carregarOrdens();
+        await carregarLogs();
+        atualizarTudo();
+      } catch (err) {
+        mostrarToast('Erro ao carregar dados: ' + mensagemErro(err), 'erro');
+        document.querySelectorAll('.tabela-vazia').forEach(t => {
+          if (t.textContent.indexOf('A carregar') !== -1) t.textContent = 'Não foi possível carregar os dados. Usa o botão Atualizar para tentar de novo.';
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
