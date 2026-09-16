@@ -166,7 +166,7 @@
            linha aqui (feito no emprestimos.html), por isso não é preciso
            ir também buscar as linhas 'emprestimo' já devolvidas - isso
            duplicava cada devolução (aparecia duas vezes na tabela). */
-        var movRes = await db.query('tool_movements', 'select=*&tipo=eq.devolucao&order=data_devolucao.desc&limit=500');
+        var movRes = await db.queryTudo('tool_movements', 'select=*&tipo=eq.devolucao&order=data_devolucao.desc');
         var allDevs = movRes || [];
 
         var toolIds = [];

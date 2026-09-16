@@ -151,19 +151,19 @@
         colabs = await db.query('collaborators', 'select=*&active=eq.true');
 
         // Record Collaborators (para vincular técnicos a intervenções)
-        relacoes = await db.query('record_collaborators', 'select=*');
+        relacoes = await db.queryTudo('record_collaborators', 'select=*');
 
         // Todas as intervenções (vinculadas via os_id)
         if (todasOS.length > 0) {
           const osIds = todasOS.map(o => o.id);
-          const allIntervencoes = await db.query('records', 'select=*&order=shift_date.desc');
+          const allIntervencoes = await db.queryTudo('records', 'select=*&order=shift_date.desc');
           todasIntervencoes = allIntervencoes.filter(r => osIds.includes(r.os_id));
         }
 
         // Peças
         if (todasOS.length > 0) {
           const osIds = todasOS.map(o => o.id);
-          const allPecas = await db.query('os_pecas', 'select=*');
+          const allPecas = await db.queryTudo('os_pecas', 'select=*');
           todasPecas = allPecas.filter(p => osIds.includes(p.os_id));
         }
 

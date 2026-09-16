@@ -448,7 +448,7 @@
       tbody.innerHTML = '';
 
       try {
-        var movRes = await db.query('tool_movements', 'select=*&tipo=eq.emprestimo&data_devolucao=is.null&order=data_saida.desc');
+        var movRes = await db.queryTudo('tool_movements', 'select=*&tipo=eq.emprestimo&data_devolucao=is.null&order=data_saida.desc');
         var emprestimos = movRes || [];
         countEl.textContent = emprestimos.length;
 

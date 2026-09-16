@@ -239,7 +239,7 @@
       /* 3c. Avaliação final (só se estiver na lista de Directores) */
       var diretores = await db.query('rh_avaliadores_diretores', 'codigo=eq.' + encodeURIComponent(codigo) + '&active=eq.true&limit=1');
       if (diretores.length) {
-        var todasCampanha = await db.query('rh_avaliacoes', 'campanha_id=eq.' + campanha.id);
+        var todasCampanha = await db.queryTudo('rh_avaliacoes', 'campanha_id=eq.' + campanha.id);
         var pendentesDirector = (todasCampanha || []).filter(function(a) { return a.avaliacao_supervisor && !a.avaliacao_director; });
         if (pendentesDirector.length) {
           opcoes.push({

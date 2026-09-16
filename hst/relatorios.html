@@ -142,11 +142,11 @@
 
     try {
       var r = await Promise.allSettled([
-        db.query('hst_acidentes', 'select=*&order=data_hora.desc&limit=500'),
-        db.query('hst_epi_entregas', 'select=*&order=data_entrega.desc&limit=2000'),
-        db.query('hst_medicoes_tensao', 'select=*&order=data_medicao.desc&limit=5000'),
-        db.query('hst_acoes_corretivas', 'select=*&limit=500'),
-        db.query('hst_areas_risco', 'select=*&limit=500')
+        db.queryTudo('hst_acidentes', 'select=*&order=data_hora.desc'),
+        db.queryTudo('hst_epi_entregas', 'select=*&order=data_entrega.desc'),
+        db.queryTudo('hst_medicoes_tensao', 'select=*&order=data_medicao.desc'),
+        db.queryTudo('hst_acoes_corretivas', 'select=*'),
+        db.queryTudo('hst_areas_risco', 'select=*')
       ]);
       var acidentes = r[0].status === 'fulfilled' ? r[0].value : [];
       var entregas = r[1].status === 'fulfilled' ? r[1].value : [];
@@ -217,7 +217,7 @@
   /* === GERAR RELATORIO DE ACIDENTES === */
   async function gerarRelatorioAcidentes() {
     try {
-      var acidentes = await db.query('hst_acidentes', 'select=*&order=data_hora.desc&limit=500');
+      var acidentes = await db.queryTudo('hst_acidentes', 'select=*&order=data_hora.desc');
       if (!acidentes.length) { mostrarToast('Nenhum acidente registado.', 'aviso'); return; }
 
       var html = montarCabecalho('Relatorio de Acidentes e Incidentes');
@@ -236,7 +236,7 @@
   /* === GERAR RELATORIO DE EPIs === */
   async function gerarRelatorioEPIs() {
     try {
-      var entregas = await db.query('hst_epi_entregas', 'select=*&order=data_entrega.desc&limit=2000');
+      var entregas = await db.queryTudo('hst_epi_entregas', 'select=*&order=data_entrega.desc');
       if (!entregas.length) { mostrarToast('Nenhuma entrega registada.', 'aviso'); return; }
 
       var html = montarCabecalho('Relatorio de Entregas de EPIs');
@@ -255,7 +255,7 @@
   /* === GERAR RELATORIO DE TENSAO === */
   async function gerarRelatorioTensao() {
     try {
-      var medicoes = await db.query('hst_medicoes_tensao', 'select=*&order=data_medicao.desc&limit=5000');
+      var medicoes = await db.queryTudo('hst_medicoes_tensao', 'select=*&order=data_medicao.desc');
       if (!medicoes.length) { mostrarToast('Nenhuma medicao registada.', 'aviso'); return; }
 
       /* Agrupar por colaborador, ultima medicao */
@@ -340,7 +340,7 @@
   /* === HISTORICO DE ACIDENTES (listagem com link para relatorio) === */
   async function carregarHistorico() {
     try {
-      todosAcidentes = await db.query('hst_acidentes', 'select=*&order=data_hora.desc&limit=200');
+      todosAcidentes = await db.queryTudo('hst_acidentes', 'select=*&order=data_hora.desc');
       document.getElementById('hist-loading').style.display = 'none';
       if (!todosAcidentes.length) { document.getElementById('hist-empty').style.display = 'block'; return; }
       var html = '';

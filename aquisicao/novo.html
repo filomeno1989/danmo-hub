@@ -201,7 +201,7 @@
 
     // Aplicação: datalist que "aprende" com pedidos anteriores
     async function carregarAplicacoesConhecidas() {
-      const itens = await db.query('aquisicao_itens', 'select=aplicacao');
+      const itens = await db.queryTudo('aquisicao_itens', 'select=aplicacao');
       const valores = [...new Set(itens.map(i => i.aplicacao).filter(Boolean))].sort();
       document.getElementById('dl-aplicacoes').innerHTML = valores.map(v => `<option value="${escaparHTML(v)}">`).join('');
     }

@@ -139,7 +139,7 @@
 
         /* Fetch all loan counts by entregue_por name */
         loanCounts = {};
-        var movRes = await db.query('tool_movements', 'select=entregue_por');
+        var movRes = await db.queryTudo('tool_movements', 'select=entregue_por');
         var movs = movRes || [];
         movs.forEach(function(m) {
           if (m.entregue_por) {

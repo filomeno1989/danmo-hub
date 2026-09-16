@@ -193,7 +193,7 @@
     document.getElementById('card-loading').style.display = 'block';
 
     try {
-      var todos = await db.query('rh_avaliacoes', 'campanha_id=eq.' + campanhaId);
+      var todos = await db.queryTudo('rh_avaliacoes', 'campanha_id=eq.' + campanhaId);
       pendentes = (todos || []).filter(function(a) { return a.avaliacao_supervisor && !a.avaliacao_director; });
 
       document.getElementById('card-loading').style.display = 'none';

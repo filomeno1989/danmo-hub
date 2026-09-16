@@ -156,7 +156,7 @@
       document.getElementById('kpi-ano-label').textContent = anoAtual;
       document.getElementById('grafico-ano-label').textContent = anoAtual;
 
-      todosPedidos = await db.query('aquisicao_pedidos', 'select=*&order=data_pedido.desc,numero.desc');
+      todosPedidos = await db.queryTudo('aquisicao_pedidos', 'select=*&order=data_pedido.desc,numero.desc');
       const fornecedores = await db.query('aquisicao_fornecedores', 'select=id,nome,ativo');
 
       const pedidosAno = todosPedidos.filter(p => p.ano === anoAtual);
@@ -224,7 +224,7 @@
       const container = document.getElementById('resultados-pesquisa');
       if (!termo) { container.innerHTML = ''; return; }
 
-      const itens = await db.query('aquisicao_itens', 'select=pedido_id,designacao');
+      const itens = await db.queryTudo('aquisicao_itens', 'select=pedido_id,designacao');
       const itensPorPedido = {};
       itens.forEach(it => {
         if (!itensPorPedido[it.pedido_id]) itensPorPedido[it.pedido_id] = [];

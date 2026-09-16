@@ -163,11 +163,11 @@
   (async function init() {
     var mes = mesAtual();
     var resultados = await Promise.allSettled([
-      db.query('hst_acidentes', 'select=*&order=data_hora.desc&limit=500'),
-      db.query('hst_epi_entregas', 'select=*&order=data_entrega.desc&limit=2000'),
-      db.query('hst_medicoes_tensao', 'select=*&order=data_medicao.desc&limit=2000'),
-      db.query('hst_acoes_corretivas', 'select=*&limit=500'),
-      db.query('hst_areas_risco', 'select=*&order=created_at.desc')
+      db.queryTudo('hst_acidentes', 'select=*&order=data_hora.desc'),
+      db.queryTudo('hst_epi_entregas', 'select=*&order=data_entrega.desc'),
+      db.queryTudo('hst_medicoes_tensao', 'select=*&order=data_medicao.desc'),
+      db.queryTudo('hst_acoes_corretivas', 'select=*'),
+      db.queryTudo('hst_areas_risco', 'select=*&order=created_at.desc')
     ]);
 
     var acidentes = resultados[0].status === 'fulfilled' ? resultados[0].value : [];

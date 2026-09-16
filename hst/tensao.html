@@ -211,7 +211,7 @@
   /* Carregar */
   async function carregarDados() {
     try {
-      var r = await db.query('hst_medicoes_tensao', 'select=*&order=data_medicao.desc&limit=5000');
+      var r = await db.queryTudo('hst_medicoes_tensao', 'select=*&order=data_medicao.desc');
       todasMedicoes = r || [];
       filtrar();
     } catch(e) {

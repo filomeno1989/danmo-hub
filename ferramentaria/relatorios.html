@@ -273,7 +273,7 @@
 
       try {
         /* Busca todos os movimentos e filtramos as datas diretamente no JavaScript para evitar erros 404 */
-        var movRes = await db.query('tool_movements', 'select=*&tipo=eq.emprestimo&order=created_at.desc&limit=2000');
+        var movRes = await db.queryTudo('tool_movements', 'select=*&tipo=eq.emprestimo&order=created_at.desc');
         var allMovements = movRes || [];
         
         var periodMovements = allMovements.filter(function(m) {
@@ -282,12 +282,12 @@
           return mDate >= di && mDate <= df;
         });
 
-        var toolsRes = await db.query('tools', 'select=id,code,nome,estado,active&limit=500');
+        var toolsRes = await db.queryTudo('tools', 'select=id,code,nome,estado,active');
         var toolsList = toolsRes || [];
         var toolsMap = {};
         toolsList.forEach(function(t) { toolsMap[t.id] = t; });
 
-        var danosRes = await db.query('tool_damage', 'select=*&limit=1000');
+        var danosRes = await db.queryTudo('tool_damage', 'select=*');
         var danosList = danosRes || [];
         var filteredDanos = danosList.filter(function(d) {
           if (!d.created_at) return false;

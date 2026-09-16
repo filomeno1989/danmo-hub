@@ -196,7 +196,7 @@
     (async function() {
       for (var i = 0; i < ordem.length; i++) {
         try {
-          var todos = await db.query(ordem[i], 'select=id');
+          var todos = await db.queryTudo(ordem[i], 'select=id');
           for (var j = 0; j < todos.length; j++) {
             await db.delete(ordem[i], todos[j].id);
           }
@@ -215,7 +215,7 @@
       var dados = {};
       for (var i = 0; i < TABELAS_HST.length; i++) {
         var t = TABELAS_HST[i];
-        dados[t] = await db.query(t, 'select=*&limit=5000&order=created_at.desc');
+        dados[t] = await db.queryTudo(t, 'select=*&order=created_at.desc');
       }
       dados.exportado_em = new Date().toISOString();
       dados.modulo = 'HST';

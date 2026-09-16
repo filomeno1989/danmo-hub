@@ -230,7 +230,7 @@
     }
 
     async function carregarMovimentos() {
-      var todos = await db.query('stock_movimentos', 'tipo=eq.entrada&order=criado_em.desc');
+      var todos = await db.queryTudo('stock_movimentos', 'tipo=eq.entrada&order=criado_em.desc');
       pendentes = [];
       confirmadas = [];
       todos.forEach(function (m) {

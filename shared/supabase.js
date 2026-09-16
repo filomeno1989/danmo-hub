@@ -3,7 +3,7 @@
  * Wrapper mínimo por cima do REST API do Supabase (fetch puro, sem SDK externo).
  * MESMO padrão já usado e testado em danmo-billing e danmo-oficina.
  * Todas as aplicações do Hub usam ESTE ficheiro.
- * Última atualização: 2026-08-11
+ * Última atualização: 2026-09-16 (paginação estável no queryTudo)
  */
 
 const SUPABASE_URL = 'https://czgnbzxoeylicrqjvncd.supabase.co';
@@ -41,11 +41,19 @@ const db = {
    *
    * Porquê: o PostgREST devolve no máximo 1000 linhas por pedido. Num query()
    * simples com order=...asc, isso significa receber só as 1000 linhas MAIS
-   * ANTIGAS — os registos recentes ficam de fora sem dar erro nenhum, o que
+   * ANTIGAS - os registos recentes ficam de fora sem dar erro nenhum, o que
    * fazia colunas como "Foi à CDM em" aparecerem vazias para obras novas.
    * Aqui pedimos bloco a bloco (cabeçalho Range) até a tabela acabar.
+   *
+   * Detalhe importante: sem ORDER BY o Postgres não garante a mesma ordem
+   * entre pedidos, o que podia duplicar/perder linhas entre páginas. Se o
+   * params não trouxer "order=", acrescentamos order=id.asc aqui dentro
+   * para a paginação ser sempre estável.
    */
   async queryTudo(tabela, params = '', tamanhoPagina = 1000) {
+    if (!/(^|&)order=/.test(params)) {
+      params += (params ? '&' : '') + 'order=id.asc';
+    }
     const todas = [];
     let inicio = 0;
     // trava de segurança: no máximo 200 páginas (200 mil linhas)

@@ -25,7 +25,7 @@
   /* ===== Fontes de avisos (todas opcionais) ===== */
 
   function contarViaQuery(tabela, params) {
-    return db.query(tabela, params).then(function (lista) { return lista.length; });
+    return db.queryTudo(tabela, params).then(function (lista) { return lista.length; });
   }
 
   var FONTES = [

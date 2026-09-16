@@ -226,7 +226,7 @@
     }
 
     async function calcularStock() {
-      var movs = await db.query('stock_movimentos', 'estado=eq.confirmado');
+      var movs = await db.queryTudo('stock_movimentos', 'estado=eq.confirmado');
       stockCalc = {};
       movs.forEach(function (m) {
         if (!stockCalc[m.material_id]) stockCalc[m.material_id] = 0;
@@ -246,7 +246,7 @@
     }
 
     async function carregarSaidas() {
-      var todos = await db.query('stock_movimentos', 'tipo=eq.saida&estado=eq.confirmado&order=criado_em.desc');
+      var todos = await db.queryTudo('stock_movimentos', 'tipo=eq.saida&estado=eq.confirmado&order=criado_em.desc');
       saidas = todos.map(function (m) {
         var mat = materiais.find(function (x) { return x.id === m.material_id; });
         m._mat = mat ? (mat.referencia + ' - ' + mat.nome) : '-';

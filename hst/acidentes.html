@@ -548,8 +548,8 @@
   /* === CARREGAR TUDO === */
   async function carregarDados() {
     var r = await Promise.allSettled([
-      db.query('hst_acidentes', 'select=*&order=data_hora.desc&limit=500'),
-      db.query('hst_acoes_corretivas', 'select=*&limit=500')
+      db.queryTudo('hst_acidentes', 'select=*&order=data_hora.desc'),
+      db.queryTudo('hst_acoes_corretivas', 'select=*')
     ]);
     todosAcidentes = r[0].status === 'fulfilled' ? r[0].value : [];
     todasAcoes = r[1].status === 'fulfilled' ? r[1].value : [];

@@ -316,7 +316,7 @@
       tbody.innerHTML = '';
 
       try {
-        var res = await db.query('tools', 'select=*&active=eq.true&order=code.asc&limit=500');
+        var res = await db.queryTudo('tools', 'select=*&active=eq.true&order=code.asc');
         allTools = res || [];
 
         countEl.textContent = allTools.length;

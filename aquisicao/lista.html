@@ -100,8 +100,8 @@
       document.getElementById('tabela-pedidos').style.display = 'none';
       document.getElementById('lista-empty').style.display = 'none';
 
-      pedidos = await db.query('aquisicao_pedidos', 'select=*&order=ano.desc,numero.desc');
-      const itens = await db.query('aquisicao_itens', 'select=pedido_id,designacao');
+      pedidos = await db.queryTudo('aquisicao_pedidos', 'select=*&order=ano.desc,numero.desc');
+      const itens = await db.queryTudo('aquisicao_itens', 'select=pedido_id,designacao');
       itensPorPedido = {};
       itens.forEach(it => {
         if (!itensPorPedido[it.pedido_id]) itensPorPedido[it.pedido_id] = [];

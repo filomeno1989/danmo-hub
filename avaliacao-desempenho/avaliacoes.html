@@ -236,7 +236,7 @@
     document.getElementById('btn-fechar-campanha').style.display = campanhaActual.estado === 'aberta' ? 'inline-flex' : 'none';
 
     try {
-      avaliacoesAtuais = await db.query('rh_avaliacoes', 'campanha_id=eq.' + campanhaActual.id + '&order=colaborador_nome.asc') || [];
+      avaliacoesAtuais = await db.queryTudo('rh_avaliacoes', 'campanha_id=eq.' + campanhaActual.id + '&order=colaborador_nome.asc') || [];
 
       /* Alertar se cargo/departamento/supervisor vieram vazios em massa
          (sinal de que essas colunas podem não existir em collaborators) */

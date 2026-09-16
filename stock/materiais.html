@@ -128,7 +128,7 @@
     }
 
     async function calcularStock() {
-      var movs = await db.query('stock_movimentos', 'estado=eq.confirmado');
+      var movs = await db.queryTudo('stock_movimentos', 'estado=eq.confirmado');
       stockCalc = {};
       movs.forEach(function (m) {
         if (!stockCalc[m.material_id]) stockCalc[m.material_id] = 0;

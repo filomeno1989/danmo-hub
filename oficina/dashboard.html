@@ -514,13 +514,13 @@
       }
 
       const osIds = obrasRevisao.map(o => o.id).join(',');
-      const checklists = await db.query('checklist_preenchidos', `select=*&os_id=in.(${osIds})&substituido=eq.false`);
+      const checklists = await db.queryTudo('checklist_preenchidos', `select=*&os_id=in.(${osIds})&substituido=eq.false`);
       const templateIds = [...new Set(checklists.map(c => c.template_id))].join(',');
       const templates = templateIds ? await db.query('checklist_templates', `select=id,nome&id=in.(${templateIds})`) : [];
       const mapaTemplate = {}; templates.forEach(t => mapaTemplate[t.id] = t.nome);
 
       const checklistIds = checklists.map(c => c.id).join(',');
-      const itens = checklistIds ? await db.query('checklist_preenchidos_itens', `select=checklist_id,executado,estado&checklist_id=in.(${checklistIds})`) : [];
+      const itens = checklistIds ? await db.queryTudo('checklist_preenchidos_itens', `select=checklist_id,executado,estado&checklist_id=in.(${checklistIds})`) : [];
 
       const mapaEquip = {}; todosEquip.forEach(e => mapaEquip[e.id]=e);
       const pendentes = [];

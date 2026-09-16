@@ -215,7 +215,7 @@
     /* ── Load Tools Map ── */
     async function loadToolsMap() {
       try {
-        var res = await db.query('tools', 'select=id,code,nome&active=eq.true&limit=500');
+        var res = await db.queryTudo('tools', 'select=id,code,nome&active=eq.true');
         var tools = res || [];
         toolsMap = {};
         tools.forEach(function(t) { toolsMap[t.id] = t; });
@@ -240,9 +240,9 @@
       tbody.innerHTML = '';
 
       try {
-        var queryParts = 'select=*&order=created_at.desc&limit=500';
+        var queryParts = 'select=*&order=created_at.desc';
 
-        var res = await db.query('tool_damage', queryParts);
+        var res = await db.queryTudo('tool_damage', queryParts);
         allDamages = res || [];
 
         /* Apply filters client-side */

@@ -191,7 +191,7 @@
       function carregarGraficoStock() {
         var caixa = document.getElementById('grafico-stock');
         if (!caixa || typeof db === 'undefined') return;
-        db.query('stock_movimentos', 'select=data_movimento,tipo&data_movimento=gte.' + inicio6Meses() + '&estado=eq.confirmado')
+        db.queryTudo('stock_movimentos', 'select=data_movimento,tipo&data_movimento=gte.' + inicio6Meses() + '&estado=eq.confirmado')
           .then(function (movs) {
             var meses = ultimos6Meses();
             movs.forEach(function (m) {

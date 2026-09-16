@@ -271,8 +271,8 @@
   /* Carregar tudo */
   async function carregarDados() {
     var r = await Promise.allSettled([
-      db.query('hst_epis', 'select=*&order=created_at.desc'),
-      db.query('hst_epi_entregas', 'select=*&order=data_entrega.desc&limit=2000')
+      db.queryTudo('hst_epis', 'select=*&order=created_at.desc'),
+      db.queryTudo('hst_epi_entregas', 'select=*&order=data_entrega.desc')
     ]);
     todosEPIs = r[0].status === 'fulfilled' ? r[0].value : [];
     todasEntregas = r[1].status === 'fulfilled' ? r[1].value : [];

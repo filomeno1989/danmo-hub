@@ -223,7 +223,7 @@
   /* === Carregar === */
   async function carregarDados() {
     try {
-      todasAreas = await db.query('hst_areas_risco', 'select=*&order=nome.asc&limit=1000');
+      todasAreas = await db.queryTudo('hst_areas_risco', 'select=*&order=nome.asc');
       var ativas = todasAreas.filter(function(a) { return a.ativo !== false; });
       document.getElementById('kpi-total').textContent = ativas.length;
       document.getElementById('kpi-criticas').textContent = ativas.filter(function(a) { return a.nivel_risco === 'Critico'; }).length;

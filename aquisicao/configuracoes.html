@@ -214,7 +214,7 @@
       document.getElementById('lista-empty').style.display = 'none';
 
       fornecedores = await db.query('aquisicao_fornecedores', 'select=*&order=nome.asc');
-      const pedidos = await db.query('aquisicao_pedidos', 'select=fornecedor_id');
+      const pedidos = await db.queryTudo('aquisicao_pedidos', 'select=fornecedor_id');
       contagemPedidos = {};
       pedidos.forEach(p => { contagemPedidos[p.fornecedor_id] = (contagemPedidos[p.fornecedor_id] || 0) + 1; });
 
@@ -357,7 +357,7 @@
       document.getElementById('denom-empty').style.display = 'none';
 
       denominacoes = await db.query('aquisicao_denominacoes', 'select=*&order=ordem.asc,nome.asc');
-      const pedidos = await db.query('aquisicao_pedidos', 'select=tipo_documento');
+      const pedidos = await db.queryTudo('aquisicao_pedidos', 'select=tipo_documento');
       contagemDenom = {};
       pedidos.forEach(p => { contagemDenom[p.tipo_documento] = (contagemDenom[p.tipo_documento] || 0) + 1; });
 
@@ -455,7 +455,7 @@
       setVal('n-ano', new Date().getFullYear());
 
       const contadores = await db.query('aquisicao_contadores', 'select=*&order=ano.desc');
-      const pedidos = await db.query('aquisicao_pedidos', 'select=ano,numero');
+      const pedidos = await db.queryTudo('aquisicao_pedidos', 'select=ano,numero');
       const ultimoPorAno = {};
       pedidos.forEach(p => {
         if (!ultimoPorAno[p.ano] || p.numero > ultimoPorAno[p.ano]) ultimoPorAno[p.ano] = p.numero;

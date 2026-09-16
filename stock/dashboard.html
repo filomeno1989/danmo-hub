@@ -152,7 +152,7 @@
     (async function init() {
       var resultados = await Promise.allSettled([
         db.query('materiais', 'ativo=eq.true&order=referencia.asc'),
-        db.query('stock_movimentos', 'order=criado_em.desc')
+        db.queryTudo('stock_movimentos', 'order=criado_em.desc')
       ]);
 
       var materiais = resultados[0].status === 'fulfilled' ? resultados[0].value : [];

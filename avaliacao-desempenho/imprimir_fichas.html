@@ -127,7 +127,7 @@
 
       var query = 'campanha_id=eq.' + campanhaId + '&order=colaborador_nome.asc';
       if (apenasId) query = 'id=eq.' + apenasId;
-      var avaliacoes = await db.query('rh_avaliacoes', query) || [];
+      var avaliacoes = await db.queryTudo('rh_avaliacoes', query) || [];
 
       document.getElementById('titulo-barra').textContent = 'Fichas de Avaliação - ' + nomeMes;
       document.getElementById('sub-barra').textContent = avaliacoes.length + ' ficha(s) prontas - usa "Imprimir" e escolhe "Guardar como PDF" no destino.';

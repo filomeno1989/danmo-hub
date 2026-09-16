@@ -247,7 +247,7 @@
       try {
         var resultados = await Promise.all([
           db.query('materiais', 'ativo=eq.true&order=referencia.asc'),
-          db.query('stock_movimentos', 'estado=eq.confirmado'),
+          db.queryTudo('stock_movimentos', 'estado=eq.confirmado'),
           db.query('fornecedores', 'ativo=eq.true&order=nome.asc')
         ]);
 
@@ -368,7 +368,7 @@
       if (tipo) params += '&tipo=eq.' + tipo;
       if (matId) params += '&material_id=eq.' + matId;
 
-      var movs = await db.query('stock_movimentos', params);
+      var movs = await db.queryTudo('stock_movimentos', params);
 
       var entradas = movs.filter(function (m) { return m.tipo === 'entrada'; });
       var saidas = movs.filter(function (m) { return m.tipo === 'saida'; });
@@ -421,7 +421,7 @@
       var params = 'tipo=eq.entrada&estado=eq.confirmado&data_movimento=gte.' + de + '&data_movimento=lte.' + ate + '&order=data_movimento.desc';
       if (forn) params += '&fornecedor=eq.' + encodeURIComponent(forn);
 
-      var compras = await db.query('stock_movimentos', params);
+      var compras = await db.queryTudo('stock_movimentos', params);
 
       var totalGasto = compras.reduce(function (s, m) { return s + ((m.preco_unitario || 0) * m.quantidade); }, 0);
 

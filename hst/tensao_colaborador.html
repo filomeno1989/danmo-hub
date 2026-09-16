@@ -172,7 +172,7 @@
     document.title = colabNome + ' - Tensao Arterial - HST';
 
     try {
-      var medicoes = await db.query('hst_medicoes_tensao', 'select=*&colaborador_nome=eq.' + encodeURIComponent(colabNome) + '&order=data_medicao.desc&limit=500');
+      var medicoes = await db.queryTudo('hst_medicoes_tensao', 'select=*&colaborador_nome=eq.' + encodeURIComponent(colabNome) + '&order=data_medicao.desc');
       document.getElementById('hist-loading').style.display = 'none';
 
       if (!medicoes || !medicoes.length) {

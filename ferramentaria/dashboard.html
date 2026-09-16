@@ -274,9 +274,9 @@
          "A processar..." por causa de uma única falha (era o que o
          Promise.all fazia antes). */
       var resultados = await Promise.allSettled([
-        db.query('tool_movements', 'select=*&order=data_saida.desc&limit=2000'),
-        db.query('tools', 'select=id,code,nome,estado,active'),
-        db.query('tool_damage', 'select=*&order=created_at.desc&limit=1000')
+        db.queryTudo('tool_movements', 'select=*&order=data_saida.desc'),
+        db.queryTudo('tools', 'select=id,code,nome,estado,active'),
+        db.queryTudo('tool_damage', 'select=*&order=created_at.desc')
       ]);
 
       var falhas = [];

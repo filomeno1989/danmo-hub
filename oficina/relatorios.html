@@ -140,7 +140,7 @@
         <div class="kpi-valor" id="kpi-sem">-</div>
         <div class="kpi-label">Sem nº de obra (em andamento)</div>
       </div>
-      <div class="kpi-card verde kpi-clicavel" data-kpi="fechadas" title="Clica para ver só as obras fechadas">
+      <div class="kpi-card verde kpi-clicavel" data-kpi="fechadas" title="Clica para ver o relatório de obras fechadas">
         <div class="kpi-valor" id="kpi-fechadas">-</div>
         <div class="kpi-label">Obras fechadas</div>
       </div>
@@ -150,12 +150,29 @@
     <div class="card card-filtros nao-imprimir" style="margin-top: 18px;">
       <div class="form-grid">
         <div class="form-grupo">
-          <label class="form-label">Abertura de</label>
+          <label class="form-label">Filtrar datas por</label>
+          <select class="form-select" id="f-campo-data">
+            <option value="abertura">Data de abertura</option>
+            <option value="cdm">Data que foi à CDM</option>
+            <option value="volta">Data da volta da CDM</option>
+            <option value="fecho">Data de fecho</option>
+          </select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">De</label>
           <input class="form-input" type="date" id="f-de" />
         </div>
         <div class="form-grupo">
-          <label class="form-label">Abertura até</label>
+          <label class="form-label">Até</label>
           <input class="form-input" type="date" id="f-ate" />
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Atalhos</label>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <button type="button" class="aba-btn" id="atalho-ontem" style="padding:7px 14px;">Ontem</button>
+            <button type="button" class="aba-btn" id="atalho-hoje" style="padding:7px 14px;">Hoje</button>
+            <button type="button" class="aba-btn" id="atalho-mes" style="padding:7px 14px;">Este mês</button>
+          </div>
         </div>
         <div class="form-grupo">
           <label class="form-label">Máquina</label>
@@ -178,7 +195,7 @@
           <input class="form-input" type="text" id="f-busca" placeholder="Nº obra, máquina ou trabalho..." />
         </div>
       </div>
-      <p class="nota-pequena">Os filtros valem para todos os relatórios. Para limpar, basta apagar os campos.</p>
+      <p class="nota-pequena">Os filtros valem para todos os relatórios. O "Filtrar datas por" escolhe a que data se aplica o intervalo: abertura, ida à CDM, volta ou fecho. Para limpar, basta apagar os campos.</p>
     </div>
 
     <!-- Abas dos relatórios -->
@@ -186,6 +203,7 @@
       <button class="aba-btn ativo" data-aba="r0">Todas as obras</button>
       <button class="aba-btn" data-aba="r1">Obras na CDM agora</button>
       <button class="aba-btn" data-aba="r2">Obras de volta da CDM</button>
+      <button class="aba-btn" data-aba="r6">Obras fechadas</button>
       <button class="aba-btn" data-aba="r3">Sem nº de obra</button>
       <button class="aba-btn" data-aba="r5">Em circulação</button>
       <button class="aba-btn" data-aba="r4">Por sector</button>
@@ -251,6 +269,23 @@
         <table class="tabela">
           <thead><tr id="thead-r2"></tr></thead>
           <tbody id="tbody-r2"><tr><td class="tabela-vazia">A carregar dados...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RELATÓRIO 6: Obras fechadas -->
+    <div class="card card-rel" id="card-r6">
+      <div class="card-rel-cabecalho">
+        <div>
+          <div class="card-rel-titulo">Obras fechadas</div>
+          <div class="card-rel-sub">Todas as obras já fechadas, ordenadas pela data de fecho. Para ver as de um dia, usa "Filtrar datas por: Data de fecho" e o atalho Ontem ou Hoje.</div>
+        </div>
+        <div class="contagem-registos"><strong id="cont-r6">0</strong> obras</div>
+      </div>
+      <div class="tabela-container">
+        <table class="tabela">
+          <thead><tr id="thead-r6"></tr></thead>
+          <tbody id="tbody-r6"><tr><td class="tabela-vazia">A carregar dados...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -408,12 +443,13 @@
       r2: 'Obras de volta da CDM',
       r3: 'Obras sem nº de obra (em andamento)',
       r5: 'Obras em circulação (antes da CDM)',
+      r6: 'Obras fechadas',
       r4: 'Distribuição das obras por sector'
     };
 
     let abaAtiva = 'r0';
     let sectorSelecionado = null;
-    let ordenacao = { r0: null, r1: null, r2: null, r3: null, r4: null, r5: null }; // { i: índice da coluna, dir: 1 ou -1 }
+    let ordenacao = { r0: null, r1: null, r2: null, r3: null, r4: null, r5: null, r6: null }; // { i: índice da coluna, dir: 1 ou -1 }
 
     /* ---------- Colunas de cada relatório ----------
        v(o) devolve o texto; num = coluna de dias (valor inteiro);
@@ -485,6 +521,13 @@
         C.fechouQuem(), C.fechouData(), C.diasTotal(),
         C.estado(), C.fisico()
       ],
+      r6: [
+        C.obra(), C.maquina(), C.tipo(), C.trabalho(), C.sector(),
+        C.abertura(),
+        C.dataCdm(), C.mandou(), C.dataVolta(),
+        C.fechouData(), C.fechouQuem(), C.diasTotal(),
+        C.fisico()
+      ],
       r3: [
         C.maquina(), C.tipo(), C.trabalho(), C.sector(),
         C.abertura(),
@@ -509,7 +552,7 @@
 
     /* Colunas visíveis: por defeito todas; fica guardado no navegador */
     const CHAVE_COLS = 'rel_oficina_colunas_v3';
-    let VISIVEIS = { r0: null, r1: null, r2: null, r3: null, r4: null, r5: null };
+    let VISIVEIS = { r0: null, r1: null, r2: null, r3: null, r4: null, r5: null, r6: null };
     (function carregarColunasGuardadas() {
       try {
         const bruto = localStorage.getItem(CHAVE_COLS);
@@ -543,6 +586,21 @@
       fim.setHours(0, 0, 0, 0);
       const dias = Math.floor((fim - ini) / 86400000);
       return isNaN(dias) ? null : dias;
+    }
+
+    /* Data de um evento em texto local (AAAA-MM-DD), para comparar com os filtros */
+    function isoLocalDe(d) {
+      if (!d || !(d instanceof Date) || isNaN(d.getTime())) return '';
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    /* Que data da obra conta para o intervalo de/ate, conforme o campo escolhido
+       no filtro "Filtrar datas por". Ex.: fecho = quando a obra foi fechada. */
+    function dataChaveObra(o, campo) {
+      if (campo === 'cdm')   return o._cdmData ? isoLocalDe(o._cdmData) : '';
+      if (campo === 'volta') return o._voltaData ? isoLocalDe(o._voltaData) : '';
+      if (campo === 'fecho') return o._fechadaData ? isoLocalDe(o._fechadaData) : '';
+      return String(o.data_abertura || '').slice(0, 10);
     }
 
     /* Em circulação = desde a abertura até antes de chegar à CDM.
@@ -675,9 +733,11 @@
       const busca = document.getElementById('f-busca').value.trim().toLowerCase();
 
       if (de || ate) {
-        if (!o.data_abertura) return false;
-        if (de && o.data_abertura < de) return false;
-        if (ate && o.data_abertura > ate) return false;
+        const selData = document.getElementById('f-campo-data');
+        const chave = dataChaveObra(o, selData ? selData.value : 'abertura');
+        if (!chave) return false;
+        if (de && chave < de) return false;
+        if (ate && chave > ate) return false;
       }
       if (maq && String(o.equipment_id) !== maq) return false;
       if (fis && o.status_fisico !== fis) return false;
@@ -718,6 +778,9 @@
           obraPassaFiltros(o, false)
         );
       }
+      if (aba === 'r6') {
+        return ORDENS.filter(o => o.status_atual === 'Fechada' && obraPassaFiltros(o, false));
+      }
       if (aba === 'r3') {
         return ORDENS.filter(o => !o.numero_obra && o.status_atual !== 'Fechada' && obraPassaFiltros(o, false));
       }
@@ -742,6 +805,8 @@
         base = [...lista].sort((a, b) => (b._cdmData ? b._cdmData.getTime() : 0) - (a._cdmData ? a._cdmData.getTime() : 0));
       } else if (aba === 'r2') {
         base = [...lista].sort((a, b) => (b._voltaData ? b._voltaData.getTime() : 0) - (a._voltaData ? a._voltaData.getTime() : 0));
+      } else if (aba === 'r6') {
+        base = [...lista].sort((a, b) => (b._fechadaData ? b._fechadaData.getTime() : 0) - (a._fechadaData ? a._fechadaData.getTime() : 0));
       } else if (aba === 'r3' || aba === 'r5') {
         // mais antigas primeiro: são as que estão paradas há mais tempo
         base = [...lista].sort((a, b) => String(a.data_abertura || '').localeCompare(String(b.data_abertura || '')));
@@ -938,6 +1003,7 @@
       renderTabela('r2');
       renderTabela('r3');
       renderTabela('r5');
+      renderTabela('r6');
       renderResumoSector();
     }
 
@@ -959,7 +1025,7 @@
 
     /* ---------- KPIs clicáveis ----------
        Cada KPI abre o relatório respectivo. O de "fechadas" abre o relatório
-       de volta da CDM já com a opção "só fechadas" marcada. */
+       próprio de obras fechadas, já a filtrar pela data de fecho. */
     document.querySelector('.kpi-grid').addEventListener('click', e => {
       const card = e.target.closest('.kpi-clicavel');
       if (!card) return;
@@ -967,9 +1033,9 @@
       const soFechadas = document.getElementById('r2-so-fechadas');
 
       if (qual === 'fechadas') {
-        soFechadas.checked = true;
-        renderTabela('r2');
-        mostrarAba('r2');
+        const selData = document.getElementById('f-campo-data');
+        if (selData) selData.value = 'fecho';
+        mostrarAba('r6');
       } else {
         if (soFechadas.checked) { soFechadas.checked = false; renderTabela('r2'); }
         const destino = { circulacao: 'r5', cdm: 'r1', volta: 'r2', sem: 'r3' }[qual];
@@ -1008,9 +1074,35 @@
     });
 
     /* ---------- Filtros ---------- */
-    ['f-de', 'f-ate', 'f-maquina', 'f-sector', 'f-fisico', 'f-estado'].forEach(id =>
+    ['f-campo-data', 'f-de', 'f-ate', 'f-maquina', 'f-sector', 'f-fisico', 'f-estado'].forEach(id =>
       document.getElementById(id).addEventListener('change', atualizarTudo)
     );
+
+    /* ---------- Atalhos de data: Ontem, Hoje e Este mês ----------
+       Para o dia-a-dia: com "Filtrar datas por: Data de fecho" ativo,
+       o atalho Ontem mostra exactamente as obras fechadas ontem. */
+    function dataISOlocal(d) {
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    document.getElementById('atalho-ontem').addEventListener('click', () => {
+      const d = new Date(); d.setDate(d.getDate() - 1);
+      const iso = dataISOlocal(d);
+      document.getElementById('f-de').value = iso;
+      document.getElementById('f-ate').value = iso;
+      atualizarTudo();
+    });
+    document.getElementById('atalho-hoje').addEventListener('click', () => {
+      const iso = dataISOlocal(new Date());
+      document.getElementById('f-de').value = iso;
+      document.getElementById('f-ate').value = iso;
+      atualizarTudo();
+    });
+    document.getElementById('atalho-mes').addEventListener('click', () => {
+      const agora = new Date();
+      document.getElementById('f-de').value = dataISOlocal(new Date(agora.getFullYear(), agora.getMonth(), 1));
+      document.getElementById('f-ate').value = dataISOlocal(new Date(agora.getFullYear(), agora.getMonth() + 1, 0));
+      atualizarTudo();
+    });
     document.getElementById('f-busca').addEventListener('input', atualizarTudo);
     document.getElementById('r2-so-fechadas').addEventListener('change', () => renderTabela('r2'));
     document.getElementById('r0-esconder-fechadas').addEventListener('change', () => renderTabela('r0'));
@@ -1144,7 +1236,8 @@
         r1: ['Na CDM', 'Obras_na_CDM'],
         r2: ['De volta', 'De_volta_da_CDM'],
         r3: ['Sem nº obra', 'Sem_numero_de_obra'],
-        r5: ['Em circulação', 'Em_circulacao']
+        r5: ['Em circulação', 'Em_circulacao'],
+        r6: ['Obras fechadas', 'Obras_fechadas']
       };
       const abaInfo = nomes[abaAtiva];
       XLSX.utils.book_append_sheet(wb, ws, abaInfo[0]);
@@ -1162,7 +1255,9 @@
       const sec = document.getElementById('f-sector');
       const fis = document.getElementById('f-fisico');
       const partes = [];
-      partes.push('Abertura: ' + (de || ate ? (de ? formatarData(de) : 'inicio') + ' a ' + (ate ? formatarData(ate) : 'hoje') : 'todas as datas'));
+      const selCampo = document.getElementById('f-campo-data');
+      const rotuloCampo = selCampo ? ((selCampo.options[selCampo.selectedIndex] || {}).textContent || 'Abertura') : 'Abertura';
+      partes.push(rotuloCampo + ': ' + (de || ate ? (de ? formatarData(de) : 'inicio') + ' a ' + (ate ? formatarData(ate) : 'hoje') : 'todas as datas'));
       partes.push('Máquina: ' + (maq.value ? (maq.options[maq.selectedIndex] || {}).textContent || maq.value : 'todas'));
       partes.push('Sector: ' + (sec.value || 'todos'));
       partes.push('Estado da obra: ' + ((document.getElementById('f-estado') || {}).value || 'todos'));
