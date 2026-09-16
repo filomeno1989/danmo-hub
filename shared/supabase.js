@@ -36,6 +36,34 @@ const db = {
     return r.json();
   },
 
+  /**
+   * Igual ao query(), mas traz a tabela TODA, em páginas.
+   *
+   * Porquê: o PostgREST devolve no máximo 1000 linhas por pedido. Num query()
+   * simples com order=...asc, isso significa receber só as 1000 linhas MAIS
+   * ANTIGAS — os registos recentes ficam de fora sem dar erro nenhum, o que
+   * fazia colunas como "Foi à CDM em" aparecerem vazias para obras novas.
+   * Aqui pedimos bloco a bloco (cabeçalho Range) até a tabela acabar.
+   */
+  async queryTudo(tabela, params = '', tamanhoPagina = 1000) {
+    const todas = [];
+    let inicio = 0;
+    // trava de segurança: no máximo 200 páginas (200 mil linhas)
+    for (let i = 0; i < 200; i++) {
+      const fim = inicio + tamanhoPagina - 1;
+      const url = `${SUPABASE_URL}/rest/v1/${tabela}?${params}`;
+      const r = await fetch(url, {
+        headers: { ...headers(), 'Range-Unit': 'items', 'Range': `${inicio}-${fim}` }
+      });
+      if (!r.ok) throw await r.json();
+      const bloco = await r.json();
+      todas.push(...bloco);
+      if (bloco.length < tamanhoPagina) break; // acabou a tabela
+      inicio += tamanhoPagina;
+    }
+    return todas;
+  },
+
   /** Criar um ou mais registos */
   async insert(tabela, dados) {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabela}`, {
