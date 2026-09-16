@@ -145,7 +145,7 @@
           `${equip.fleet_type||'-'} - ${equip.group_name||'-'} - Adquirido em ${equip.year_acquired||'-'}`;
 
         // Todas as OS desta máquina
-        todasOS = await db.query('ordens_servico', `select=*&equipment_id=eq.${equipId}&order=data_abertura.desc`);
+        todasOS = await db.queryTudo('ordens_servico', `select=*&equipment_id=eq.${equipId}&order=data_abertura.desc`);
 
         // Colaboradores
         colabs = await db.query('collaborators', 'select=*&active=eq.true');

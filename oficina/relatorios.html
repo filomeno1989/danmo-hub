@@ -570,7 +570,7 @@
 
     /* ---------- Carregamento de dados ---------- */
     async function carregarEquipamentos() {
-      const lista = await db.query('equipment', 'select=*&order=code.asc');
+      const lista = await db.queryTudo('equipment', 'select=*&order=code.asc');
       EQUIPS = {};
       lista.forEach(e => { EQUIPS[String(e.id)] = e; });
       const sel = document.getElementById('f-maquina');
@@ -583,7 +583,7 @@
     }
 
     async function carregarOrdens() {
-      ORDENS = await db.query('ordens_servico', 'select=*');
+      ORDENS = await db.queryTudo('ordens_servico', 'select=*');
       MAPA_OS = {};
       ORDENS.forEach(o => {
         MAPA_OS[String(o.id)] = o;
@@ -601,10 +601,13 @@
     async function carregarLogs() {
       let logs = [];
       try {
-        logs = await db.query('os_status_log', 'select=*&order=data_mudanca.asc');
+        // queryTudo: traz a tabela toda em páginas. Com query() simples, o
+        // Supabase devolvia só as 1000 linhas mais antigas e as mudanças
+        // recentes (as de ontem/hoje) nunca chegavam cá.
+        logs = await db.queryTudo('os_status_log', 'select=*&order=data_mudanca.asc');
       } catch (e) {
         // Se a coluna data_mudanca não existir, traz sem ordem e ordena em JS
-        logs = await db.query('os_status_log', 'select=*');
+        logs = await db.queryTudo('os_status_log', 'select=*');
       }
       logs.sort((a, b) => new Date(dataDoEvento(a) || 0) - new Date(dataDoEvento(b) || 0));
       logs.forEach(ev => {

@@ -392,7 +392,7 @@
       if (dataIni)    qOrdens += `&data_abertura=gte.${dataIni}`;
       if (dataFim)    qOrdens += `&data_abertura=lte.${dataFim}`;
       if (sectFiltro) qOrdens += `&sector=eq.${encodeURIComponent(sectFiltro)}`;
-      todasOrdens = await db.query('ordens_servico', qOrdens);
+      todasOrdens = await db.queryTudo('ordens_servico', qOrdens);
 
       let equipFiltrados = [...todosEquip];
       if (catId) {
@@ -460,7 +460,7 @@
       let logCdm = [];
       if (idsFiltrados.length) {
         const idsStr = idsFiltrados.join(',');
-        logCdm = await db.query('os_status_log', `select=*&status_novo=eq.CdM&os_id=in.(${idsStr})`);
+        logCdm = await db.queryTudo('os_status_log', `select=*&status_novo=eq.CdM&os_id=in.(${idsStr})`);
       }
       const idsPassaramPorCdm = new Set(logCdm.map(l => l.os_id));
       const totalEnviadas = idsPassaramPorCdm.size;

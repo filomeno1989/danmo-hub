@@ -323,7 +323,7 @@
     });
 
     async function carregarOrdens() {
-      todasOrdens = await db.query('ordens_servico','select=*');
+      todasOrdens = await db.queryTudo('ordens_servico','select=*');
       renderizarTabela();
     }
 
