@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faturação - Técnicos - Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png" />
+  <script src="../shared/guard.js" data-modulo="faturacao"></script>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <link rel="stylesheet" href="style.css" />
+
+
+<!-- menu interno do billing removido: o Hub fornece a navegacao -->
+
+</head>
+<body>
+
+<div id="navbar"></div>
+
+<main class="main fat">
+
+<div class="modal-overlay" id="modal-tecnico">
+  <div class="modal modal-md">
+    <div class="modal-title" id="modal-titulo">👷 Novo Técnico</div>
+    <input type="hidden" id="tec-id">
+    <div class="grid-2">
+      <div class="form-row"><label>Nome *</label><input type="text" id="tec-nome" placeholder="Nome do técnico ou categoria"></div>
+      <div class="form-row"><label>Especialidade</label><input type="text" id="tec-esp" placeholder="ex: Mecânico, Eletricista..."></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-row"><label>Tarifa / Hora (MZN)</label><input type="number" id="tec-mzn" step="0.01" placeholder="0.00"></div>
+      <div class="form-row"><label>Tarifa / Hora (USD)</label><input type="number" id="tec-usd" step="0.01" placeholder="0.00"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('modal-tecnico')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardar()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal modal-sm">
+    <div class="modal-title">⚠️ Confirmar</div>
+    <p id="confirm-msg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <h1 class="page-title" style="margin:0;">👷 <span>Técnicos</span></h1>
+    <button class="btn btn-primary" id="btn-novo" onclick="abrirNovo()" style="display:none;">➕ Novo Técnico</button>
+  </div>
+  <div class="card">
+    <div id="tabela-wrap"><div class="loading"><span class="spinner"></span> A carregar...</div></div>
+  </div>
+</div>
+
+</main>
+
+<script src="../shared/supabase.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/utils.js"></script>
+<script src="../shared/tema.js"></script>
+<script src="tema.js"></script>
+<script src="faturacao.js"></script>
+<script src="../shared/nav.js"></script>
+<script>
+const user = auth.require();
+let lista = [];
+
+if (!auth.isAdmin()) window.location.href = 'dashboard.html';
+document.getElementById('btn-novo').style.display = 'inline-flex';
+ carregar();
+
+
+async function carregar() {
+  try {
+    lista = await db.queryTudo('tecnicos');
+    lista.sort((a,b) => a.nome.localeCompare(b.nome));
+    render();
+  } catch(err) {
+    document.getElementById('tabela-wrap').innerHTML = `<div class="empty-state"><span class="empty-icon">⚠️</span>Erro ao carregar.</div>`;
+  }
+}
+
+function render() {
+  const wrap = document.getElementById('tabela-wrap');
+  if (!lista.length) {
+    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">👷</span>Nenhum técnico registado.<br><button class="btn btn-primary" style="margin-top:1rem;" onclick="abrirNovo()">➕ Adicionar técnico</button></div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <div style="font-size:12px;color:var(--steel2);margin-bottom:10px;">${lista.length} técnico(s)</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Nome</th><th>Especialidade</th><th>Tarifa/Hora MZN</th><th>Tarifa/Hora USD</th><th style="width:100px;">Ações</th></tr></thead>
+      <tbody>${lista.map(t=>`<tr>
+        <td><strong>${t.nome}</strong></td>
+        <td style="color:var(--steel);font-size:13px;">${t.especialidade||'-'}</td>
+        <td style="font-family:'Courier Prime';">${fmtNum(t.tarifa_mzn||0)} MZN</td>
+        <td style="font-family:'Courier Prime';">${fmtNum(t.tarifa_usd||0)} USD</td>
+        <td><div style="display:flex;gap:4px;">
+          <button class="btn btn-outline btn-xs" onclick="abrirEditar('${t.id}')">✏️</button>
+          <button class="btn btn-danger btn-xs" onclick="eliminar('${t.id}','${t.nome.replace(/'/g,"\\'")}')">🗑️</button>
+        </div></td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+function abrirNovo() {
+  document.getElementById('modal-titulo').textContent = '👷 Novo Técnico';
+  ['tec-id','tec-nome','tec-esp','tec-mzn','tec-usd'].forEach(id => setVal(id,''));
+  abrirModal('modal-tecnico');
+}
+
+function abrirEditar(id) {
+  const t = lista.find(x=>x.id===id); if(!t) return;
+  document.getElementById('modal-titulo').textContent = '✏️ Editar Técnico';
+  setVal('tec-id',t.id); setVal('tec-nome',t.nome||''); setVal('tec-esp',t.especialidade||'');
+  setVal('tec-mzn',t.tarifa_mzn||''); setVal('tec-usd',t.tarifa_usd||'');
+  abrirModal('modal-tecnico');
+}
+
+async function guardar() {
+  const nome = getVal('tec-nome').trim();
+  if (!nome) { showToast('Nome obrigatório.','error'); return; }
+  const dados = { nome, especialidade:getVal('tec-esp'), tarifa_mzn:parseFloat(getVal('tec-mzn'))||0, tarifa_usd:parseFloat(getVal('tec-usd'))||0 };
+  try {
+    const id = getVal('tec-id');
+    if (id) {
+      await db.update('tecnicos',id,dados);
+      const idx = lista.findIndex(t=>t.id===id);
+      if(idx>=0) lista[idx]={...lista[idx],...dados};
+      showToast('Técnico actualizado!');
+    } else {
+      const res = await db.insert('tecnicos',dados);
+      lista.push(res[0]); lista.sort((a,b)=>a.nome.localeCompare(b.nome));
+      showToast('Técnico adicionado!');
+    }
+    fecharModal('modal-tecnico'); render();
+  } catch(err) { showToast('Erro ao guardar.','error'); console.error(err); }
+}
+
+function eliminar(id, nome) {
+  confirmar(`Eliminar técnico "${nome}"?`, async () => {
+    try {
+      await db.delete('tecnicos',id);
+      lista = lista.filter(t=>t.id!==id); render();
+      showToast('Técnico eliminado.');
+    } catch(err) { showToast('Erro ao eliminar.','error'); }
+  });
+}
+
+window.addEventListener('click', e => { if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
+</script>
+</body>
+</html>

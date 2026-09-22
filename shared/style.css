@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   style.css — Estilos unificados & Elegantes (Danmo Hub)
+   style.css - Estilos unificados & Elegantes (Danmo Hub)
    Paleta Profissional Empresarial (Navy / Âmbar / Clean)
    Suporta tema claro e escuro global via data-tema no <html>.
    Última atualização: 2026-08-11
@@ -146,7 +146,7 @@ img { max-width: 100%; display: block; }
 }
 
 .topbar-hamburguer-btn {
-  display: none; /* só existe em ecrãs pequenos — ver media query 900px */
+  display: none; /* só existe em ecrãs pequenos - ver media query 900px */
   background: none;
   border: none;
   color: var(--chrome-texto);
@@ -293,7 +293,7 @@ img { max-width: 100%; display: block; }
 }
 
 /* ── SIDEBAR & LAYOUT ────────────────────────────────────────
-   Por defeito a sidebar mostra só os ícones (modo compacto) —
+   Por defeito a sidebar mostra só os ícones (modo compacto) -
    não precisa de nenhum botão para aparecer, está sempre visível.
    Ao clicar num módulo com submenu, expande-se por cima do
    conteúdo (não empurra o .main) para se poder ler os nomes e
@@ -412,7 +412,7 @@ img { max-width: 100%; display: block; }
 
 /* ── GRUPO ANINHADO (+/-) dentro de um submenu ─────────────
    Usado quando um módulo (ex: Avaliação de Desempenho) tem
-   várias páginas próprias — fica escondido atrás de +/- para
+   várias páginas próprias - fica escondido atrás de +/- para
    o submenu principal não crescer demasiado. */
 .sidebar-grupo {
   margin: 2px 0;
@@ -503,7 +503,7 @@ img { max-width: 100%; display: block; }
 
 /* ── MODO EXPANDIDO (temporário, ao clicar num módulo) ─────
    Flutua por cima do conteúdo (a sidebar já é position:fixed),
-   não desloca o .main — por isso não há "saltos" de layout
+   não desloca o .main - por isso não há "saltos" de layout
    quando abre ou fecha. */
 .sidebar.expandida {
   width: var(--sidebar-w);
@@ -540,7 +540,7 @@ img { max-width: 100%; display: block; }
 
 /* ── RESPONSIVO (TOPBAR / SIDEBAR / MAIN) ────────────────────
    Em ecrã grande a sidebar é sempre visível em modo compacto
-   (ver bloco principal acima) — não precisa de hambúrguer.
+   (ver bloco principal acima) - não precisa de hambúrguer.
    Só a partir daqui (<900px) é que ela sai do ecrã por omissão
    e o hambúrguer aparece para a chamar como overlay a toda a
    largura; o relógio central esconde-se em <600px. ────────── */
@@ -956,7 +956,7 @@ table tbody tr:hover {
 }
 
 /* ── TOAST (notificações) ─────────────────────────────────
-   Antes não existia CSS nenhum para isto — por isso aparecia
+   Antes não existia CSS nenhum para isto - por isso aparecia
    sem estilo, sem posição fixa, lá em baixo na página. */
 #toast-container {
   position: fixed;

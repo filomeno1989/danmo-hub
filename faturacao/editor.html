@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faturação - Editor - Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png" />
+  <script src="../shared/guard.js" data-modulo="faturacao"></script>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <link rel="stylesheet" href="style.css" />
+
+
+<!-- menu interno do billing removido: o Hub fornece a navegacao -->
+
+<style>
+  .items-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .items-table th {
+    background:rgba(245,158,11,0.1); padding:8px 10px;
+    font-size:10px; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--amber); text-align:left;
+    border-bottom:1px solid rgba(245,158,11,0.2);
+  }
+  .items-table td { padding:5px 4px; vertical-align:middle; }
+  .items-table input, .items-table select { padding:7px 8px; font-size:13px; }
+  .item-del {
+    background:transparent; border:none; color:var(--steel2);
+    cursor:pointer; padding:4px 10px; font-size:18px;
+    transition:color 0.2s; line-height:1;
+  }
+  .item-del:hover { color:var(--danger); }
+  .item-total {
+    font-family:'Courier Prime'; color:var(--amber);
+    font-weight:700; font-size:14px; white-space:nowrap; padding:0 8px;
+  }
+  .totais-box {
+    background:rgba(245,158,11,0.06);
+    border:1px solid rgba(245,158,11,0.2);
+    border-radius:8px; padding:1.5rem;
+  }
+  .total-linha {
+    display:flex; justify-content:space-between;
+    padding:7px 0; font-size:14px;
+    border-bottom:1px solid rgba(255,255,255,0.05);
+  }
+  .total-linha:last-child { border-bottom:none; }
+  .total-linha.grande {
+    font-family:'Bebas Neue'; font-size:24px; color:var(--amber);
+    padding-top:12px; margin-top:4px;
+    border-top:1px solid rgba(245,158,11,0.3); border-bottom:none;
+  }
+  .extenso-box {
+    background:rgba(255,255,255,0.03); border:1px solid var(--border);
+    border-radius:6px; padding:12px; font-style:italic;
+    font-size:13px; color:var(--steel); margin-top:10px; line-height:1.5;
+  }
+  .action-bar {
+    position:sticky; bottom:0; z-index:50;
+    background:var(--navy2); border-top:1px solid var(--border);
+    padding:12px 2rem; display:flex;
+    justify-content:space-between; align-items:center;
+    box-shadow:0 -4px 20px rgba(0,0,0,0.4);
+  }
+  .action-bar-left  { display:flex; align-items:center; gap:12px; }
+  .action-bar-right { display:flex; gap:10px; }
+  .estado-badge { font-size:12px; padding:4px 12px; border-radius:20px; font-weight:600; letter-spacing:1px; }
+  .estado-novo     { background:rgba(148,163,184,0.15); color:var(--steel); }
+  .estado-guardado { background:rgba(16,185,129,0.15);  color:#34d399; }
+  .taxa-row {
+    display:flex; gap:10px; align-items:flex-end;
+  }
+  .taxa-row > div:first-child { flex:1; }
+  .taxa-row > div:last-child  { width:130px; }
+  .tipo-cliente-info {
+    font-size:11px; color:var(--steel); margin-top:6px;
+    padding:6px 10px; background:rgba(245,158,11,0.06);
+    border-radius:4px; border-left:3px solid var(--amber);
+    display:none;
+  }
+  .tarifa-atalhos {
+    display:flex; gap:4px; margin-top:4px; flex-wrap:wrap;
+  }
+  .tarifa-atalho-btn {
+    background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25);
+    color:var(--amber); border-radius:4px; padding:2px 7px;
+    font-size:11px; cursor:pointer; font-family:'Source Sans 3';
+    font-weight:600; transition:all 0.2s; white-space:nowrap;
+  }
+  .tarifa-atalho-btn:hover {
+    background:rgba(245,158,11,0.25); border-color:var(--amber);
+  }
+  .desconto-row {
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  .total-linha.desconto { color:#f87171; }
+  .total-linha.desconto span:first-child { color:#f87171; }
+</style>
+</head>
+<body>
+
+<div id="navbar"></div>
+
+<main class="main fat">
+
+<!-- HEADER -->
+<!-- MODAL CONFIRMAR -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal modal-sm">
+    <div class="modal-title">⚠️ Confirmar</div>
+    <p id="confirm-msg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger"  id="confirm-ok-btn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CORPO -->
+<div class="page-body" style="padding-bottom:80px;">
+  <div class="grid-2" style="gap:1.5rem;align-items:start;">
+
+    <!-- ═══ COLUNA ESQUERDA ═══ -->
+    <div>
+
+      <!-- TIPO DE DOCUMENTO -->
+      <div class="card">
+        <div class="card-title">📄 Documento</div>
+        <div class="form-row">
+          <label>Tipo</label>
+          <div class="toggle-group" id="tg-tipo">
+            <button class="toggle-opt active" onclick="setTipo('cotacao',this)">Cotação</button>
+            <button class="toggle-opt"        onclick="setTipo('fatura',this)">Fatura</button>
+          </div>
+        </div>
+        <div class="form-row-inline">
+          <div>
+            <label>Número</label>
+            <input type="text" id="doc-numero" placeholder="ex: 001/26">
+          </div>
+          <div>
+            <label>Data</label>
+            <input type="date" id="doc-data">
+          </div>
+        </div>
+      </div>
+
+      <!-- CLIENTE -->
+      <div class="card">
+        <div class="card-title">🏢 Cliente</div>
+        <div class="form-row">
+          <label>Selecionar da base de dados</label>
+          <select id="sel-cliente" onchange="preencherCliente()">
+            <option value="">- Selecionar cliente -</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Nome / Empresa *</label>
+          <input type="text" id="cli-nome" placeholder="Nome da empresa">
+        </div>
+        <div class="form-row">
+          <label>Morada</label>
+          <input type="text" id="cli-morada" placeholder="Endereço">
+        </div>
+        <div class="form-row-inline">
+          <div>
+            <label>NUIT</label>
+            <input type="text" id="cli-nuit">
+          </div>
+          <div>
+            <label>Contacto</label>
+            <input type="text" id="cli-contacto">
+          </div>
+        </div>
+        <div class="form-row-inline">
+          <div>
+            <label>Enviado a (nome)</label>
+            <input type="text" id="cli-env-nome">
+          </div>
+          <div>
+            <label>Cargo / Dep.</label>
+            <input type="text" id="cli-env-cargo">
+          </div>
+        </div>
+      </div>
+
+      <!-- DESCRIÇÃO -->
+      <div class="card">
+        <div class="card-title">📝 Descrição do Serviço</div>
+        <div class="form-row">
+          <label>Assunto / Descrição</label>
+          <textarea id="doc-assunto" placeholder="Descreva o serviço a realizar..." style="min-height:110px;"></textarea>
+        </div>
+      </div>
+
+    </div><!-- /coluna esquerda -->
+
+    <!-- ═══ COLUNA DIREITA ═══ -->
+    <div>
+
+      <!-- CONFIGURAÇÕES -->
+      <div class="card">
+        <div class="card-title">⚙️ Configurações</div>
+
+        <!-- Tipo de Serviço -->
+        <div class="form-row">
+          <label>Tipo de Serviço</label>
+          <div class="toggle-group" id="tg-servico">
+            <button class="toggle-opt active" onclick="setServico('mao',this)">Mão-de-Obra</button>
+            <button class="toggle-opt"        onclick="setServico('material',this)">Material</button>
+            <button class="toggle-opt"        onclick="setServico('misto',this)">Misto</button>
+          </div>
+        </div>
+
+        <!-- Tipo de Cliente -->
+        <div class="form-row">
+          <label>Tipo de Cliente</label>
+          <div class="toggle-group" id="tg-tipocli">
+            <button class="toggle-opt active" onclick="setTipoCliente('interno',this)">Interno</button>
+            <button class="toggle-opt"        onclick="setTipoCliente('externo',this)">Externo</button>
+            <button class="toggle-opt"        onclick="setTipoCliente('outro',this)">Outro</button>
+          </div>
+          <div class="tipo-cliente-info" id="info-tipocli"></div>
+        </div>
+
+        <!-- Moeda + Taxa de câmbio (sempre visível) -->
+        <div class="form-row">
+          <label>Moeda &amp; Taxa de Câmbio</label>
+          <div class="taxa-row">
+            <div>
+              <div class="toggle-group" id="tg-moeda">
+                <button class="toggle-opt active" onclick="setMoeda('MZN',this)">MZN</button>
+                <button class="toggle-opt"        onclick="setMoeda('USD',this)">USD</button>
+              </div>
+            </div>
+            <div>
+              <label style="margin-bottom:4px;">1 USD = ? MZN</label>
+              <input type="number" id="taxa-cambio" value="64" step="0.5" min="1" oninput="calcTotais()">
+            </div>
+          </div>
+        </div>
+
+        <!-- IVA -->
+        <div class="form-row">
+          <label>IVA</label>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <div class="toggle-group" id="tg-iva">
+              <button class="toggle-opt active" onclick="setIVA(false,this)">Não incluído</button>
+              <button class="toggle-opt"        onclick="setIVA(true,this)">Incluído</button>
+            </div>
+            <div id="row-iva-pct" style="display:none;align-items:center;gap:6px;">
+              <input type="number" id="iva-pct" value="16" min="0" max="100" step="0.5"
+                     oninput="calcTotais()" style="width:70px;">
+              <span style="color:var(--steel);font-size:14px;">%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Elaborado por -->
+        <div class="form-row">
+          <label>Elaborado por</label>
+          <select id="sel-utilizador">
+            <option value="">- Selecionar -</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ITENS -->
+      <div class="card">
+        <div class="card-title">📦 Itens do Serviço</div>
+        <div style="overflow-x:auto;">
+          <table class="items-table">
+            <thead id="items-thead"></thead>
+            <tbody id="items-body"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-outline btn-sm" onclick="adicionarItem()">➕ Adicionar linha</button>
+        </div>
+      </div>
+
+      <!-- TOTAIS -->
+      <div class="totais-box">
+        <div class="total-linha">
+          <span style="color:var(--steel);">Subtotal</span>
+          <span id="val-subtotal">0,00</span>
+        </div>
+
+        <!-- DESCONTO -->
+        <div class="total-linha" id="linha-desconto">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="color:#f87171;">Desconto</span>
+            <div class="toggle-group" style="transform:scale(0.85);transform-origin:left;">
+              <button class="toggle-opt active" onclick="setDescontoTipo('fixo',this)" style="padding:4px 10px;font-size:11px;">MZN</button>
+              <button class="toggle-opt" onclick="setDescontoTipo('pct',this)" style="padding:4px 10px;font-size:11px;">%</button>
+            </div>
+            <input type="number" id="desconto-val" value="0" min="0" step="0.01"
+                   oninput="calcTotais()" style="width:90px;padding:5px 8px;font-size:13px;">
+          </div>
+          <span style="color:#f87171;" id="val-desconto">0,00</span>
+        </div>
+
+        <div class="total-linha" id="linha-iva" style="display:none;">
+          <span style="color:var(--steel);" id="label-iva">IVA (16%)</span>
+          <span id="val-iva">0,00</span>
+        </div>
+        <div class="total-linha grande">
+          <span id="label-total">TOTAL MZN</span>
+          <span id="val-total">0,00</span>
+        </div>
+        <div id="equiv-cambio" style="font-size:12px;color:var(--steel);text-align:right;margin-top:4px;"></div>
+        <div class="extenso-box" id="val-extenso">-</div>
+      </div>
+
+    </div><!-- /coluna direita -->
+  </div>
+</div>
+
+<!-- BARRA DE ACÇÕES -->
+<div class="action-bar">
+  <div class="action-bar-left">
+    <a href="dashboard.html" class="btn btn-outline btn-sm">← Voltar</a>
+    <span class="estado-badge estado-novo" id="estado-badge">Novo documento</span>
+    <span id="doc-id-label" style="font-size:12px;color:var(--steel2);display:none;"></span>
+  </div>
+  <div class="action-bar-right">
+    <button class="btn btn-outline" onclick="guardar(false)">💾 Guardar</button>
+    <button class="btn btn-primary" onclick="guardarEImprimir()">🖨️ Guardar e Imprimir</button>
+  </div>
+</div>
+
+</main>
+
+<script src="../shared/supabase.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/utils.js"></script>
+<script src="../shared/tema.js"></script>
+<script src="tema.js"></script>
+<script src="faturacao.js"></script>
+<script src="../shared/nav.js"></script>
+<script>
+// ── ESTADO ────────────────────────────────────────────
+const user   = auth.require();
+let docId    = null;
+let docTipo  = 'cotacao';
+let docServ  = 'mao';
+let docMoeda = 'MZN';
+let ivaOn    = false;
+let tipoCliente  = 'interno';
+let descontoTipo = 'fixo'; // 'fixo' ou 'pct'
+let itens    = [];
+let clientes = [], tecnicos = [], utilizadores = [], todosDocumentos = [], tarifas = [], materiais = [];
+
+// Unidades disponíveis
+const UNIDADES = ['horas','hora','dias','Und','Litro','Kg','Metro','Par','Caixa','Rolo','Tonelada','m²','ml'];
+
+// ── INIT ──────────────────────────────────────────────
+if (!auth.pode.criarDocumento()) window.location.href = 'dashboard.html';
+
+iniciar();
+
+async function iniciar() {
+  [clientes, tecnicos, utilizadores, todosDocumentos, tarifas, materiais] = await Promise.all([
+    db.queryTudo('clientes'),
+    db.queryTudo('tecnicos'),
+    db.queryTudo('utilizadores', 'select=id,usuario,nome,cargo,nivel,ativo'),
+    db.queryTudo('documentos'),
+    db.queryTudo('tarifas', 'ativo=eq.true'),
+    db.queryTudo('materiais', 'ativo=eq.true')
+  ]);
+  tarifas.sort((a,b) => b.valor_mzn - a.valor_mzn);
+  materiais.sort((a,b) => (a.referencia||'').localeCompare(b.referencia||''));
+
+  popularClientesSelect();
+  popularUtilizadoresSelect();
+  document.getElementById('doc-data').value = hoje();
+
+
+  const params = new URLSearchParams(window.location.search);
+  const editId = params.get('id');
+  if (editId) {
+    await carregarDocumento(editId);
+  } else {
+    document.getElementById('doc-numero').value = proximoNumero('cotacao', todosDocumentos);
+    document.getElementById('sel-utilizador').value = user.id;
+    construirTabelaItens();
+    adicionarItem();
+  }
+}
+
+// ── NAV ───────────────────────────────────────────────
+
+// ── CARREGAR DOCUMENTO (edição) ───────────────────────
+async function carregarDocumento(id) {
+  try {
+    const [docs, itensBD] = await Promise.all([
+      db.queryTudo('documentos', 'id=eq.' + id),
+      db.queryTudo('documento_itens', 'documento_id=eq.' + id)
+    ]);
+    const doc = docs[0];
+    if (!doc) { mostrarToast('Documento não encontrado.', 'erro'); return; }
+
+    docId       = doc.id;
+    docTipo     = doc.tipo;
+    docServ     = doc.servico;
+    docMoeda    = doc.moeda;
+    ivaOn       = doc.iva_incluido;
+    tipoCliente = doc.tipo_cliente || 'interno';
+    descontoTipo = doc.desconto_tipo || 'fixo';
+
+    activarToggle('tg-tipo',    docTipo     === 'fatura'   ? 1 : 0);
+    activarToggle('tg-servico', docServ     === 'material' ? 1 : docServ === 'misto' ? 2 : 0);
+    activarToggle('tg-moeda',   docMoeda    === 'USD'      ? 1 : 0);
+    activarToggle('tg-iva',     ivaOn                     ? 1 : 0);
+    activarToggle('tg-tipocli', tipoCliente === 'externo'  ? 1 : tipoCliente === 'outro' ? 2 : 0);
+
+    setVal('doc-numero',   doc.numero);
+    setVal('doc-data',     doc.data);
+    setVal('cli-nome',     doc.cliente_nome);
+    setVal('cli-morada',   doc.cliente_morada);
+    setVal('cli-nuit',     doc.cliente_nuit);
+    setVal('cli-contacto', doc.cliente_contacto);
+    setVal('cli-env-nome', doc.enviado_nome);
+    setVal('cli-env-cargo',doc.enviado_cargo);
+    setVal('doc-assunto',  doc.assunto);
+    setVal('taxa-cambio',  doc.taxa_cambio || 64);
+    setVal('iva-pct',      doc.iva_pct || 16);
+    setVal('desconto-val', doc.desconto_input || 0);
+    // Toggle desconto tipo
+    const descontoIdx = (doc.desconto_tipo === 'pct') ? 1 : 0;
+    document.getElementById('linha-desconto')
+      ?.querySelectorAll('.toggle-opt')
+      .forEach((b,i) => b.classList.toggle('active', i === descontoIdx));
+    setTimeout(() => { setVal('sel-utilizador', doc.utilizador_id); }, 100);
+
+    document.getElementById('row-iva-pct').style.display = ivaOn ? 'flex' : 'none';
+    document.getElementById('linha-iva').style.display   = ivaOn ? 'flex' : 'none';
+    actualizarInfoTipoCliente();
+
+    itens = itensBD.sort((a,b) => a.ordem - b.ordem).map(it => ({
+      _id:        it.id,
+      item_tipo:  it.item_tipo,
+      tecnico_id: it.tecnico_id,
+      descricao:  it.descricao,
+      qtd:        it.qtd,
+      tempo:      it.tempo,
+      unidade:    it.unidade,
+      valor_unit: it.valor_unit,
+      total:      it.total
+    }));
+
+    construirTabelaItens();
+    renderItens();
+    calcTotais();
+
+    document.getElementById('estado-badge').textContent = 'A editar';
+    document.getElementById('estado-badge').className   = 'estado-badge estado-guardado';
+    document.getElementById('doc-id-label').textContent = `Nº ${doc.numero}`;
+    document.getElementById('doc-id-label').style.display = 'inline';
+
+  } catch(err) { console.error(err); mostrarToast('Erro ao carregar documento.', 'erro'); }
+}
+
+// ── TOGGLES ───────────────────────────────────────────
+function setTipo(t, btn) {
+  docTipo = t;
+  activarBtn(btn);
+  if (!docId) document.getElementById('doc-numero').value = proximoNumero(t, todosDocumentos);
+}
+
+function setServico(s, btn) {
+  docServ = s;
+  activarBtn(btn);
+  itens = [];
+  construirTabelaItens();
+  adicionarItem();
+  calcTotais();
+}
+
+function setMoeda(m, btn) {
+  docMoeda = m;
+  activarBtn(btn);
+  document.getElementById('label-total').textContent = 'TOTAL ' + m;
+  calcTotais();
+}
+
+function setIVA(on, btn) {
+  ivaOn = on;
+  activarBtn(btn);
+  document.getElementById('row-iva-pct').style.display = on ? 'flex' : 'none';
+  document.getElementById('linha-iva').style.display   = on ? 'flex' : 'none';
+  calcTotais();
+}
+
+function setTipoCliente(t, btn) {
+  tipoCliente = t;
+  activarBtn(btn);
+  actualizarInfoTipoCliente();
+}
+
+function actualizarInfoTipoCliente() {
+  const info = document.getElementById('info-tipocli');
+  const msgs = {
+    interno: 'Tarifa interna aplicada (CdM e afiliadas)',
+    externo: 'Tarifa externa aplicada (clientes terceiros)',
+    outro:   'Tarifa personalizada - definir manualmente'
+  };
+  info.textContent    = msgs[tipoCliente] || '';
+  info.style.display  = 'block';
+}
+
+function activarBtn(btn) {
+  btn.closest('.toggle-group').querySelectorAll('.toggle-opt')
+     .forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function activarToggle(grupoId, idx) {
+  const btns = document.getElementById(grupoId)?.querySelectorAll('.toggle-opt');
+  if (!btns) return;
+  btns.forEach((b,i) => b.classList.toggle('active', i === idx));
+}
+
+// ── SELECTS ───────────────────────────────────────────
+function popularClientesSelect() {
+  const sel = document.getElementById('sel-cliente');
+  sel.innerHTML = '<option value="">- Selecionar cliente -</option>' +
+    clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+}
+
+function preencherCliente() {
+  const c = clientes.find(x => x.id === document.getElementById('sel-cliente').value);
+  if (!c) return;
+  setVal('cli-nome',     c.nome);
+  setVal('cli-morada',   c.morada    || '');
+  setVal('cli-nuit',     c.nuit      || '');
+  setVal('cli-contacto', c.contacto  || '');
+}
+
+function popularUtilizadoresSelect() {
+  const sel = document.getElementById('sel-utilizador');
+  sel.innerHTML = '<option value="">- Selecionar -</option>' +
+    utilizadores.map(u =>
+      `<option value="${u.id}">${u.nome} - ${u.cargo||''}</option>`
+    ).join('');
+  sel.value = user.id;
+}
+
+// ── TABELA DE ITENS ───────────────────────────────────
+function construirTabelaItens() {
+  const thead = document.getElementById('items-thead');
+  if (docServ === 'mao') {
+    thead.innerHTML = `<tr>
+      <th>#</th><th style="min-width:150px;">Técnico</th>
+      <th style="width:55px;">Qtd</th><th style="width:65px;">Tempo</th>
+      <th style="width:95px;">Unidade</th><th style="width:110px;">Val. Unit.</th>
+      <th style="width:110px;">Total</th><th></th></tr>`;
+  } else if (docServ === 'material') {
+    thead.innerHTML = `<tr>
+      <th>#</th><th>Descrição</th>
+      <th style="width:55px;">Qtd</th><th style="width:95px;">Unidade</th>
+      <th style="width:110px;">Val. Unit.</th>
+      <th style="width:110px;">Total</th><th></th></tr>`;
+  } else {
+    thead.innerHTML = `<tr>
+      <th>#</th><th style="width:80px;">Tipo</th>
+      <th>Técnico / Descrição</th>
+      <th style="width:55px;">Qtd</th><th style="width:65px;">Tempo</th>
+      <th style="width:95px;">Unidade</th>
+      <th style="width:110px;">Val. Unit.</th>
+      <th style="width:110px;">Total</th><th></th></tr>`;
+  }
+}
+
+function adicionarItem() {
+  itens.push({
+    _id:        'new_' + Date.now(),
+    item_tipo:  docServ === 'material' ? 'material' : 'mao',
+    material_id: null, tecnico_id: '', descricao: '',
+    qtd: 1, tempo: 1, unidade: 'horas',
+    valor_unit: 0, total: 0
+  });
+  renderItens();
+}
+
+function removerItem(lid) {
+  itens = itens.filter(i => i._id !== lid);
+  renderItens();
+  calcTotais();
+}
+
+function undSelectHtml(lid, val) {
+  const opts = UNIDADES.map(u =>
+    `<option value="${u}" ${u===val?'selected':''}>${u}</option>`
+  ).join('');
+  return `<select onchange="updateItem('${lid}','unidade',this.value)" style="width:90px;">
+    ${opts}
+    <option value="__outro__">Outro...</option>
+  </select>`;
+}
+
+function renderItens() {
+  const tbody = document.getElementById('items-body');
+  tbody.innerHTML = '';
+
+  itens.forEach((item, idx) => {
+    const tr  = document.createElement('tr');
+    const lid = item._id;
+
+    if (docServ === 'mao') {
+      tr.innerHTML = `
+        <td style="color:var(--steel2);width:24px;font-size:12px;">${idx+1}</td>
+        <td>${tecSelect(lid, item.tecnico_id)}</td>
+        <td><input type="number" value="${item.qtd}" min="1" style="width:52px;"
+            oninput="updateItem('${lid}','qtd',this.value)"></td>
+        <td><input type="number" value="${item.tempo}" min="0.5" step="0.5" style="width:60px;"
+            oninput="updateItem('${lid}','tempo',this.value)"></td>
+        <td>${undSelectHtml(lid, item.unidade)}</td>
+        <td>
+          <input type="number" value="${item.valor_unit}" step="0.01" style="width:105px;"
+            oninput="updateItem('${lid}','valor_unit',this.value)" id="vu_${lid}">
+          <div class="tarifa-atalhos">
+            ${tarifas.map(t=>`<button class="tarifa-atalho-btn" onclick="aplicarTarifa('${lid}',${t.valor_mzn})" title="${t.descricao}">${fmtNum(t.valor_mzn)}</button>`).join('')}
+          </div>
+        </td>
+        <td class="item-total" id="tot_${lid}">${fmtNum(item.total)}</td>
+        <td><button class="item-del" onclick="removerItem('${lid}')">×</button></td>`;
+
+    } else if (docServ === 'material') {
+      tr.innerHTML = `
+        <td style="color:var(--steel2);width:24px;font-size:12px;">${idx+1}</td>
+        <td>
+          <select onchange="selMaterial('${lid}',this.value)" style="margin-bottom:4px;">
+            <option value="">- Selecionar material -</option>
+            ${materiais.map(m=>`<option value="${m.id}" ${item.material_id===m.id?'selected':''}>${m.referencia?m.referencia+' - ':''}${m.nome}</option>`).join('')}
+          </select>
+          <input type="text" value="${item.descricao||''}" placeholder="Ou escrever manualmente"
+            oninput="updateItem('${lid}','descricao',this.value)" style="font-size:12px;" id="desc_${lid}">
+        </td>
+        <td><input type="number" value="${item.qtd}" min="1" style="width:52px;"
+            oninput="updateItem('${lid}','qtd',this.value)"></td>
+        <td>${undSelectHtml(lid, item.unidade || 'Und')}</td>
+        <td><input type="number" value="${item.valor_unit}" step="0.01" style="width:105px;"
+            oninput="updateItem('${lid}','valor_unit',this.value)" id="vu_mat_${lid}"></td>
+        <td class="item-total" id="tot_${lid}">${fmtNum(item.total)}</td>
+        <td><button class="item-del" onclick="removerItem('${lid}')">×</button></td>`;
+
+    } else {
+      const isMao = item.item_tipo === 'mao';
+      tr.innerHTML = `
+        <td style="color:var(--steel2);width:24px;font-size:12px;">${idx+1}</td>
+        <td>
+          <select style="width:80px;font-size:12px;padding:6px;"
+              onchange="updateItem('${lid}','item_tipo',this.value);renderItens();">
+            <option value="mao"      ${isMao ?'selected':''}>M-de-O</option>
+            <option value="material" ${!isMao?'selected':''}>Material</option>
+          </select>
+        </td>
+        <td>${isMao
+          ? tecSelect(lid, item.tecnico_id)
+          : `<div>
+               <select onchange="selMaterial('${lid}',this.value)" style="margin-bottom:3px;font-size:12px;">
+                 <option value="">- Selecionar material -</option>
+                 ${materiais.map(m=>`<option value="${m.id}" ${item.material_id===m.id?'selected':''}>${m.referencia?m.referencia+' - ':''}${m.nome}</option>`).join('')}
+               </select>
+               <input type="text" value="${item.descricao||''}" placeholder="Ou escrever manualmente"
+                 oninput="updateItem('${lid}','descricao',this.value)" style="font-size:12px;" id="desc_${lid}">
+             </div>`
+        }</td>
+        <td><input type="number" value="${item.qtd}" min="1" style="width:52px;"
+            oninput="updateItem('${lid}','qtd',this.value)"></td>
+        <td>${isMao
+          ? `<input type="number" value="${item.tempo}" step="0.5" style="width:60px;"
+               oninput="updateItem('${lid}','tempo',this.value)">`
+          : `<span style="color:var(--steel2);font-size:12px;">-</span>`
+        }</td>
+        <td>${undSelectHtml(lid, item.unidade || (isMao ? 'horas' : 'Und'))}</td>
+        <td>
+          <input type="number" value="${item.valor_unit}" step="0.01" style="width:105px;"
+            oninput="updateItem('${lid}','valor_unit',this.value)" id="vu_${lid}">
+          ${item.item_tipo === 'mao' ? `<div class="tarifa-atalhos">${tarifas.map(t=>`<button class="tarifa-atalho-btn" onclick="aplicarTarifa('${lid}',${t.valor_mzn})" title="${t.descricao}">${fmtNum(t.valor_mzn)}</button>`).join('')}</div>` : ''}
+        </td>
+        <td class="item-total" id="tot_${lid}">${fmtNum(item.total)}</td>
+        <td><button class="item-del" onclick="removerItem('${lid}')">×</button></td>`;
+    }
+    tbody.appendChild(tr);
+  });
+
+  // Listener para "Outro..." nas unidades
+  tbody.querySelectorAll('select').forEach(sel => {
+    if (sel.value === '__outro__' || [...sel.options].some(o => o.value === '__outro__')) {
+      sel.addEventListener('change', function() {
+        if (this.value === '__outro__') {
+          const custom = prompt('Escreve a unidade:');
+          if (custom && custom.trim()) {
+            const opt = new Option(custom.trim(), custom.trim(), true, true);
+            this.insertBefore(opt, this.lastElementChild);
+            this.value = custom.trim();
+            const lid = this.closest('tr').querySelector('[id^="tot_"]')?.id.replace('tot_','');
+            if (lid) updateItem(lid, 'unidade', custom.trim());
+          } else {
+            this.value = 'Und';
+          }
+        }
+      });
+    }
+  });
+}
+
+function tecSelect(lid, val) {
+  const opts = tecnicos.map(t =>
+    `<option value="${t.id}" ${t.id===val?'selected':''}>${t.nome}</option>`
+  ).join('');
+  return `<select onchange="updateItem('${lid}','tecnico_id',this.value);autoTarifa('${lid}')">
+    <option value="">- Técnico -</option>${opts}</select>`;
+}
+
+function autoTarifa(lid) {
+  const item = itens.find(i => i._id === lid);
+  if (!item?.tecnico_id) return;
+  const tec = tecnicos.find(t => t.id === item.tecnico_id);
+  if (!tec) return;
+  item.valor_unit = docMoeda === 'USD' ? (tec.tarifa_usd||0) : (tec.tarifa_mzn||0);
+  const el = document.getElementById('vu_' + lid);
+  if (el) el.value = item.valor_unit;
+  calcItemTotal(item);
+  calcTotais();
+  const totEl = document.getElementById('tot_' + lid);
+  if (totEl) totEl.textContent = fmtNum(item.total);
+}
+
+function selMaterial(lid, materialId) {
+  const item = itens.find(i => i._id === lid); if (!item) return;
+  if (!materialId) return;
+  const mat = materiais.find(m => m.id === materialId); if (!mat) return;
+  item.material_id = mat.id;
+  item.descricao   = mat.nome;
+  item.unidade     = mat.unidade || 'Und';
+  item.valor_unit  = mat.preco_mzn || 0;
+  // Actualizar campos visuais
+  const descEl = document.getElementById('desc_' + lid);
+  if (descEl) descEl.value = mat.nome;
+  const vuEl = document.getElementById('vu_mat_' + lid) || document.getElementById('vu_' + lid);
+  if (vuEl) vuEl.value = mat.preco_mzn || 0;
+  calcItemTotal(item);
+  calcTotais();
+  const totEl = document.getElementById('tot_' + lid);
+  if (totEl) totEl.textContent = fmtNum(item.total);
+  // Re-render para actualizar unidade
+  renderItens();
+}
+
+function aplicarTarifa(lid, valor) {
+  const item = itens.find(i => i._id === lid);
+  if (!item) return;
+  item.valor_unit = valor;
+  const el = document.getElementById('vu_' + lid);
+  if (el) el.value = valor;
+  calcItemTotal(item);
+  calcTotais();
+  const totEl = document.getElementById('tot_' + lid);
+  if (totEl) totEl.textContent = fmtNum(item.total);
+}
+
+function updateItem(lid, campo, valor) {
+  const item = itens.find(i => i._id === lid);
+  if (!item) return;
+  if (['qtd','tempo','valor_unit'].includes(campo)) item[campo] = parseFloat(valor)||0;
+  else item[campo] = valor;
+  calcItemTotal(item);
+  const totEl = document.getElementById('tot_' + lid);
+  if (totEl) totEl.textContent = fmtNum(item.total);
+  calcTotais();
+}
+
+function calcItemTotal(item) {
+  const isMat = item.item_tipo === 'material' || docServ === 'material';
+  item.total = isMat
+    ? (item.qtd||1) * (item.valor_unit||0)
+    : (item.qtd||1) * (item.tempo||1) * (item.valor_unit||0);
+}
+
+function setDescontoTipo(t, btn) {
+  descontoTipo = t;
+  btn.closest('.toggle-group').querySelectorAll('.toggle-opt')
+     .forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Reset valor
+  document.getElementById('desconto-val').value = 0;
+  calcTotais();
+}
+
+// ── TOTAIS ────────────────────────────────────────────
+function calcTotais() {
+  const subtotal   = itens.reduce((s,it) => s + (it.total||0), 0);
+  const descontoInput = parseFloat(getVal('desconto-val') || 0);
+  const descontoAmt   = descontoTipo === 'pct'
+    ? subtotal * descontoInput / 100
+    : descontoInput;
+  const aposDesconto  = Math.max(0, subtotal - descontoAmt);
+  const ivaPct     = parseFloat(getVal('iva-pct') || 16);
+  const ivaAmt     = ivaOn ? aposDesconto * ivaPct / 100 : 0;
+  const total      = aposDesconto + ivaAmt;
+  const taxa       = parseFloat(getVal('taxa-cambio') || 64);
+  const totalMZN   = docMoeda === 'USD' ? total * taxa : total;
+
+  document.getElementById('val-subtotal').textContent = fmtNum(subtotal) + ' ' + docMoeda;
+  document.getElementById('label-total').textContent  = 'TOTAL ' + docMoeda;
+  document.getElementById('val-total').textContent    = fmtNum(total) + ' ' + docMoeda;
+
+  // Desconto
+  if (descontoAmt > 0) {
+    const label = descontoTipo === 'pct'
+      ? `- ${fmtNum(descontoAmt)} ${docMoeda} (${descontoInput}%)`
+      : `- ${fmtNum(descontoAmt)} ${docMoeda}`;
+    document.getElementById('val-desconto').textContent = label;
+  } else {
+    document.getElementById('val-desconto').textContent = '0,00';
+  }
+
+  if (ivaOn) {
+    document.getElementById('label-iva').textContent = `IVA (${ivaPct}%)`;
+    document.getElementById('val-iva').textContent   = fmtNum(ivaAmt) + ' ' + docMoeda;
+  }
+
+  const equivEl = document.getElementById('equiv-cambio');
+  if (docMoeda === 'USD') {
+    equivEl.textContent = `≈ ${fmtNum(totalMZN)} MZN (taxa: ${taxa})`;
+  } else {
+    equivEl.textContent = `≈ USD ${fmtNum(total / taxa)} (taxa: ${taxa})`;
+  }
+
+  document.getElementById('val-extenso').textContent = 'São: ' + numPorExtenso(totalMZN);
+}
+
+// ── GUARDAR ───────────────────────────────────────────
+async function guardar(silencioso = false) {
+  const numero  = getVal('doc-numero').trim();
+  const clinome = getVal('cli-nome').trim();
+  if (!numero)  { showToast('Insira o número do documento.', 'error'); return false; }
+  if (!clinome) { showToast('Insira o nome do cliente.',     'error'); return false; }
+
+  const taxa        = parseFloat(getVal('taxa-cambio') || 64);
+  const ivaPct      = parseFloat(getVal('iva-pct')     || 16);
+  const descontoInput = parseFloat(getVal('desconto-val') || 0);
+  const subtotal    = itens.reduce((s,it) => s + (it.total||0), 0);
+  const descontoAmt = descontoTipo === 'pct' ? subtotal * descontoInput / 100 : descontoInput;
+  const aposDesconto = Math.max(0, subtotal - descontoAmt);
+  const ivaAmt      = ivaOn ? aposDesconto * ivaPct / 100 : 0;
+  const total       = aposDesconto + ivaAmt;
+  const totalMZN    = docMoeda === 'USD' ? total * taxa : total;
+
+  const utilId = getVal('sel-utilizador');
+  const util   = utilizadores.find(u => u.id === utilId);
+
+  const docData = {
+    tipo:             docTipo,
+    numero,
+    data:             getVal('doc-data'),
+    servico:          docServ,
+    moeda:            docMoeda,
+    taxa_cambio:      taxa,
+    iva_incluido:     ivaOn,
+    iva_pct:          ivaPct,
+    tipo_cliente:     tipoCliente,
+    cliente_nome:     clinome,
+    cliente_morada:   getVal('cli-morada'),
+    cliente_nuit:     getVal('cli-nuit'),
+    cliente_contacto: getVal('cli-contacto'),
+    enviado_nome:     getVal('cli-env-nome'),
+    enviado_cargo:    getVal('cli-env-cargo'),
+    assunto:          getVal('doc-assunto'),
+    subtotal,
+    desconto:         descontoAmt,
+    desconto_tipo:    descontoTipo,
+    desconto_input:   descontoInput,
+    iva_amt:          ivaAmt,
+    total,
+    total_mzn:        totalMZN,
+    utilizador_id:    utilId || null,
+    utilizador_nome:  util?.nome  || '',
+    utilizador_cargo: util?.cargo || '',
+    atualizado_em:    new Date().toISOString()
+  };
+
+  try {
+    let savedDoc;
+    if (docId) {
+      const res = await db.update('documentos', docId, docData);
+      savedDoc  = res[0];
+    } else {
+      const res = await db.insert('documentos', docData);
+      savedDoc  = res[0];
+      docId     = savedDoc.id;
+      todosDocumentos.push(savedDoc);
+    }
+
+    // Apagar itens antigos e reinserir
+    await fetch(`${SUPABASE_URL}/rest/v1/documento_itens?documento_id=eq.${docId}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+
+    if (itens.length > 0) {
+      const itensBD = itens.map((it, idx) => ({
+        documento_id: docId,
+        ordem:        idx,
+        item_tipo:    it.item_tipo || (docServ === 'material' ? 'material' : 'mao'),
+        tecnico_id:   it.tecnico_id || null,
+        tecnico_nome: tecnicos.find(t => t.id === it.tecnico_id)?.nome || null,
+        descricao:    it.descricao  || null,
+        qtd:          it.qtd        || 1,
+        tempo:        it.tempo      || 1,
+        unidade:      it.unidade    || 'horas',
+        valor_unit:   it.valor_unit || 0,
+        total:        it.total      || 0
+      }));
+      await db.insert('documento_itens', itensBD);
+    }
+
+    document.getElementById('estado-badge').textContent = '✅ Guardado';
+    document.getElementById('estado-badge').className   = 'estado-badge estado-guardado';
+    document.getElementById('doc-id-label').textContent = `Nº ${numero}`;
+    document.getElementById('doc-id-label').style.display = 'inline';
+
+    if (!silencioso) showToast('Documento guardado com sucesso!');
+    return true;
+
+  } catch(err) {
+    console.error(err);
+    showToast('Erro ao guardar. Verifica a ligação.', 'error');
+    return false;
+  }
+}
+
+async function guardarEImprimir() {
+  const ok = await guardar(true);
+  if (ok) window.open(`print.html?id=${docId}`, '_blank');
+}
+
+window.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
+});
+</script>
+</body>
+</html>

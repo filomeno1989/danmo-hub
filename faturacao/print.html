@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faturação - Documento - Danmo Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png" />
+  <script src="../shared/guard.js" data-modulo="faturacao"></script>
+  <link rel="stylesheet" href="../shared/style.css" />
+<style>
+/* ── ECRÃ ── */
+body {
+  font-family: 'Source Sans 3', sans-serif;
+  background: #1a1a2e;
+  margin: 0; padding: 20px;
+  min-height: 100vh;
+}
+.preview-bar {
+  max-width: 820px; margin: 0 auto 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 10px; flex-wrap: wrap;
+}
+.preview-bar-left { display:flex; align-items:center; gap:10px; }
+.btn-print {
+  background: #f59e0b; color: #0a1628; border: none;
+  padding: 10px 24px; border-radius: 6px; cursor: pointer;
+  font-family: 'Source Sans 3'; font-size: 14px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase; transition: background 0.2s;
+}
+.btn-print:hover { background: #d97706; }
+.btn-back {
+  background: transparent; color: #94a3b8;
+  border: 1px solid rgba(148,163,184,0.3);
+  padding: 10px 20px; border-radius: 6px; cursor: pointer;
+  font-family: 'Source Sans 3'; font-size: 13px;
+  text-decoration: none; display: inline-block; transition: all 0.2s;
+}
+.btn-back:hover { color: #f59e0b; border-color: #f59e0b; }
+.preview-title {
+  font-family: 'Source Sans 3'; font-size: 16px;
+  font-weight: 700; color: #f59e0b;
+}
+
+/* ── PAPEL (ecrã) ── */
+.doc-wrap {
+  max-width: 820px; margin: 0 auto;
+  background: white; border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+
+/* ── DOCUMENTO ── */
+.doc-page {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 11pt;
+  color: #1a1a1a;
+  box-sizing: border-box;
+}
+
+/* ── CABEÇALHO ── */
+.doc-header {
+  padding: 12mm 18mm 4mm 18mm;
+}
+.doc-header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4mm;
+}
+.logo-danmo { height: 48px; width: auto; object-fit: contain; }
+.logo-mmm   { height: 48px; width: auto; object-fit: contain; }
+
+.doc-title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 3px solid #0a1628;
+  border-bottom: 1px solid #0a1628;
+  padding: 5px 0;
+}
+.doc-type-label {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 17pt;
+  font-weight: bold;
+  color: #f59e0b;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.doc-number-date { text-align: right; }
+.doc-number { font-size: 15pt; font-weight: bold; color: #0a1628; }
+.doc-date   { font-size: 9.5pt; color: #555; margin-top: 2px; }
+
+/* ── CORPO ── */
+.doc-body { padding: 5mm 18mm 0 18mm; }
+
+.doc-parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6mm;
+  margin-bottom: 4mm;
+}
+.party-label {
+  font-size: 8pt;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 3px;
+}
+.party-name {
+  font-size: 11.5pt;
+  font-weight: bold;
+  color: #0a1628;
+  margin-bottom: 3px;
+}
+.party-detail {
+  font-size: 9.5pt;
+  color: #333;
+  line-height: 1.6;
+}
+
+.doc-assunto {
+  background: #f8f8f8;
+  border-left: 4px solid #f59e0b;
+  padding: 7px 11px;
+  margin-bottom: 4mm;
+  font-size: 9.5pt;
+  color: #222;
+  line-height: 1.6;
+  border-radius: 0 3px 3px 0;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.doc-assunto strong { color: #0a1628; }
+
+/* Tabela de itens */
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  font-family: 'Times New Roman', Times, serif;
+}
+.items-table thead { display: table-header-group; } /* repete cabeçalho em nova página */
+.items-table th {
+  background: #0a1628;
+  color: white;
+  padding: 6px 8px;
+  text-align: left;
+  font-size: 8.5pt;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.items-table th.right { text-align: right; }
+.items-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+}
+.items-table td.right { text-align: right; }
+.items-table td.bold  { font-weight: bold; }
+.items-table tr:nth-child(even) td { background: #f9fafb; }
+.items-table tr { page-break-inside: avoid; break-inside: avoid; }
+
+/* Totais */
+.doc-totais-area {
+  padding: 0 18mm;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.doc-totais-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 3mm;
+  margin-bottom: 3mm;
+}
+.totais-block { width: 270px; }
+.total-linha {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 10pt;
+  border-bottom: 1px solid #f0f0f0;
+}
+.total-linha .lbl { color: #555; }
+.total-linha .val { font-weight: bold; }
+.total-linha.desconto .lbl,
+.total-linha.desconto .val { color: #c00; }
+.total-linha.final {
+  font-size: 13pt;
+  font-weight: bold;
+  color: #0a1628;
+  border-top: 2px solid #0a1628;
+  border-bottom: 2px solid #0a1628;
+  padding: 5px 0;
+  margin-top: 3px;
+}
+.equiv-line {
+  font-size: 8.5pt;
+  color: #777;
+  text-align: right;
+  margin-top: 3px;
+  font-style: italic;
+}
+
+/* Extenso */
+.extenso-area {
+  padding: 0 18mm;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.extenso-block {
+  font-size: 9.5pt;
+  font-style: italic;
+  color: #444;
+  padding: 6px 10px;
+  background: #f8f8f8;
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+  margin-bottom: 4mm;
+  line-height: 1.5;
+}
+
+/* Assinatura */
+.assinatura-area {
+  padding: 0 18mm;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.assinatura-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 6mm;
+  margin-bottom: 4mm;
+}
+.assinatura-inner { text-align: center; width: 260px; }
+.assinatura-data  { font-size: 10pt; color: #333; margin-bottom: 10mm; }
+.assinatura-linha { border-top: 1px solid #000; padding-top: 6px; }
+.assinatura-nome  { font-size: 11pt; font-weight: bold; color: #0a1628; }
+.assinatura-cargo { font-size: 9.5pt; color: #555; margin-top: 2px; font-style: italic; }
+
+/* Rodapé */
+.doc-footer {
+  padding: 3mm 18mm 10mm 18mm;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 6mm;
+}
+.footer-codigo {
+  font-size: 7pt;
+  color: #555;
+  line-height: 1.6;
+  max-width: 310px;
+}
+.footer-codigo b { color: #000; }
+.logo-mesquita { height: 32px; width: auto; object-fit: contain; }
+
+/* ── LAYOUT ESTRUTURAL DE IMPRESSÃO (TABELA MÁGICA) ── */
+.tabela-layout-impressao {
+  width: 100%;
+  border-collapse: collapse;
+  border: none;
+}
+/* CORREÇÃO AQUI: o seletor '>' garante que a tabela de itens dentro do documento NÃO perde as bordas e paddings! */
+.tabela-layout-impressao > thead > tr > td,
+.tabela-layout-impressao > tbody > tr > td,
+.tabela-layout-impressao > tfoot > tr > td {
+  padding: 0;
+  border: none;
+}
+
+@media screen {
+  .print-header-space, .print-footer-space { display: none; }
+}
+
+/* ── IMPRESSÃO ── */
+@media print {
+  body { background: white; padding: 0; }
+  .preview-bar { display: none !important; }
+  .doc-wrap { box-shadow: none; border-radius: 0; max-width: 100%; }
+
+  @page { margin: 0; size: A4; }
+
+  /* Cabeçalho fixo no topo de todas as páginas */
+  .doc-header { 
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: #fff;
+    z-index: 1000;
+  }
+
+  /* Rodapé fixo no fundo de todas as páginas */
+  .doc-footer { 
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    z-index: 1000;
+    margin-top: 0;
+  }
+
+  /* Linhas da tabela não partem no meio */
+  .items-table tr { page-break-inside: avoid; break-inside: avoid; }
+
+  /* Cabeçalho da tabela repete em nova página */
+  .items-table thead { display: table-header-group; }
+
+  /* Manter blocos juntos */
+  .doc-assunto,
+  .doc-totais-area,
+  .extenso-area,
+  .assinatura-area { page-break-inside: avoid; break-inside: avoid; }
+
+  /* Cores na impressão */
+  .items-table th,
+  .doc-assunto {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- BARRA PREVIEW -->
+<div class="preview-bar">
+  <div class="preview-bar-left">
+    <a href="dashboard.html" class="btn-back">← Voltar</a>
+    <span class="preview-title" id="preview-title">A carregar...</span>
+  </div>
+  <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+</div>
+
+<!-- DOCUMENTO -->
+<div class="doc-wrap">
+  <div class="doc-page" id="doc-page">
+    <div style="text-align:center;padding:3rem;color:#999;font-family:sans-serif;">
+      A carregar documento...
+    </div>
+  </div>
+</div>
+
+<script src="../shared/supabase.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/utils.js"></script>
+<script src="faturacao.js"></script>
+<script src="logos.js"></script>
+<script>
+auth.require();
+
+// NOVA LÓGICA DE MARGENS (Calcula os espaços do cabeçalho e rodapé para a tabela)
+function ajustarMargensImpressao() {
+  const cab = document.querySelector('.doc-header');
+  const rod = document.querySelector('.doc-footer');
+  if (!cab || !rod) return;
+  
+  const alturaCab = cab.offsetHeight + 15; // +15px de folga extra
+  const alturaRod = rod.offsetHeight + 15;
+
+  let estilo = document.getElementById('_margem-dinamica');
+  if (!estilo) {
+    estilo = document.createElement('style');
+    estilo.id = '_margem-dinamica';
+    document.head.appendChild(estilo);
+  }
+  
+  estilo.textContent = `
+    @media print {      
+      .print-header-space { height: ${alturaCab}px !important; }
+      .print-footer-space { height: ${alturaRod}px !important; }
+    }
+  `;
+}
+window.addEventListener('beforeprint', ajustarMargensImpressao);
+
+
+async function carregarERender() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if (!id) { mostrarErro('Nenhum documento especificado.'); return; }
+
+  try {
+    const [docs, itens, tecnicos] = await Promise.all([
+      db.queryTudo('documentos', 'id=eq.' + id),
+      db.queryTudo('documento_itens', 'documento_id=eq.' + id),
+      db.queryTudo('tecnicos')
+    ]);
+
+    const doc = docs[0];
+    if (!doc) { mostrarErro('Documento não encontrado.'); return; }
+
+    const itensSorted = itens.sort((a,b) => a.ordem - b.ordem);
+    const tipoLabel   = doc.tipo === 'fatura' ? 'FATURA' : 'COTAÇÃO';
+    const taxa        = doc.taxa_cambio || 64;
+    const totalMZN    = doc.moeda === 'USD' ? doc.total * taxa : doc.total;
+
+    document.getElementById('preview-title').textContent =
+      `${tipoLabel} Nº ${doc.numero} - ${doc.cliente_nome || ''}`;
+    document.title = `Danmo SS - ${tipoLabel} ${doc.numero}`;
+
+    // ── CABEÇALHO TABELA ──
+    const isMao = doc.servico === 'mao';
+    const isMat = doc.servico === 'material';
+    let thHtml = '';
+    // CORREÇÃO AQUI: "#" alterado para "Nº" em todos os cenários
+    if (isMao) {
+      thHtml = `<tr>
+        <th style="width:30px;">Nº</th>
+        <th>Técnico</th>
+        <th style="width:44px;">Qtd</th>
+        <th style="width:60px;">Tempo</th>
+        <th style="width:65px;">Unidade</th>
+        <th class="right" style="width:115px;">Val. Unit. (${doc.moeda})</th>
+        <th class="right" style="width:120px;">Total (${doc.moeda})</th>
+      </tr>`;
+    } else if (isMat) {
+      thHtml = `<tr>
+        <th style="width:30px;">Nº</th>
+        <th>Descrição</th>
+        <th style="width:44px;">Qtd</th>
+        <th style="width:65px;">Unidade</th>
+        <th class="right" style="width:115px;">Val. Unit. (${doc.moeda})</th>
+        <th class="right" style="width:120px;">Total (${doc.moeda})</th>
+      </tr>`;
+    } else {
+      thHtml = `<tr>
+        <th style="width:30px;">Nº</th>
+        <th style="width:68px;">Tipo</th>
+        <th>Técnico / Descrição</th>
+        <th style="width:44px;">Qtd</th>
+        <th style="width:60px;">Tempo/Und</th>
+        <th class="right" style="width:115px;">Val. Unit. (${doc.moeda})</th>
+        <th class="right" style="width:120px;">Total (${doc.moeda})</th>
+      </tr>`;
+    }
+
+    // ── LINHAS ITENS ──
+    const linhasHtml = itensSorted.map((it, idx) => {
+      const tec  = tecnicos.find(t => t.id === it.tecnico_id);
+      const nome = tec ? tec.nome : (it.tecnico_nome || '-');
+      if (isMao) {
+        return `<tr>
+          <td>${idx+1}</td><td>${nome}</td>
+          <td>${it.qtd}</td><td>${it.tempo}</td><td>${it.unidade}</td>
+          <td class="right">${fmtNum(it.valor_unit)}</td>
+          <td class="right bold">${fmtNum(it.total)}</td>
+        </tr>`;
+      } else if (isMat) {
+        return `<tr>
+          <td>${idx+1}</td><td>${it.descricao||'-'}</td>
+          <td>${it.qtd}</td><td>${it.unidade}</td>
+          <td class="right">${fmtNum(it.valor_unit)}</td>
+          <td class="right bold">${fmtNum(it.total)}</td>
+        </tr>`;
+      } else {
+        const tipoIt = it.item_tipo === 'mao' ? 'Mão-de-Obra' : 'Material';
+        const desc   = it.item_tipo === 'mao' ? nome : (it.descricao||'-');
+        const tempo  = it.item_tipo === 'mao' ? `${it.tempo} ${it.unidade}` : it.unidade;
+        return `<tr>
+          <td>${idx+1}</td><td>${tipoIt}</td><td>${desc}</td>
+          <td>${it.qtd}</td><td>${tempo}</td>
+          <td class="right">${fmtNum(it.valor_unit)}</td>
+          <td class="right bold">${fmtNum(it.total)}</td>
+        </tr>`;
+      }
+    }).join('');
+
+    // ── TOTAIS ──
+    const desconto = doc.desconto || 0;
+    let totaisHtml = `
+      <div class="total-linha">
+        <span class="lbl">Subtotal</span>
+        <span class="val">${fmtNum(doc.subtotal)} ${doc.moeda}</span>
+      </div>`;
+    if (desconto > 0) {
+      const dl = doc.desconto_tipo === 'pct' ? `Desconto (${doc.desconto_input}%)` : 'Desconto';
+      totaisHtml += `<div class="total-linha desconto">
+        <span class="lbl">${dl}</span>
+        <span class="val">- ${fmtNum(desconto)} ${doc.moeda}</span>
+      </div>`;
+    }
+    if (doc.iva_incluido) {
+      totaisHtml += `<div class="total-linha">
+        <span class="lbl">IVA (${doc.iva_pct||16}%)</span>
+        <span class="val">${fmtNum(doc.iva_amt||0)} ${doc.moeda}</span>
+      </div>`;
+    }
+    totaisHtml += `<div class="total-linha final">
+      <span class="lbl">TOTAL ${doc.moeda}</span>
+      <span class="val">${fmtNum(doc.total)} ${doc.moeda}</span>
+    </div>`;
+
+    const equivHtml = doc.moeda === 'USD'
+      ? `<div class="equiv-line">≈ ${fmtNum(totalMZN)} MZN (taxa: 1 USD = ${taxa} MZN)</div>`
+      : '';
+
+    const dataExtensa = dataExtenso(doc.data);
+
+    // ── RENDER (COM ESTRUTURA DE TABELA) ──
+    document.getElementById('doc-page').innerHTML = `
+
+      <!-- CABEÇALHO REAL (FIXO) -->
+      <div class="doc-header">
+        <div class="doc-header-inner">
+          <img src="${LOGO_DANMO}" class="logo-danmo" alt="Danmo SS">
+          <img src="${LOGO_MMM}"   class="logo-mmm"   alt="Made in Mozambique">
+        </div>
+        <div class="doc-title-bar">
+          <div class="doc-type-label">${tipoLabel}</div>
+          <div class="doc-number-date">
+            <div class="doc-number">Nº ${doc.numero}</div>
+            <div class="doc-date">${fmtData(doc.data)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABELA DE LAYOUT PARA EMPURRAR O CONTEÚDO EM TODAS AS PÁGINAS -->
+      <table class="tabela-layout-impressao">
+        <thead>
+          <tr>
+            <td>
+              <div class="print-header-space"></div>
+            </td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <!-- CORPO DO DOCUMENTO VEM AQUI PARA DENTRO -->
+              <div class="doc-body">
+                <div class="doc-parties">
+                  <div>
+                    <div class="party-label">De</div>
+                    <div class="party-name">Danmo Service System, Lda</div>
+                    <div class="party-detail">
+                      Porto da Beira, Sofala - Moçambique<br>
+                      NUIT: 400024022<br>
+                      Tel: +258 84 301 9615
+                    </div>
+                  </div>
+                  <div>
+                    <div class="party-label">Para</div>
+                    <div class="party-name">${doc.cliente_nome||'-'}</div>
+                    <div class="party-detail">
+                      ${doc.cliente_morada   ? doc.cliente_morada   + '<br>' : ''}
+                      ${doc.cliente_nuit     ? 'NUIT: ' + doc.cliente_nuit + '<br>' : ''}
+                      ${doc.cliente_contacto ? 'Tel: '  + doc.cliente_contacto + '<br>' : ''}
+                      ${doc.enviado_nome     ? '<br>Att: <strong>' + doc.enviado_nome + '</strong>' + (doc.enviado_cargo ? ' - ' + doc.enviado_cargo : '') : ''}
+                    </div>
+                  </div>
+                </div>
+
+                ${doc.assunto ? `
+                <div class="doc-assunto">
+                  <strong>Assunto:</strong><br>
+                  ${doc.assunto.replace(/\n/g,'<br>')}
+                </div>` : ''}
+
+                <table class="items-table">
+                  <thead>${thHtml}</thead>
+                  <tbody>${linhasHtml}</tbody>
+                </table>
+              </div>
+
+              <!-- TOTAIS -->
+              <div class="doc-totais-area">
+                <div class="doc-totais-wrap">
+                  <div class="totais-block">
+                    ${totaisHtml}
+                    ${equivHtml}
+                  </div>
+                </div>
+              </div>
+
+              <!-- EXTENSO -->
+              <div class="extenso-area">
+                <div class="extenso-block">${numPorExtenso(totalMZN)}</div>
+              </div>
+
+              <!-- ASSINATURA -->
+              <div class="assinatura-area">
+                <div class="assinatura-wrap">
+                  <div class="assinatura-inner">
+                    <div class="assinatura-data">${dataExtensa}</div>
+                    <div class="assinatura-linha">
+                      <div class="assinatura-nome">${doc.utilizador_nome || '________________________________'}</div>
+                      <div class="assinatura-cargo">${doc.utilizador_cargo ? '(' + doc.utilizador_cargo + ')' : ''}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>
+              <div class="print-footer-space"></div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- RODAPÉ REAL (FIXO) -->
+      <div class="doc-footer">
+        <div class="footer-codigo">
+          <b>Código</b> DAN_ADO_FR_030_REV02_29.05.26<br>
+          Este documento é propriedade da DANMO. Não é permitida sua reprodução sem autorização.<br>
+          Depois de impresso este documento é considerado cópia não controlado
+        </div>
+        <img src="${LOGO_MESQUITA}" class="logo-mesquita" alt="Grupo Mesquita">
+      </div>
+    `;
+
+    // Chama o ajuste de layout da tabela logo após renderizar
+    setTimeout(ajustarMargensImpressao, 150);
+
+  } catch(err) {
+    console.error(err);
+    mostrarErro('Erro ao carregar o documento.');
+  }
+}
+
+function mostrarErro(msg) {
+  document.getElementById('doc-page').innerHTML =
+    `<div style="text-align:center;padding:3rem;color:#c00;font-family:sans-serif;">${msg}</div>`;
+}
+
+function dataExtenso(dataStr) {
+  if (!dataStr) return '';
+  const meses = ['janeiro','fevereiro','março','abril','maio','junho',
+                 'julho','agosto','setembro','outubro','novembro','dezembro'];
+  const d = new Date(dataStr + 'T12:00:00');
+  return `Beira, ${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+carregarERender();
+</script>
+</body>
+</html>

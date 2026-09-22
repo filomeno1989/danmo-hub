@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faturação - Materiais - Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png" />
+  <script src="../shared/guard.js" data-modulo="faturacao"></script>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <link rel="stylesheet" href="style.css" />
+
+
+<!-- menu interno do billing removido: o Hub fornece a navegacao -->
+
+</head>
+<body>
+
+<div id="navbar"></div>
+
+<main class="main fat">
+
+<!-- MODAL MATERIAL -->
+<div class="modal-overlay" id="modal-material">
+  <div class="modal modal-md">
+    <div class="modal-title" id="modal-titulo">📦 Novo Material</div>
+    <input type="hidden" id="mat-id">
+    <div class="grid-2">
+      <div class="form-row">
+        <label>Referência</label>
+        <input type="text" id="mat-ref" placeholder="ex: DAN_LUB_001"
+               style="text-transform:uppercase;letter-spacing:1px;"
+               oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div class="form-row">
+        <label>Nome *</label>
+        <input type="text" id="mat-nome" placeholder="ex: Óleo DOT3">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-row">
+        <label>Unidade</label>
+        <select id="mat-unidade">
+          <option value="Und">Und</option>
+          <option value="Litro">Litro</option>
+          <option value="Kg">Kg</option>
+          <option value="Metro">Metro</option>
+          <option value="Par">Par</option>
+          <option value="Caixa">Caixa</option>
+          <option value="Rolo">Rolo</option>
+          <option value="Tonelada">Tonelada</option>
+          <option value="m²">m²</option>
+          <option value="ml">ml</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Preço Unitário (MZN)</label>
+        <input type="number" id="mat-preco" step="0.01" min="0" placeholder="0.00">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Estado</label>
+      <select id="mat-ativo">
+        <option value="true">Activo - disponível para selecção</option>
+        <option value="false">Inactivo - não aparece nas listas</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('modal-material')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardar()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal modal-sm">
+    <div class="modal-title">⚠️ Confirmar</div>
+    <p id="confirm-msg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <h1 class="page-title" style="margin:0;">📦 <span>Materiais</span></h1>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="text" id="pesquisa" placeholder="🔍 Pesquisar..."
+             oninput="filtrar()" style="width:220px;padding:8px 12px;font-size:13px;">
+      <select id="filtro-unidade" onchange="filtrar()" style="padding:8px 12px;font-size:13px;width:130px;">
+        <option value="">Todas as unid.</option>
+      </select>
+      <button class="btn btn-primary" onclick="abrirNovo()">➕ Novo Material</button>
+    </div>
+  </div>
+
+  <!-- INFO -->
+  <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:6px;padding:12px 16px;font-size:13px;color:var(--steel);margin-bottom:1.5rem;line-height:1.6;">
+    💡 Esta tabela é partilhada com os módulos de <strong style="color:#60a5fa;">Stock</strong> e <strong style="color:#60a5fa;">Ordem de Reparação</strong> - quando forem construídos usarão os mesmos materiais e referências.
+  </div>
+
+  <div class="card">
+    <div id="tabela-wrap">
+      <div class="loading"><span class="spinner"></span> A carregar materiais...</div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script src="../shared/supabase.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/utils.js"></script>
+<script src="../shared/tema.js"></script>
+<script src="tema.js"></script>
+<script src="faturacao.js"></script>
+<script src="../shared/nav.js"></script>
+<script>
+const user = auth.require();
+let lista = [];
+
+if (!auth.isGestor()) window.location.href = 'dashboard.html';
+
+carregar();
+
+
+async function carregar() {
+  try {
+    lista = await db.queryTudo('materiais');
+    lista.sort((a,b) => (a.referencia||'').localeCompare(b.referencia||''));
+    popularFiltroUnidade();
+    render(lista);
+  } catch(err) {
+    document.getElementById('tabela-wrap').innerHTML =
+      `<div class="empty-state"><span class="empty-icon">⚠️</span>Erro ao carregar materiais.</div>`;
+  }
+}
+
+function popularFiltroUnidade() {
+  const unidades = [...new Set(lista.map(m => m.unidade).filter(Boolean))].sort();
+  const sel = document.getElementById('filtro-unidade');
+  unidades.forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u; opt.textContent = u;
+    sel.appendChild(opt);
+  });
+}
+
+function filtrar() {
+  const q       = document.getElementById('pesquisa').value.toLowerCase();
+  const unidade = document.getElementById('filtro-unidade').value;
+  render(lista.filter(m =>
+    (!q || (m.referencia||'').toLowerCase().includes(q) ||
+            m.nome.toLowerCase().includes(q)) &&
+    (!unidade || m.unidade === unidade)
+  ));
+}
+
+function render(dados) {
+  const wrap = document.getElementById('tabela-wrap');
+  const podeEditar = auth.isGestor();
+
+  if (!dados.length) {
+    wrap.innerHTML = `<div class="empty-state">
+      <span class="empty-icon">📦</span>
+      Nenhum material encontrado.
+      <br><button class="btn btn-primary" style="margin-top:1rem;" onclick="abrirNovo()">➕ Adicionar material</button>
+    </div>`;
+    return;
+  }
+
+  const activos   = dados.filter(m => m.ativo).length;
+  wrap.innerHTML = `
+    <div style="font-size:12px;color:var(--steel2);margin-bottom:10px;">
+      ${dados.length} material(ais) &nbsp;·&nbsp;
+      <span style="color:var(--success);">${activos} activo(s)</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Referência</th>
+          <th>Nome</th>
+          <th>Unidade</th>
+          <th>Preço Unit. (MZN)</th>
+          <th>Estado</th>
+          ${podeEditar ? '<th style="width:110px;">Ações</th>' : ''}
+        </tr></thead>
+        <tbody>
+          ${dados.map(m => `<tr style="opacity:${m.ativo?1:0.5};">
+            <td>
+              <span style="font-family:'Courier Prime';font-size:13px;color:var(--amber);letter-spacing:1px;">
+                ${m.referencia || '-'}
+              </span>
+            </td>
+            <td><strong>${m.nome}</strong></td>
+            <td>
+              <span class="badge" style="background:rgba(148,163,184,0.1);color:var(--steel);font-size:11px;">
+                ${m.unidade||'Und'}
+              </span>
+            </td>
+            <td style="font-family:'Courier Prime';color:var(--amber);">
+              ${fmtNum(m.preco_mzn||0)} MZN
+            </td>
+            <td>
+              <span style="font-size:12px;font-weight:600;color:${m.ativo?'var(--success)':'var(--steel2)'};">
+                ${m.ativo ? '● Activo' : '○ Inactivo'}
+              </span>
+            </td>
+            ${podeEditar ? `<td>
+              <div style="display:flex;gap:4px;">
+                <button class="btn btn-outline btn-xs" onclick="abrirEditar('${m.id}')">✏️</button>
+                <button class="btn ${m.ativo?'btn-outline':'btn-success'} btn-xs"
+                        onclick="toggleAtivo('${m.id}')" title="${m.ativo?'Desactivar':'Activar'}">
+                  ${m.ativo ? '⏸️' : '▶️'}
+                </button>
+                ${auth.isAdmin() ? `<button class="btn btn-danger btn-xs" onclick="eliminar('${m.id}','${m.nome.replace(/'/g,"\\'")}')">🗑️</button>` : ''}
+              </div>
+            </td>` : ''}
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function abrirNovo() {
+  document.getElementById('modal-titulo').textContent = '📦 Novo Material';
+  ['mat-id','mat-ref','mat-nome','mat-preco'].forEach(id => setVal(id,''));
+  setVal('mat-unidade','Und');
+  setVal('mat-ativo','true');
+  abrirModal('modal-material');
+}
+
+function abrirEditar(id) {
+  const m = lista.find(x => x.id === id); if (!m) return;
+  document.getElementById('modal-titulo').textContent = '✏️ Editar Material';
+  setVal('mat-id',      m.id);
+  setVal('mat-ref',     m.referencia || '');
+  setVal('mat-nome',    m.nome || '');
+  setVal('mat-unidade', m.unidade || 'Und');
+  setVal('mat-preco',   m.preco_mzn || '');
+  setVal('mat-ativo',   m.ativo ? 'true' : 'false');
+  abrirModal('modal-material');
+}
+
+async function guardar() {
+  const nome = getVal('mat-nome').trim();
+  if (!nome) { showToast('Nome obrigatório.','error'); return; }
+
+  const dados = {
+    referencia: getVal('mat-ref').trim() || null,
+    nome,
+    unidade:    getVal('mat-unidade'),
+    preco_mzn:  parseFloat(getVal('mat-preco')) || 0,
+    ativo:      getVal('mat-ativo') === 'true'
+  };
+
+  try {
+    const id = getVal('mat-id');
+    if (id) {
+      await db.update('materiais', id, dados);
+      const idx = lista.findIndex(m => m.id === id);
+      if (idx >= 0) lista[idx] = { ...lista[idx], ...dados };
+      showToast('Material actualizado!');
+    } else {
+      const res = await db.insert('materiais', dados);
+      lista.push(res[0]);
+      lista.sort((a,b) => (a.referencia||'').localeCompare(b.referencia||''));
+      showToast('Material adicionado!');
+    }
+    fecharModal('modal-material'); filtrar();
+  } catch(err) {
+    showToast('Erro ao guardar.','error'); console.error(err);
+  }
+}
+
+async function toggleAtivo(id) {
+  const m = lista.find(x => x.id === id); if (!m) return;
+  try {
+    await db.update('materiais', id, { ativo: !m.ativo });
+    m.ativo = !m.ativo;
+    filtrar();
+    showToast(m.ativo ? 'Material activado.' : 'Material desactivado.');
+  } catch(err) { showToast('Erro ao actualizar.','error'); }
+}
+
+function eliminar(id, nome) {
+  confirmar(`Eliminar material "${nome}"?`, async () => {
+    try {
+      await db.delete('materiais', id);
+      lista = lista.filter(m => m.id !== id);
+      filtrar(); showToast('Material eliminado.');
+    } catch(err) { showToast('Erro ao eliminar.','error'); }
+  });
+}
+
+window.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
+});
+</script>
+</body>
+</html>

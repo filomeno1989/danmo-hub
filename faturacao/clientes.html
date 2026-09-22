@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faturação - Clientes - Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png" />
+  <script src="../shared/guard.js" data-modulo="faturacao"></script>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <link rel="stylesheet" href="style.css" />
+
+
+<!-- menu interno do billing removido: o Hub fornece a navegacao -->
+
+</head>
+<body>
+
+<div id="navbar"></div>
+
+<main class="main fat">
+
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal modal-md">
+    <div class="modal-title" id="modal-titulo">🏢 Novo Cliente</div>
+    <input type="hidden" id="cli-id">
+    <div class="grid-2">
+      <div class="form-row"><label>Nome / Empresa *</label><input type="text" id="cli-nome" placeholder="Nome da empresa"></div>
+      <div class="form-row"><label>NUIT</label><input type="text" id="cli-nuit" placeholder="Número de contribuinte"></div>
+    </div>
+    <div class="form-row"><label>Morada</label><input type="text" id="cli-morada" placeholder="Endereço"></div>
+    <div class="form-row"><label>Contacto</label><input type="text" id="cli-contacto" placeholder="Telefone ou email"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('modal-cliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardar()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal modal-sm">
+    <div class="modal-title">⚠️ Confirmar</div>
+    <p id="confirm-msg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <h1 class="page-title" style="margin:0;">🏢 <span>Clientes</span></h1>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="text" id="pesquisa" placeholder="🔍 Pesquisar..." oninput="filtrar()" style="width:220px;padding:8px 12px;font-size:13px;">
+      <button class="btn btn-primary" id="btn-novo" onclick="abrirNovo()" style="display:none;">➕ Novo Cliente</button>
+    </div>
+  </div>
+  <div class="card">
+    <div id="tabela-wrap"><div class="loading"><span class="spinner"></span> A carregar...</div></div>
+  </div>
+</div>
+
+</main>
+
+<script src="../shared/supabase.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/utils.js"></script>
+<script src="../shared/tema.js"></script>
+<script src="tema.js"></script>
+<script src="faturacao.js"></script>
+<script src="../shared/nav.js"></script>
+<script>
+const user = auth.require();
+let lista = [];
+
+if (!auth.pode.verClientes()) window.location.href = 'dashboard.html';
+if (auth.pode.gerirClientes()) document.getElementById('btn-novo').style.display = 'inline-flex';
+ carregar();
+
+
+async function carregar() {
+  try {
+    lista = await db.queryTudo('clientes');
+    lista.sort((a,b) => a.nome.localeCompare(b.nome));
+    render(lista);
+  } catch(err) {
+    document.getElementById('tabela-wrap').innerHTML = `<div class="empty-state"><span class="empty-icon">⚠️</span>Erro ao carregar.</div>`;
+  }
+}
+
+function filtrar() {
+  const q = document.getElementById('pesquisa').value.toLowerCase();
+  render(lista.filter(c => (c.nome+''+c.morada+''+c.nuit+''+c.contacto).toLowerCase().includes(q)));
+}
+
+function render(dados) {
+  const wrap = document.getElementById('tabela-wrap');
+  const podeGer = auth.pode.gerirClientes();
+  if (!dados.length) {
+    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">🏢</span>Nenhum cliente encontrado.${podeGer?'<br><button class="btn btn-primary" style="margin-top:1rem;" onclick="abrirNovo()">➕ Adicionar cliente</button>':''}</div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <div style="font-size:12px;color:var(--steel2);margin-bottom:10px;">${dados.length} cliente(s)</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Nome / Empresa</th><th>Morada</th><th>NUIT</th><th>Contacto</th>${podeGer?'<th style="width:100px;">Ações</th>':''}</tr></thead>
+      <tbody>${dados.map(c=>`<tr>
+        <td><strong>${c.nome}</strong></td>
+        <td style="color:var(--steel);font-size:13px;">${c.morada||'-'}</td>
+        <td style="font-family:'Courier Prime';font-size:13px;">${c.nuit||'-'}</td>
+        <td style="color:var(--steel);font-size:13px;">${c.contacto||'-'}</td>
+        ${podeGer?`<td><div style="display:flex;gap:4px;">
+          <button class="btn btn-outline btn-xs" onclick="abrirEditar('${c.id}')">✏️</button>
+          <button class="btn btn-danger btn-xs" onclick="eliminar('${c.id}','${c.nome.replace(/'/g,"\\'")}')">🗑️</button>
+        </div></td>`:''}
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+function abrirNovo() {
+  document.getElementById('modal-titulo').textContent = '🏢 Novo Cliente';
+  ['cli-id','cli-nome','cli-morada','cli-nuit','cli-contacto'].forEach(id => setVal(id,''));
+  abrirModal('modal-cliente');
+}
+
+function abrirEditar(id) {
+  const c = lista.find(x=>x.id===id); if(!c) return;
+  document.getElementById('modal-titulo').textContent = '✏️ Editar Cliente';
+  setVal('cli-id',c.id); setVal('cli-nome',c.nome||''); setVal('cli-morada',c.morada||'');
+  setVal('cli-nuit',c.nuit||''); setVal('cli-contacto',c.contacto||'');
+  abrirModal('modal-cliente');
+}
+
+async function guardar() {
+  const nome = getVal('cli-nome').trim();
+  if (!nome) { showToast('Nome obrigatório.','error'); return; }
+  const dados = { nome, morada:getVal('cli-morada'), nuit:getVal('cli-nuit'), contacto:getVal('cli-contacto') };
+  try {
+    const id = getVal('cli-id');
+    if (id) {
+      await db.update('clientes',id,dados);
+      const idx = lista.findIndex(c=>c.id===id);
+      if(idx>=0) lista[idx]={...lista[idx],...dados};
+      showToast('Cliente actualizado!');
+    } else {
+      const res = await db.insert('clientes',dados);
+      lista.push(res[0]); lista.sort((a,b)=>a.nome.localeCompare(b.nome));
+      showToast('Cliente adicionado!');
+    }
+    fecharModal('modal-cliente'); filtrar();
+  } catch(err) { showToast('Erro ao guardar.','error'); console.error(err); }
+}
+
+function eliminar(id, nome) {
+  confirmar(`Eliminar "${nome}"? Esta acção não pode ser desfeita.`, async () => {
+    try {
+      await db.delete('clientes',id);
+      lista = lista.filter(c=>c.id!==id); filtrar();
+      showToast('Cliente eliminado.');
+    } catch(err) { showToast('Erro ao eliminar.','error'); }
+  });
+}
+
+window.addEventListener('click', e => { if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
+</script>
+</body>
+</html>

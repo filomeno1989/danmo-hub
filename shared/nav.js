@@ -26,7 +26,7 @@
 
     { id: 'disponibilidade', label: 'Disponibilidade Equip.', icon: '&#128666;', href: '#', dev: true },
 
-    { id: 'admin', label: 'Admin. Oficinal', icon: '&#128188;', pasta: 'rh|avaliacao-desempenho|aquisicao|ferias',
+    { id: 'admin', label: 'Admin. Oficinal', icon: '&#128188;', pasta: 'rh|avaliacao-desempenho|aquisicao|ferias|faturacao',
       sub: [
         { label: 'RH & Quadro de Pessoal',   href: 'rh/index.html', perm: 'rh' },
         { label: 'Avaliação de Desempenho',  id: 'aval-desempenho', perm: 'avaliacao',
@@ -53,6 +53,17 @@
             { label: 'Relatórios',               href: 'ferias/relatorios.html' },
             { label: 'Configurações',            href: 'ferias/configuracao.html' },
             { label: 'O Meu Plano (consulta)',   href: 'ferias/minhas-ferias.html' }
+          ] },
+        { label: 'Faturação (Cotações e Faturas)', id: 'faturacao-grupo', perm: 'faturacao',
+          itens: [
+            { label: 'Painel',          href: 'faturacao/dashboard.html' },
+            { label: 'Novo Documento',  href: 'faturacao/editor.html' },
+            { label: 'Clientes',        href: 'faturacao/clientes.html' },
+            { label: 'Técnicos',        href: 'faturacao/tecnicos.html' },
+            { label: 'Materiais',       href: 'faturacao/materiais.html' },
+            { label: 'Tarifas',         href: 'faturacao/tarifas.html' },
+            { label: 'Relatórios',      href: 'faturacao/relatorios.html' },
+            { label: 'Configurações',   href: 'faturacao/configuracoes.html' }
           ] }
       ] },
 

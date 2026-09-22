@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faturação - Dashboard - Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png" />
+  <script src="../shared/guard.js" data-modulo="faturacao"></script>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <link rel="stylesheet" href="style.css" />
+
+
+<!-- menu interno do billing removido: o Hub fornece a navegacao -->
+
+</head>
+<body>
+
+<div id="navbar"></div>
+
+<main class="main fat">
+
+<!-- HEADER -->
+<!-- MODAL CONFIRMAR ELIMINAR -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal modal-sm">
+    <div class="modal-title">⚠️ Confirmar</div>
+    <p id="confirm-msg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CORPO -->
+<div class="page-body">
+
+  <!-- STATS -->
+  <div class="grid-4" style="margin-bottom:1.5rem;">
+    <div class="stat-card stat-amber">
+      <div class="stat-val" id="stat-total">-</div>
+      <div class="stat-label">Total Documentos</div>
+    </div>
+    <div class="stat-card stat-blue">
+      <div class="stat-val" id="stat-cotacoes">-</div>
+      <div class="stat-label">Cotações</div>
+    </div>
+    <div class="stat-card stat-green">
+      <div class="stat-val" id="stat-faturas">-</div>
+      <div class="stat-label">Faturas</div>
+    </div>
+    <div class="stat-card stat-purple">
+      <div class="stat-val" id="stat-clientes">-</div>
+      <div class="stat-label">Clientes</div>
+    </div>
+  </div>
+
+  <!-- TABELA DE DOCUMENTOS -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px;">
+      <div class="card-title" style="margin:0;">📁 Documentos</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+
+        <!-- Filtros -->
+        <select id="filtro-tipo" onchange="aplicarFiltros()" style="width:130px;padding:8px 10px;font-size:13px;">
+          <option value="">Todos os tipos</option>
+          <option value="cotacao">Cotações</option>
+          <option value="fatura">Faturas</option>
+        </select>
+
+        <input type="text" id="filtro-pesquisa" placeholder="🔍 Pesquisar..."
+               oninput="aplicarFiltros()" style="width:200px;padding:8px 12px;font-size:13px;">
+
+        <!-- Botão Novo - só visível para gestor/admin -->
+        <a href="editor.html" class="btn btn-primary btn-sm" id="btn-novo" style="display:none;">
+          ➕ Novo Documento
+        </a>
+      </div>
+    </div>
+
+    <div id="tabela-wrap">
+      <div class="loading"><span class="spinner"></span> A carregar documentos...</div>
+    </div>
+  </div>
+
+</div><!-- page-body -->
+
+</main>
+
+<script src="../shared/supabase.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/utils.js"></script>
+<script src="../shared/tema.js"></script>
+<script src="tema.js"></script>
+<script src="faturacao.js"></script>
+<script src="../shared/nav.js"></script>
+<script>
+// ── INIT ──────────────────────────────────────────────
+const user = auth.require();
+let todosDocumentos = [];
+
+// Menu de navegação de acordo com o nível
+
+// Botão novo documento
+if (auth.pode.criarDocumento()) {
+  document.getElementById('btn-novo').style.display = 'inline-flex';
+}
+
+// Carregar dados
+carregarDados();
+
+// ── NAV ───────────────────────────────────────────────
+
+// ── CARREGAR ──────────────────────────────────────────
+async function carregarDados() {
+  try {
+    const [docs, clientes] = await Promise.all([
+      db.queryTudo('documentos'),
+      db.queryTudo('clientes')
+    ]);
+
+    todosDocumentos = docs.sort((a,b) =>
+      new Date(b.criado_em) - new Date(a.criado_em)
+    );
+
+    // Stats
+    document.getElementById('stat-total').textContent = docs.length;
+    document.getElementById('stat-cotacoes').textContent = docs.filter(d => d.tipo === 'cotacao').length;
+    document.getElementById('stat-faturas').textContent = docs.filter(d => d.tipo === 'fatura').length;
+    document.getElementById('stat-clientes').textContent = clientes.length;
+
+    renderTabela(todosDocumentos);
+
+  } catch (err) {
+    document.getElementById('tabela-wrap').innerHTML =
+      `<div class="empty-state"><span class="empty-icon">⚠️</span>Erro ao carregar dados. Verifica a ligação.</div>`;
+    console.error(err);
+  }
+}
+
+// ── FILTROS ───────────────────────────────────────────
+function aplicarFiltros() {
+  const tipo     = document.getElementById('filtro-tipo').value;
+  const pesquisa = document.getElementById('filtro-pesquisa').value.toLowerCase();
+
+  const filtrados = todosDocumentos.filter(d => {
+    const matchTipo = !tipo || d.tipo === tipo;
+    const matchPesq = !pesquisa ||
+      (d.numero||'').toLowerCase().includes(pesquisa) ||
+      (d.cliente_nome||'').toLowerCase().includes(pesquisa) ||
+      (d.assunto||'').toLowerCase().includes(pesquisa) ||
+      (d.utilizador_nome||'').toLowerCase().includes(pesquisa);
+    return matchTipo && matchPesq;
+  });
+
+  renderTabela(filtrados);
+}
+
+// ── RENDER TABELA ─────────────────────────────────────
+function renderTabela(docs) {
+  const wrap = document.getElementById('tabela-wrap');
+
+  if (!docs.length) {
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">📄</span>
+        Nenhum documento encontrado.
+        ${auth.pode.criarDocumento() ? '<br><a href="editor.html" class="btn btn-primary" style="margin-top:1rem;">➕ Criar primeiro documento</a>' : ''}
+      </div>`;
+    return;
+  }
+
+  const servicoLabel = { mao:'Mão-de-Obra', material:'Material', misto:'Misto' };
+  const servicoBadge = { mao:'badge-mao', material:'badge-material', misto:'badge-misto' };
+  const podeEditar   = auth.pode.editarDocumento();
+  const podeApagar   = auth.pode.apagarDocumento();
+
+  const linhas = docs.map(d => `
+    <tr>
+      <td>
+        <span style="font-family:'Courier Prime';font-weight:700;color:var(--amber);font-size:15px;">
+          ${d.numero || '-'}
+        </span>
+      </td>
+      <td><span class="badge badge-${d.tipo}">${d.tipo === 'cotacao' ? 'Cotação' : 'Fatura'}</span></td>
+      <td>
+        <div style="font-weight:600;">${d.cliente_nome || '-'}</div>
+        ${d.assunto ? `<div style="font-size:12px;color:var(--steel);margin-top:2px;">${truncar(d.assunto, 50)}</div>` : ''}
+      </td>
+      <td><span class="badge ${servicoBadge[d.servico]||''}">${servicoLabel[d.servico]||'-'}</span></td>
+      <td style="color:var(--steel);font-size:13px;">${fmtData(d.data)}</td>
+      <td style="font-family:'Courier Prime';">
+        <div>${fmtNum(d.total)} ${d.moeda}</div>
+        ${d.moeda === 'USD'
+          ? `<div style="font-size:11px;color:var(--steel);">≈ ${fmtNum(d.total_mzn)} MZN</div>`
+          : `<div style="font-size:11px;color:var(--steel);">≈ USD ${fmtNum(d.total / (d.taxa_cambio||64))}</div>`
+        }
+      </td>
+      <td style="font-size:13px;">
+        <div>${d.utilizador_nome || '-'}</div>
+        ${d.utilizador_cargo ? `<div style="font-size:11px;color:var(--steel);">${d.utilizador_cargo}</div>` : ''}
+      </td>
+      <td>
+        <div style="display:flex;gap:4px;">
+          ${podeEditar
+            ? `<a href="editor.html?id=${d.id}" class="btn btn-outline btn-xs" title="Editar">✏️</a>`
+            : ''}
+          <button class="btn btn-outline btn-xs" onclick="verPDF('${d.id}')" title="Imprimir">🖨️</button>
+          ${podeApagar
+            ? `<button class="btn btn-danger btn-xs" onclick="eliminarDoc('${d.id}','${(d.numero||'').replace(/'/g,'')}')">🗑️</button>`
+            : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  wrap.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Nº</th>
+          <th>Tipo</th>
+          <th>Cliente / Assunto</th>
+          <th>Serviço</th>
+          <th>Data</th>
+          <th>Total</th>
+          <th>Elaborado por</th>
+          <th>Ações</th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    </div>`;
+}
+
+// ── ELIMINAR ──────────────────────────────────────────
+function eliminarDoc(id, numero) {
+  confirmar(
+    `Tem a certeza que quer eliminar o documento "${numero}"? Esta acção não pode ser desfeita.`,
+    async () => {
+      try {
+        await db.delete('documento_itens', id); // cascade, mas por garantia
+        await db.delete('documentos', id);
+        todosDocumentos = todosDocumentos.filter(d => d.id !== id);
+        aplicarFiltros();
+        // Actualizar stats
+        document.getElementById('stat-total').textContent = todosDocumentos.length;
+        document.getElementById('stat-cotacoes').textContent = todosDocumentos.filter(d => d.tipo === 'cotacao').length;
+        document.getElementById('stat-faturas').textContent = todosDocumentos.filter(d => d.tipo === 'fatura').length;
+        showToast('Documento eliminado.');
+      } catch (err) {
+        showToast('Erro ao eliminar documento.', 'error');
+        console.error(err);
+      }
+    }
+  );
+}
+
+// ── PDF ───────────────────────────────────────────────
+function verPDF(id) {
+  window.open(`print.html?id=${id}`, '_blank');
+}
+
+// ── HELPERS ───────────────────────────────────────────
+function truncar(str, max) {
+  return str.length > max ? str.substring(0, max) + '...' : str;
+}
+
+// Fechar modal ao clicar fora
+window.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('open');
+  }
+});
+</script>
+</body>
+</html>

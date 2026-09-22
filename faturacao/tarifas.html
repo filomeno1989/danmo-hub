@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faturação - Tarifas - Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png" />
+  <script src="../shared/guard.js" data-modulo="faturacao"></script>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <link rel="stylesheet" href="style.css" />
+
+
+<!-- menu interno do billing removido: o Hub fornece a navegacao -->
+
+</head>
+<body>
+
+<div id="navbar"></div>
+
+<main class="main fat">
+
+<!-- MODAL TARIFA -->
+<div class="modal-overlay" id="modal-tarifa">
+  <div class="modal modal-sm">
+    <div class="modal-title" id="modal-titulo">💰 Nova Tarifa</div>
+    <input type="hidden" id="tar-id">
+    <div class="form-row">
+      <label>Descrição *</label>
+      <input type="text" id="tar-descricao" placeholder="ex: Tarifa Standard, Tarifa CdM...">
+    </div>
+    <div class="form-row">
+      <label>Valor (MZN) *</label>
+      <input type="number" id="tar-valor" step="0.01" min="0" placeholder="0.00">
+    </div>
+    <div class="form-row">
+      <label>Estado</label>
+      <select id="tar-ativo">
+        <option value="true">Activa - aparece nos atalhos do editor</option>
+        <option value="false">Inactiva - não aparece nos atalhos</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('modal-tarifa')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardar()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal modal-sm">
+    <div class="modal-title">⚠️ Confirmar</div>
+    <p id="confirm-msg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <h1 class="page-title" style="margin:0;">💰 <span>Tabela de Tarifas</span></h1>
+    <button class="btn btn-primary" onclick="abrirNovo()">➕ Nova Tarifa</button>
+  </div>
+
+  <!-- INFO -->
+  <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:6px;padding:12px 16px;font-size:13px;color:var(--steel);margin-bottom:1.5rem;line-height:1.6;">
+    💡 As tarifas <strong style="color:var(--amber);">Activas</strong> aparecem como botões de atalho no editor ao adicionar itens de mão-de-obra. Um clique preenche o valor automaticamente. Podes ter quantas tarifas quiseres e activar/desactivar conforme necessário.
+  </div>
+
+  <div class="card">
+    <div id="tabela-wrap">
+      <div class="loading"><span class="spinner"></span> A carregar tarifas...</div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script src="../shared/supabase.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/utils.js"></script>
+<script src="../shared/tema.js"></script>
+<script src="tema.js"></script>
+<script src="faturacao.js"></script>
+<script src="../shared/nav.js"></script>
+<script>
+const user = auth.require();
+let lista = [];
+
+if (!auth.isAdmin()) window.location.href = 'dashboard.html';
+
+carregar();
+
+
+async function carregar() {
+  try {
+    lista = await db.queryTudo('tarifas');
+    lista.sort((a,b) => b.valor_mzn - a.valor_mzn);
+    render();
+  } catch(err) {
+    document.getElementById('tabela-wrap').innerHTML =
+      `<div class="empty-state"><span class="empty-icon">⚠️</span>Erro ao carregar tarifas.</div>`;
+  }
+}
+
+function render() {
+  const wrap = document.getElementById('tabela-wrap');
+  if (!lista.length) {
+    wrap.innerHTML = `<div class="empty-state">
+      <span class="empty-icon">💰</span>
+      Nenhuma tarifa registada.
+      <br><button class="btn btn-primary" style="margin-top:1rem;" onclick="abrirNovo()">➕ Adicionar tarifa</button>
+    </div>`;
+    return;
+  }
+
+  const activas = lista.filter(t => t.ativo);
+  wrap.innerHTML = `
+    <div style="font-size:12px;color:var(--steel2);margin-bottom:10px;">
+      ${lista.length} tarifa(s) &nbsp;·&nbsp;
+      <span style="color:var(--success);">${activas.length} activa(s)</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Descrição</th>
+          <th>Valor (MZN)</th>
+          <th>Estado</th>
+          <th style="width:120px;">Ações</th>
+        </tr></thead>
+        <tbody>
+          ${lista.map(t => `<tr>
+            <td><strong>${t.descricao}</strong></td>
+            <td style="font-family:'Courier Prime';font-size:15px;color:var(--amber);">
+              ${fmtNum(t.valor_mzn)} MZN
+            </td>
+            <td>
+              <span style="font-size:12px;font-weight:600;color:${t.ativo ? 'var(--success)' : 'var(--steel2)'};">
+                ${t.ativo ? '● Activa' : '○ Inactiva'}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex;gap:4px;">
+                <button class="btn btn-outline btn-xs" onclick="abrirEditar('${t.id}')">✏️</button>
+                <button class="btn ${t.ativo ? 'btn-outline' : 'btn-success'} btn-xs"
+                        onclick="toggleAtivo('${t.id}')"
+                        title="${t.ativo ? 'Desactivar' : 'Activar'}">
+                  ${t.ativo ? '⏸️' : '▶️'}
+                </button>
+                <button class="btn btn-danger btn-xs" onclick="eliminar('${t.id}','${t.descricao.replace(/'/g,"\\'")}')">🗑️</button>
+              </div>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function abrirNovo() {
+  document.getElementById('modal-titulo').textContent = '💰 Nova Tarifa';
+  ['tar-id','tar-descricao','tar-valor'].forEach(id => setVal(id,''));
+  setVal('tar-ativo','true');
+  abrirModal('modal-tarifa');
+}
+
+function abrirEditar(id) {
+  const t = lista.find(x => x.id === id); if (!t) return;
+  document.getElementById('modal-titulo').textContent = '✏️ Editar Tarifa';
+  setVal('tar-id', t.id);
+  setVal('tar-descricao', t.descricao||'');
+  setVal('tar-valor', t.valor_mzn||'');
+  setVal('tar-ativo', t.ativo ? 'true' : 'false');
+  abrirModal('modal-tarifa');
+}
+
+async function guardar() {
+  const descricao = getVal('tar-descricao').trim();
+  const valor     = parseFloat(getVal('tar-valor'));
+  if (!descricao)  { showToast('Descrição obrigatória.','error'); return; }
+  if (isNaN(valor))  { showToast('Valor inválido.','error'); return; }
+
+  const dados = { descricao, valor_mzn: valor, ativo: getVal('tar-ativo') === 'true' };
+
+  try {
+    const id = getVal('tar-id');
+    if (id) {
+      await db.update('tarifas', id, dados);
+      const idx = lista.findIndex(t => t.id === id);
+      if (idx >= 0) lista[idx] = { ...lista[idx], ...dados };
+      showToast('Tarifa actualizada!');
+    } else {
+      const res = await db.insert('tarifas', dados);
+      lista.push(res[0]);
+      lista.sort((a,b) => b.valor_mzn - a.valor_mzn);
+      showToast('Tarifa adicionada!');
+    }
+    fecharModal('modal-tarifa'); render();
+  } catch(err) {
+    showToast('Erro ao guardar.','error'); console.error(err);
+  }
+}
+
+async function toggleAtivo(id) {
+  const t = lista.find(x => x.id === id); if (!t) return;
+  try {
+    await db.update('tarifas', id, { ativo: !t.ativo });
+    t.ativo = !t.ativo;
+    render();
+    showToast(t.ativo ? 'Tarifa activada.' : 'Tarifa desactivada.');
+  } catch(err) {
+    showToast('Erro ao actualizar.','error');
+  }
+}
+
+function eliminar(id, descricao) {
+  confirmar(`Eliminar tarifa "${descricao}"?`, async () => {
+    try {
+      await db.delete('tarifas', id);
+      lista = lista.filter(t => t.id !== id);
+      render(); showToast('Tarifa eliminada.');
+    } catch(err) { showToast('Erro ao eliminar.','error'); }
+  });
+}
+
+window.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
+});
+</script>
+</body>
+</html>

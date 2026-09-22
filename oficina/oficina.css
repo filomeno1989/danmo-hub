@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   oficina.css — Compatibilidade visual do módulo Oficina (Danmo Hub)
+   oficina.css - Compatibilidade visual do módulo Oficina (Danmo Hub)
    Carregar APENAS nas páginas dentro de /oficina/, DEPOIS de style.css.
    Contém as classes e variáveis que os ficheiros da Oficina já usam
    (trazidos do repositório danmo-oficina original) para não ter de
@@ -8,7 +8,7 @@
    Última atualização: 2026-08-28
    ═══════════════════════════════════════════════════════════════ */
 
-/* O .main do Hub (style.css) não tem largura máxima — ocupa sempre o
+/* O .main do Hub (style.css) não tem largura máxima - ocupa sempre o
    espaço todo ao lado da sidebar. O módulo antigo da Oficina tinha
    max-width:1200px + centragem, o que dava um aspeto mais compacto e
    arrumado em ecrãs largos (grelhas de KPIs/tabelas não esticam ao
@@ -20,8 +20,8 @@
 /* Estas variáveis passam a APONTAR para os tokens globais do style.css
    (--cor-superficie, --cor-texto, --cor-borda, etc.), que já mudam sozinhos
    entre claro/escuro consoante o interruptor de tema. Assim, todas as
-   páginas da Oficina — incluindo os <style> inline de cada ficheiro, que
-   continuam a usar --navy2/--border/--text/--amber/etc. — passam a seguir
+   páginas da Oficina - incluindo os <style> inline de cada ficheiro, que
+   continuam a usar --navy2/--border/--text/--amber/etc. - passam a seguir
    automaticamente o mesmo tema unificado do resto do Hub, sem ter de
    reescrever cada página uma a uma. */
 :root {
@@ -140,7 +140,7 @@
 /* ── Adaptação do sistema de modal/formulário NOVO do Hub (.modal-fundo/.modal/
    .form-grupo/.form-label/.form-input) ao tema escuro da Oficina.
    Mantém-se a estrutura nova (cabeçalho + rodapé fixos), só se repõem as cores
-   escuras que a Oficina sempre teve — usado atualmente em ordens.html. ── */
+   escuras que a Oficina sempre teve - usado atualmente em ordens.html. ── */
 .modal-fundo { background: rgba(0,0,0,0.6); }
 .modal {
   background: var(--navy2);
@@ -177,7 +177,7 @@
 .nota { color: var(--text2); }
 .tipo-grid label { color: var(--text); }
 
-/* ── Botões (nomes em inglês E em português — a Oficina foi migrada com os dois) ── */
+/* ── Botões (nomes em inglês E em português - a Oficina foi migrada com os dois) ── */
 .btn-primary,
 .btn-primario { background: var(--amber); color: var(--navy); }
 .btn-primario:hover,

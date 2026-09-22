@@ -1,0 +1,271 @@
+/* ============================================================
+   DANMO SS - Estilos Globais
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Sans+3:wght@300;400;600;700&family=Courier+Prime:wght@400;700&display=swap');
+
+:root {
+  --navy:    #0a1628;
+  --navy2:   #0f2040;
+  --navy3:   #162d55;
+  --amber:   #f59e0b;
+  --amber2:  #d97706;
+  --steel:   #94a3b8;
+  --steel2:  #64748b;
+  --white:   #f8fafc;
+  --light:   #e2e8f0;
+  --danger:  #ef4444;
+  --success: #10b981;
+  --info:    #3b82f6;
+  --border:  rgba(148,163,184,0.2);
+  --card:    rgba(15,32,64,0.85);
+}
+
+/* reset global ja existe no style.css do Hub */
+
+.main.fat {
+  font-family: 'Source Sans 3', sans-serif;
+  background: var(--navy);
+  color: var(--white);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(245,158,11,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(22,45,85,0.6) 0%, transparent 55%);
+}
+
+/* ── HEADER ─────────────────────────────────────────── */
+.fat .app-header {
+  background: var(--navy2);
+  border-bottom: 2px solid var(--amber);
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.logo { display:flex; align-items:center; gap:12px; text-decoration:none; }
+.fat .logo-icon {
+  width:36px; height:36px; background:var(--amber);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Bebas Neue'; font-size:18px; color:var(--navy);
+  clip-path: polygon(10% 0%,90% 0%,100% 10%,100% 90%,90% 100%,10% 100%,0% 90%,0% 10%);
+}
+.logo-text { font-family:'Bebas Neue'; font-size:22px; letter-spacing:2px; color:var(--white); }
+.logo-sub  { font-size:10px; color:var(--steel); letter-spacing:1px; text-transform:uppercase; }
+
+.header-nav { display:flex; gap:4px; }
+.fat .nav-btn {
+  background:transparent; border:none; color:var(--steel);
+  padding:8px 16px; cursor:pointer; font-family:'Source Sans 3';
+  font-size:13px; letter-spacing:1px; text-transform:uppercase;
+  border-radius:4px; transition:all 0.2s; text-decoration:none;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.fat .nav-btn:hover, .fat .nav-btn.active {
+  background:rgba(245,158,11,0.15); color:var(--amber);
+}
+
+.fat .user-info {
+  display:flex; align-items:center; gap:10px;
+  font-size:13px; color:var(--steel);
+}
+.user-name { color:var(--white); font-weight:600; }
+.fat .user-nivel {
+  font-size:10px; letter-spacing:1px; text-transform:uppercase;
+  padding:2px 8px; border-radius:10px;
+}
+.nivel-admin    { background:rgba(245,158,11,0.2); color:var(--amber); }
+.nivel-gestor   { background:rgba(59,130,246,0.2); color:#60a5fa; }
+.nivel-operador { background:rgba(16,185,129,0.2); color:#34d399; }
+
+.fat .btn-logout {
+  background:transparent; border:1px solid var(--border);
+  color:var(--steel); padding:6px 12px; border-radius:5px;
+  cursor:pointer; font-size:12px; transition:all 0.2s;
+}
+.btn-logout:hover { border-color:var(--danger); color:var(--danger); }
+
+/* ── LAYOUT ──────────────────────────────────────────── */
+.page-body { max-width:1400px; margin:0 auto; padding:2rem; }
+
+.fat .page-title {
+  font-family:'Bebas Neue'; font-size:28px; letter-spacing:3px;
+  color:var(--white); margin-bottom:1.5rem;
+  display:flex; align-items:center; gap:12px;
+}
+.page-title span { color:var(--amber); }
+
+/* ── CARD ────────────────────────────────────────────── */
+.fat .card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  margin-bottom: 1.5rem;
+}
+.fat .card-title {
+  font-family:'Bebas Neue'; font-size:18px; letter-spacing:2px;
+  color:var(--amber); margin-bottom:1rem;
+}
+
+/* ── GRID ────────────────────────────────────────────── */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.5rem; }
+.grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; }
+
+/* ── FORM ────────────────────────────────────────────── */
+.form-row        { margin-bottom:1rem; }
+.form-row-inline { display:flex; gap:1rem; margin-bottom:1rem; }
+.form-row-inline > * { flex:1; }
+
+.fat label {
+  font-size:11px; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--steel); display:block; margin-bottom:5px;
+}
+.fat input, .fat select, .fat textarea {
+  width:100%; background:rgba(255,255,255,0.05);
+  border:1px solid var(--border); border-radius:5px;
+  color:var(--white); font-family:'Source Sans 3'; font-size:14px;
+  padding:10px 12px; transition:border-color 0.2s;
+}
+.fat input:focus, .fat select:focus, .fat textarea:focus {
+  outline:none; border-color:var(--amber);
+  background:rgba(245,158,11,0.05);
+}
+select option { background:var(--navy2); color:var(--white); }
+textarea { resize:vertical; min-height:80px; }
+
+/* ── BUTTONS ─────────────────────────────────────────── */
+.fat .btn {
+  padding:10px 20px; border:none; border-radius:5px;
+  cursor:pointer; font-family:'Source Sans 3'; font-size:13px;
+  font-weight:600; letter-spacing:1px; text-transform:uppercase;
+  transition:all 0.2s; display:inline-flex; align-items:center;
+  gap:8px; text-decoration:none;
+}
+.btn-primary { background:var(--amber); color:var(--navy); }
+.btn-primary:hover { background:var(--amber2); transform:translateY(-1px); box-shadow:0 4px 12px rgba(245,158,11,0.3); }
+.btn-outline { background:transparent; color:var(--steel); border:1px solid var(--border); }
+.btn-outline:hover { border-color:var(--amber); color:var(--amber); }
+.btn-danger  { background:transparent; color:var(--danger); border:1px solid rgba(239,68,68,0.3); }
+.btn-danger:hover  { background:rgba(239,68,68,0.1); }
+.btn-success { background:var(--success); color:white; }
+.btn-success:hover { background:#059669; }
+.btn-sm { padding:6px 12px; font-size:12px; }
+.btn-xs { padding:4px 8px; font-size:11px; }
+
+/* ── TOGGLE ──────────────────────────────────────────── */
+.fat .toggle-group {
+  display:flex; gap:4px; background:rgba(255,255,255,0.05);
+  border-radius:6px; padding:3px; width:fit-content;
+}
+.fat .toggle-opt {
+  padding:7px 16px; border-radius:4px; cursor:pointer;
+  font-size:12px; font-weight:600; letter-spacing:1px;
+  text-transform:uppercase; color:var(--steel);
+  transition:all 0.2s; border:none; background:transparent;
+}
+.toggle-opt.active { background:var(--amber); color:var(--navy); }
+
+/* ── TABLE ───────────────────────────────────────────── */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+.fat th {
+  text-align:left; padding:10px 12px;
+  font-size:11px; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--steel2); border-bottom:1px solid var(--border);
+}
+td { padding:12px; border-bottom:1px solid rgba(148,163,184,0.08); }
+tr:hover td { background:rgba(245,158,11,0.03); }
+
+/* ── BADGES ──────────────────────────────────────────── */
+.fat .badge {
+  display:inline-block; padding:3px 10px; border-radius:20px;
+  font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase;
+}
+.badge-cotacao { background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); }
+.badge-fatura  { background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.3); }
+.badge-mao     { background:rgba(59,130,246,0.15); color:#60a5fa; }
+.badge-material{ background:rgba(168,85,247,0.15); color:#c084fc; }
+.badge-misto   { background:rgba(245,158,11,0.15); color:#fbbf24; }
+
+/* ── STAT CARD ───────────────────────────────────────── */
+.fat .stat-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:8px; padding:1.2rem; position:relative; overflow:hidden;
+}
+.fat .stat-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+}
+.stat-amber::before  { background:var(--amber); }
+.stat-blue::before   { background:var(--info); }
+.stat-green::before  { background:var(--success); }
+.stat-purple::before { background:#a855f7; }
+.stat-val   { font-family:'Bebas Neue'; font-size:36px; line-height:1; }
+.stat-label { font-size:11px; letter-spacing:1px; color:var(--steel); text-transform:uppercase; margin-top:4px; }
+
+/* ── MODAL ───────────────────────────────────────────── */
+.fat .modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.75);
+  display:none; align-items:center; justify-content:center;
+  z-index:1000; backdrop-filter:blur(4px);
+}
+.modal-overlay.open { display:flex; }
+.fat .modal {
+  background:var(--navy2); border:1px solid var(--border);
+  border-radius:10px; padding:2rem; width:90%;
+  box-shadow:0 25px 60px rgba(0,0,0,0.6);
+  max-height:90vh; overflow-y:auto;
+}
+.modal-sm  { max-width:420px; }
+.modal-md  { max-width:600px; }
+.modal-lg  { max-width:800px; }
+.fat .modal-title {
+  font-family:'Bebas Neue'; font-size:22px; letter-spacing:2px;
+  color:var(--amber); margin-bottom:1.5rem;
+}
+.fat .modal-actions {
+  display:flex; gap:10px; justify-content:flex-end; margin-top:1.5rem;
+  padding-top:1rem; border-top:1px solid var(--border);
+}
+
+/* ── SECTION DIVIDER ─────────────────────────────────── */
+.fat .section-div {
+  font-family:'Bebas Neue'; font-size:13px; letter-spacing:3px;
+  color:var(--steel2); text-transform:uppercase;
+  margin:1.5rem 0 1rem; display:flex; align-items:center; gap:10px;
+}
+.section-div::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── LOADING ─────────────────────────────────────────── */
+.fat .loading {
+  text-align:center; padding:3rem; color:var(--steel2);
+  font-size:14px; letter-spacing:1px;
+}
+.fat .spinner {
+  display:inline-block; width:24px; height:24px;
+  border:2px solid var(--border); border-top-color:var(--amber);
+  border-radius:50%; animation:spin 0.7s linear infinite;
+  margin-right:10px; vertical-align:middle;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── EMPTY STATE ─────────────────────────────────────── */
+.fat .empty-state {
+  text-align:center; padding:4rem 2rem; color:var(--steel2);
+}
+.empty-icon { font-size:48px; margin-bottom:1rem; opacity:0.3; display:block; }
+
+/* ── ACESSO NEGADO ───────────────────────────────────── */
+.fat .acesso-negado {
+  text-align:center; padding:4rem 2rem;
+  color:var(--danger); font-size:16px;
+}
+
+/* ── MODAL CONFIRM ───────────────────────────────────── */
+#modal-confirm .modal { max-width:420px; }
+#confirm-msg { color:var(--steel); margin-bottom:1rem; line-height:1.6; }

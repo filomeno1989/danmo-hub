@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faturação - Configurações - Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png" />
+  <script src="../shared/guard.js" data-modulo="faturacao"></script>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <link rel="stylesheet" href="style.css" />
+
+<style>
+  .config-section {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;
+  }
+  .config-section-title {
+    font-family:'Bebas Neue'; font-size:18px; letter-spacing:2px;
+    color:var(--amber); margin-bottom:1.2rem;
+    display:flex; align-items:center; gap:10px;
+    padding-bottom:10px; border-bottom:1px solid var(--border);
+  }
+  .tarifa-card {
+    background: rgba(255,255,255,0.03); border:1px solid var(--border);
+    border-radius:8px; padding:1.2rem;
+  }
+  .tarifa-card-title {
+    font-size:13px; font-weight:700; letter-spacing:1px;
+    text-transform:uppercase; margin-bottom:1rem;
+    display:flex; align-items:center; gap:8px;
+  }
+  .tc-interno { color:#60a5fa; }
+  .tc-externo { color:#34d399; }
+  .tc-outro   { color:var(--steel); }
+  .save-bar {
+    position:sticky; bottom:0; z-index:50;
+    background:var(--navy2); border-top:1px solid var(--border);
+    padding:12px 2rem; display:flex;
+    justify-content:space-between; align-items:center;
+    box-shadow:0 -4px 20px rgba(0,0,0,0.4);
+  }
+  .info-box {
+    background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2);
+    border-radius:6px; padding:10px 14px; font-size:12px;
+    color:var(--steel); margin-bottom:1rem; line-height:1.6;
+  }
+</style>
+</head>
+<body>
+
+<div id="navbar"></div>
+
+<main class="main fat">
+
+<div class="page-body" style="padding-bottom:80px;">
+  <h1 class="page-title">⚙️ <span>Configurações Gerais</span></h1>
+
+  <div id="loading-wrap">
+    <div class="loading"><span class="spinner"></span> A carregar configurações...</div>
+  </div>
+
+  <div id="config-wrap" style="display:none;">
+
+    <!-- DADOS DA EMPRESA -->
+    <div class="config-section">
+      <div class="config-section-title">🏭 Dados da Empresa</div>
+      <div class="info-box">
+        Estes dados aparecem automaticamente no cabeçalho de todas as cotações e faturas.
+      </div>
+      <div class="grid-2">
+        <div class="form-row">
+          <label>Nome / Empresa</label>
+          <input type="text" id="cfg-empresa-nome" placeholder="Nome da empresa">
+        </div>
+        <div class="form-row">
+          <label>NUIT</label>
+          <input type="text" id="cfg-empresa-nuit" placeholder="Número de contribuinte">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-row">
+          <label>Morada</label>
+          <input type="text" id="cfg-empresa-morada" placeholder="Endereço completo">
+        </div>
+        <div class="form-row">
+          <label>Contacto</label>
+          <input type="text" id="cfg-empresa-contacto" placeholder="Telefone ou email">
+        </div>
+      </div>
+    </div>
+
+    <!-- TAXA DE CÂMBIO -->
+    <div class="config-section">
+      <div class="config-section-title">💱 Taxa de Câmbio Padrão</div>
+      <div class="info-box">
+        Esta taxa é usada como valor inicial ao criar novos documentos em USD. Podes sempre alterar directamente no editor.
+      </div>
+      <div class="form-row" style="max-width:300px;">
+        <label>1 USD = ? MZN</label>
+        <input type="number" id="cfg-taxa-cambio" placeholder="ex: 64" step="0.50" min="1">
+      </div>
+    </div>
+
+    <!-- TARIFAS DE MÃO-DE-OBRA -->
+    <div class="config-section">
+      <div class="config-section-title">👷 Tarifas de Mão-de-Obra por Tipo de Cliente</div>
+      <div class="info-box">
+        Quando selecionas um técnico no editor, a tarifa é preenchida automaticamente com base no tipo de cliente escolhido (Interno / Externo / Outro).
+      </div>
+      <div class="grid-3">
+
+        <!-- INTERNO -->
+        <div class="tarifa-card">
+          <div class="tarifa-card-title tc-interno">🔵 Cliente Interno</div>
+          <div class="form-row">
+            <label>Tarifa / Hora (MZN)</label>
+            <input type="number" id="cfg-interno-mzn" step="0.01" min="0" placeholder="0.00">
+          </div>
+          <div class="form-row">
+            <label>Tarifa / Hora (USD)</label>
+            <input type="number" id="cfg-interno-usd" step="0.01" min="0" placeholder="0.00">
+          </div>
+        </div>
+
+        <!-- EXTERNO -->
+        <div class="tarifa-card">
+          <div class="tarifa-card-title tc-externo">🟢 Cliente Externo</div>
+          <div class="form-row">
+            <label>Tarifa / Hora (MZN)</label>
+            <input type="number" id="cfg-externo-mzn" step="0.01" min="0" placeholder="0.00">
+          </div>
+          <div class="form-row">
+            <label>Tarifa / Hora (USD)</label>
+            <input type="number" id="cfg-externo-usd" step="0.01" min="0" placeholder="0.00">
+          </div>
+        </div>
+
+        <!-- OUTRO -->
+        <div class="tarifa-card">
+          <div class="tarifa-card-title tc-outro">⚪ Outro</div>
+          <div class="form-row">
+            <label>Tarifa / Hora (MZN)</label>
+            <input type="number" id="cfg-outro-mzn" step="0.01" min="0" placeholder="0.00">
+          </div>
+          <div class="form-row">
+            <label>Tarifa / Hora (USD)</label>
+            <input type="number" id="cfg-outro-usd" step="0.01" min="0" placeholder="0.00">
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PRÉVIA DOS DADOS ACTUAIS -->
+    <div class="config-section">
+      <div class="config-section-title">👁️ Prévia do Cabeçalho</div>
+      <div id="previa-cabecalho" style="background:white;border-radius:6px;padding:20px;font-family:'Times New Roman',serif;color:#1a1a1a;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0a1628;padding-bottom:12px;margin-bottom:12px;">
+          <div>
+            <div style="font-size:20px;font-weight:bold;color:#0a1628;" id="prev-nome">-</div>
+            <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.6;" id="prev-detalhes">-</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:16px;font-weight:bold;color:#f59e0b;letter-spacing:2px;">COTAÇÃO</div>
+            <div style="font-size:18px;font-weight:bold;color:#0a1628;">Nº 001/26</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#999;font-style:italic;">Prévia em tempo real - actualiza ao escrever</div>
+      </div>
+    </div>
+
+  </div><!-- /config-wrap -->
+</div>
+
+<!-- BARRA GUARDAR -->
+<div class="save-bar">
+  <span style="font-size:13px;color:var(--steel);" id="save-status">Carregando...</span>
+  <button class="btn btn-primary" onclick="guardarTudo()">💾 Guardar Configurações</button>
+</div>
+
+</main>
+
+<script src="../shared/supabase.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/utils.js"></script>
+<script src="../shared/tema.js"></script>
+<script src="tema.js"></script>
+<script src="faturacao.js"></script>
+<script src="../shared/nav.js"></script>
+<script>
+const user = auth.require();
+let cfgMap = {}; // chave -> { id, valor }
+
+// Só Admin e Gestor
+if (!auth.isGestor()) window.location.href = 'dashboard.html';
+
+carregar();
+
+async function carregar() {
+  try {
+    const lista = await db.queryTudo('configuracoes');
+    lista.forEach(row => { cfgMap[row.chave] = { id: row.id, valor: row.valor }; });
+
+    // Preencher campos
+    setVal('cfg-empresa-nome',     cfg('empresa_nome'));
+    setVal('cfg-empresa-morada',   cfg('empresa_morada'));
+    setVal('cfg-empresa-nuit',     cfg('empresa_nuit'));
+    setVal('cfg-empresa-contacto', cfg('empresa_contacto'));
+    setVal('cfg-taxa-cambio',      cfg('taxa_cambio'));
+    setVal('cfg-interno-mzn',      cfg('tarifa_interno_mzn'));
+    setVal('cfg-interno-usd',      cfg('tarifa_interno_usd'));
+    setVal('cfg-externo-mzn',      cfg('tarifa_externo_mzn'));
+    setVal('cfg-externo-usd',      cfg('tarifa_externo_usd'));
+    setVal('cfg-outro-mzn',        cfg('tarifa_outro_mzn'));
+    setVal('cfg-outro-usd',        cfg('tarifa_outro_usd'));
+
+    actualizarPrevia();
+
+    // Listeners para prévia em tempo real
+    ['cfg-empresa-nome','cfg-empresa-morada','cfg-empresa-nuit','cfg-empresa-contacto'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', actualizarPrevia);
+    });
+
+    document.getElementById('loading-wrap').style.display = 'none';
+    document.getElementById('config-wrap').style.display  = 'block';
+    document.getElementById('save-status').textContent = 'Configurações carregadas';
+
+  } catch(err) {
+    console.error(err);
+    document.getElementById('loading-wrap').innerHTML =
+      `<div class="empty-state"><span class="empty-icon">⚠️</span>Erro ao carregar configurações.</div>`;
+  }
+}
+
+function cfg(chave) {
+  return cfgMap[chave]?.valor || '';
+}
+
+function actualizarPrevia() {
+  const nome     = getVal('cfg-empresa-nome')     || '-';
+  const morada   = getVal('cfg-empresa-morada')   || '';
+  const nuit     = getVal('cfg-empresa-nuit')     || '';
+  const contacto = getVal('cfg-empresa-contacto') || '';
+  document.getElementById('prev-nome').textContent = nome;
+  document.getElementById('prev-detalhes').innerHTML =
+    [morada, nuit ? 'NUIT: ' + nuit : '', contacto].filter(Boolean).join('<br>');
+}
+
+async function guardarTudo() {
+  const updates = {
+    empresa_nome:      getVal('cfg-empresa-nome'),
+    empresa_morada:    getVal('cfg-empresa-morada'),
+    empresa_nuit:      getVal('cfg-empresa-nuit'),
+    empresa_contacto:  getVal('cfg-empresa-contacto'),
+    taxa_cambio:       getVal('cfg-taxa-cambio'),
+    tarifa_interno_mzn:getVal('cfg-interno-mzn'),
+    tarifa_interno_usd:getVal('cfg-interno-usd'),
+    tarifa_externo_mzn:getVal('cfg-externo-mzn'),
+    tarifa_externo_usd:getVal('cfg-externo-usd'),
+    tarifa_outro_mzn:  getVal('cfg-outro-mzn'),
+    tarifa_outro_usd:  getVal('cfg-outro-usd'),
+  };
+
+  const statusEl = document.getElementById('save-status');
+  statusEl.textContent = 'A guardar...';
+
+  try {
+    // Actualizar cada chave individualmente
+    for (const [chave, valor] of Object.entries(updates)) {
+      if (cfgMap[chave]) {
+        await db.update('configuracoes', cfgMap[chave].id, {
+          valor,
+          atualizado_em: new Date().toISOString()
+        });
+        cfgMap[chave].valor = valor;
+      }
+    }
+    statusEl.textContent = '✅ Guardado em ' + new Date().toLocaleTimeString('pt');
+    showToast('Configurações guardadas com sucesso!');
+  } catch(err) {
+    console.error(err);
+    statusEl.textContent = '❌ Erro ao guardar';
+    showToast('Erro ao guardar configurações.', 'error');
+  }
+}
+
+window.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
+});
+</script>
+</body>
+</html>

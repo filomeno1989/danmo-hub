@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faturação - Relatórios - Danmo Hub</title>
+  <link rel="icon" href="../shared/logos/danmo-logo.png" type="image/png" />
+  <script src="../shared/guard.js" data-modulo="faturacao"></script>
+  <link rel="stylesheet" href="../shared/style.css" />
+  <link rel="stylesheet" href="style.css" />
+
+
+<!-- menu interno do billing removido: o Hub fornece a navegacao -->
+
+<style>
+  .rel-tabs {
+    display:flex; gap:4px; margin-bottom:1.5rem;
+    background:rgba(255,255,255,0.04); border-radius:8px; padding:4px;
+    width:fit-content;
+  }
+  .rel-tab {
+    padding:9px 20px; border-radius:6px; cursor:pointer;
+    font-size:13px; font-weight:600; letter-spacing:0.5px;
+    color:var(--steel); transition:all 0.2s; border:none; background:transparent;
+  }
+  .rel-tab.active { background:var(--amber); color:var(--navy); }
+  .rel-tab:hover:not(.active) { color:var(--white); background:rgba(255,255,255,0.06); }
+
+  .rel-panel { display:none; }
+  .rel-panel.active { display:block; }
+
+  .filtros-bar {
+    display:flex; gap:10px; align-items:flex-end;
+    flex-wrap:wrap; margin-bottom:1.5rem;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:8px; padding:1.2rem;
+  }
+  .filtros-bar .form-row { margin:0; min-width:160px; }
+
+  .kpi-mini-grid {
+    display:grid; grid-template-columns:repeat(4,1fr);
+    gap:1rem; margin-bottom:1.5rem;
+  }
+  .kpi-mini {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:8px; padding:1rem; text-align:center;
+  }
+  .kpi-mini-val {
+    font-family:'Bebas Neue'; font-size:28px; color:var(--amber); line-height:1;
+  }
+  .kpi-mini-label {
+    font-size:11px; letter-spacing:1px; color:var(--steel);
+    text-transform:uppercase; margin-top:4px;
+  }
+
+  .resultado-vazio {
+    text-align:center; padding:3rem; color:var(--steel2); font-size:14px;
+  }
+
+  /* Print */
+  @media print {
+    body > *:not(#print-area) { display:none !important; }
+    #print-area { display:block !important; }
+    @page { margin:15mm; size:A4; }
+  }
+  #print-area {
+    display:none;
+    font-family:'Times New Roman',serif; font-size:11pt; color:#000;
+  }
+  .print-header {
+    display:flex; justify-content:space-between; align-items:flex-start;
+    border-bottom:2px solid #000; padding-bottom:8px; margin-bottom:12px;
+  }
+  .print-company { font-size:16pt; font-weight:bold; }
+  .print-company-sub { font-size:9pt; color:#555; margin-top:2px; }
+  .print-rel-title { font-size:14pt; font-weight:bold; text-align:right; }
+  .print-rel-sub { font-size:9pt; color:#555; text-align:right; margin-top:2px; }
+  .print-kpis { display:flex; gap:20px; margin:10px 0; }
+  .print-kpi { border:1px solid #ccc; border-radius:4px; padding:6px 12px; text-align:center; flex:1; }
+  .print-kpi-val { font-size:16pt; font-weight:bold; }
+  .print-kpi-lbl { font-size:8pt; color:#666; }
+  .print-table { width:100%; border-collapse:collapse; margin-top:10px; font-size:9.5pt; }
+  .print-table th { background:#1a1a1a; color:white; padding:5px 8px; text-align:left; font-size:8.5pt; }
+  .print-table td { padding:5px 8px; border-bottom:1px solid #eee; }
+  .print-table tr:nth-child(even) td { background:#f9f9f9; }
+  .print-footer { margin-top:16px; font-size:8pt; color:#888; border-top:1px solid #ccc; padding-top:6px; display:flex; justify-content:space-between; }
+</style>
+</head>
+<body>
+
+<div id="navbar"></div>
+
+<main class="main fat">
+
+<div id="print-area"></div>
+
+<div class="page-body">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <h1 class="page-title" style="margin:0;">📊 <span>Relatórios</span></h1>
+    <button class="btn btn-outline" onclick="imprimir()" id="btn-imprimir" style="display:none;">
+      🖨️ Imprimir / PDF
+    </button>
+  </div>
+
+  <!-- TABS -->
+  <div class="rel-tabs">
+    <button class="rel-tab active" onclick="setTab('periodo',this)">📅 Por Período</button>
+    <button class="rel-tab"        onclick="setTab('cliente',this)">🏢 Por Cliente</button>
+    <button class="rel-tab"        onclick="setTab('utilizador',this)">👤 Por Utilizador</button>
+  </div>
+
+  <!-- ═══ PERÍODO ═══ -->
+  <div class="rel-panel active" id="panel-periodo">
+    <div class="filtros-bar">
+      <div class="form-row">
+        <label>De</label>
+        <input type="date" id="per-de">
+      </div>
+      <div class="form-row">
+        <label>Até</label>
+        <input type="date" id="per-ate">
+      </div>
+      <div class="form-row">
+        <label>Tipo</label>
+        <select id="per-tipo" style="width:150px;">
+          <option value="">Todos</option>
+          <option value="cotacao">Cotações</option>
+          <option value="fatura">Faturas</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Moeda</label>
+        <select id="per-moeda" style="width:110px;">
+          <option value="">Todas</option>
+          <option value="MZN">MZN</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="relPeriodo()">🔍 Gerar</button>
+    </div>
+    <div id="res-periodo"></div>
+  </div>
+
+  <!-- ═══ CLIENTE ═══ -->
+  <div class="rel-panel" id="panel-cliente">
+    <div class="filtros-bar">
+      <div class="form-row" style="min-width:300px;">
+        <label>Cliente</label>
+        <select id="cli-sel">
+          <option value="">- Selecionar cliente -</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>De</label>
+        <input type="date" id="cli-de">
+      </div>
+      <div class="form-row">
+        <label>Até</label>
+        <input type="date" id="cli-ate">
+      </div>
+      <button class="btn btn-primary" onclick="relCliente()">🔍 Gerar</button>
+    </div>
+    <div id="res-cliente"></div>
+  </div>
+
+  <!-- ═══ UTILIZADOR ═══ -->
+  <div class="rel-panel" id="panel-utilizador">
+    <div class="filtros-bar">
+      <div class="form-row" style="min-width:280px;">
+        <label>Utilizador</label>
+        <select id="util-sel">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>De</label>
+        <input type="date" id="util-de">
+      </div>
+      <div class="form-row">
+        <label>Até</label>
+        <input type="date" id="util-ate">
+      </div>
+      <button class="btn btn-primary" onclick="relUtilizador()">🔍 Gerar</button>
+    </div>
+    <div id="res-utilizador"></div>
+  </div>
+
+</div>
+
+</main>
+
+<script src="../shared/supabase.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/utils.js"></script>
+<script src="../shared/tema.js"></script>
+<script src="tema.js"></script>
+<script src="faturacao.js"></script>
+<script src="../shared/nav.js"></script>
+<script>
+const user = auth.require();
+if (!auth.isGestor()) window.location.href = 'dashboard.html';
+
+let tabActual = 'periodo';
+let ultimoResultado = null; // para imprimir
+
+iniciar();
+
+
+async function iniciar() {
+  // Datas padrão: mês actual
+  const hoje = new Date();
+  const ini  = isoLocalFat(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+  const fim  = isoLocalFat(hoje);
+  ['per-de','cli-de','util-de'].forEach(id => setVal(id, ini));
+  ['per-ate','cli-ate','util-ate'].forEach(id => setVal(id, fim));
+
+  // Popular selects
+  const [clientes, utilizadores] = await Promise.all([
+    db.queryTudo('clientes'), db.queryTudo('utilizadores', 'select=id,usuario,nome,cargo,nivel,ativo')
+  ]);
+  clientes.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(c => {
+    document.getElementById('cli-sel').innerHTML +=
+      `<option value="${c.id}">${c.nome}</option>`;
+  });
+  utilizadores.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(u => {
+    document.getElementById('util-sel').innerHTML +=
+      `<option value="${u.id}">${u.nome}</option>`;
+  });
+}
+
+function setTab(tab, btn) {
+  tabActual = tab;
+  document.querySelectorAll('.rel-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.rel-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.getElementById('btn-imprimir').style.display = 'none';
+  ultimoResultado = null;
+}
+
+// ── RELATÓRIO POR PERÍODO ──────────────────────────────
+async function relPeriodo() {
+  const de    = getVal('per-de');
+  const ate   = getVal('per-ate');
+  const tipo  = getVal('per-tipo');
+  const moeda = getVal('per-moeda');
+  if (!de || !ate) { showToast('Selecciona as datas.','error'); return; }
+
+  const wrap = document.getElementById('res-periodo');
+  wrap.innerHTML = `<div class="loading"><span class="spinner"></span> A calcular...</div>`;
+
+  try {
+    let docs = await db.queryTudo('documentos');
+    docs = docs.filter(d => d.data >= de && d.data <= ate);
+    if (tipo)  docs = docs.filter(d => d.tipo  === tipo);
+    if (moeda) docs = docs.filter(d => d.moeda === moeda);
+    docs.sort((a,b) => b.data.localeCompare(a.data));
+
+    const totalDocs    = docs.length;
+    const totalMZN     = docs.reduce((s,d) => s + (d.total_mzn||0), 0);
+    const totalCotacoes= docs.filter(d=>d.tipo==='cotacao').length;
+    const totalFaturas = docs.filter(d=>d.tipo==='fatura').length;
+
+    if (!totalDocs) {
+      wrap.innerHTML = `<div class="resultado-vazio">Nenhum documento encontrado para o período seleccionado.</div>`;
+      document.getElementById('btn-imprimir').style.display = 'none';
+      return;
+    }
+
+    wrap.innerHTML = `
+      <div class="kpi-mini-grid">
+        <div class="kpi-mini"><div class="kpi-mini-val">${totalDocs}</div><div class="kpi-mini-label">Total Documentos</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-val">${totalCotacoes}</div><div class="kpi-mini-label">Cotações</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-val">${totalFaturas}</div><div class="kpi-mini-label">Faturas</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-val" style="font-size:20px;">${fmtNum(totalMZN)}</div><div class="kpi-mini-label">Total MZN</div></div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Nº</th><th>Tipo</th><th>Data</th><th>Cliente</th>
+              <th>Serviço</th><th>Total</th><th>Elaborado por</th>
+            </tr></thead>
+            <tbody>
+              ${docs.map(d=>`<tr>
+                <td style="font-family:'Courier Prime';color:var(--amber);">${d.numero||'-'}</td>
+                <td><span class="badge badge-${d.tipo}">${d.tipo==='cotacao'?'Cotação':'Fatura'}</span></td>
+                <td style="color:var(--steel);font-size:13px;">${fmtData(d.data)}</td>
+                <td>${d.cliente_nome||'-'}</td>
+                <td><span class="badge badge-${d.servico}">${{mao:'Mão-de-Obra',material:'Material',misto:'Misto'}[d.servico]||'-'}</span></td>
+                <td style="font-family:'Courier Prime';">${fmtNum(d.total)} ${d.moeda}</td>
+                <td style="font-size:13px;color:var(--steel);">${d.utilizador_nome||'-'}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+
+    ultimoResultado = { titulo:'Relatório por Período', subtitulo:`${fmtData(de)} a ${fmtData(ate)}`, docs, kpis:[
+      {val:totalDocs,lbl:'Total Documentos'},{val:totalCotacoes,lbl:'Cotações'},
+      {val:totalFaturas,lbl:'Faturas'},{val:fmtNum(totalMZN)+' MZN',lbl:'Total MZN'}
+    ]};
+    document.getElementById('btn-imprimir').style.display = 'inline-flex';
+
+  } catch(err) {
+    wrap.innerHTML = `<div class="resultado-vazio">Erro ao carregar dados.</div>`;
+    console.error(err);
+  }
+}
+
+// ── RELATÓRIO POR CLIENTE ──────────────────────────────
+async function relCliente() {
+  const cliId = getVal('cli-sel');
+  const de    = getVal('cli-de');
+  const ate   = getVal('cli-ate');
+  if (!cliId) { showToast('Selecciona um cliente.','error'); return; }
+
+  const wrap = document.getElementById('res-cliente');
+  wrap.innerHTML = `<div class="loading"><span class="spinner"></span> A calcular...</div>`;
+
+  try {
+    let docs = await db.queryTudo('documentos');
+    const cliNome = document.getElementById('cli-sel').selectedOptions[0]?.text || '';
+    docs = docs.filter(d => d.cliente_nome === cliNome);
+    if (de)  docs = docs.filter(d => d.data >= de);
+    if (ate) docs = docs.filter(d => d.data <= ate);
+    docs.sort((a,b) => b.data.localeCompare(a.data));
+
+    const totalMZN  = docs.reduce((s,d) => s + (d.total_mzn||0), 0);
+    const totalDocs = docs.length;
+
+    if (!totalDocs) {
+      wrap.innerHTML = `<div class="resultado-vazio">Nenhum documento encontrado para este cliente no período.</div>`;
+      document.getElementById('btn-imprimir').style.display = 'none';
+      return;
+    }
+
+    wrap.innerHTML = `
+      <div class="kpi-mini-grid">
+        <div class="kpi-mini"><div class="kpi-mini-val">${totalDocs}</div><div class="kpi-mini-label">Documentos</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-val">${docs.filter(d=>d.tipo==='cotacao').length}</div><div class="kpi-mini-label">Cotações</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-val">${docs.filter(d=>d.tipo==='fatura').length}</div><div class="kpi-mini-label">Faturas</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-val" style="font-size:20px;">${fmtNum(totalMZN)}</div><div class="kpi-mini-label">Total MZN</div></div>
+      </div>
+      <div class="card">
+        <div style="font-size:13px;color:var(--steel);margin-bottom:1rem;">
+          Cliente: <strong style="color:var(--white);">${cliNome}</strong>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Nº</th><th>Tipo</th><th>Data</th><th>Assunto</th>
+              <th>Total</th><th>Elaborado por</th>
+            </tr></thead>
+            <tbody>
+              ${docs.map(d=>`<tr>
+                <td style="font-family:'Courier Prime';color:var(--amber);">${d.numero||'-'}</td>
+                <td><span class="badge badge-${d.tipo}">${d.tipo==='cotacao'?'Cotação':'Fatura'}</span></td>
+                <td style="color:var(--steel);font-size:13px;">${fmtData(d.data)}</td>
+                <td style="font-size:13px;max-width:200px;">${d.assunto ? d.assunto.substring(0,60)+(d.assunto.length>60?'...':'') : '-'}</td>
+                <td style="font-family:'Courier Prime';">${fmtNum(d.total)} ${d.moeda}</td>
+                <td style="font-size:13px;color:var(--steel);">${d.utilizador_nome||'-'}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+
+    ultimoResultado = { titulo:'Relatório por Cliente', subtitulo:cliNome, docs, kpis:[
+      {val:totalDocs,lbl:'Documentos'},{val:docs.filter(d=>d.tipo==='cotacao').length,lbl:'Cotações'},
+      {val:docs.filter(d=>d.tipo==='fatura').length,lbl:'Faturas'},{val:fmtNum(totalMZN)+' MZN',lbl:'Total MZN'}
+    ]};
+    document.getElementById('btn-imprimir').style.display = 'inline-flex';
+
+  } catch(err) {
+    wrap.innerHTML = `<div class="resultado-vazio">Erro ao carregar dados.</div>`;
+    console.error(err);
+  }
+}
+
+// ── RELATÓRIO POR UTILIZADOR ───────────────────────────
+async function relUtilizador() {
+  const utilId = getVal('util-sel');
+  const de     = getVal('util-de');
+  const ate    = getVal('util-ate');
+
+  const wrap = document.getElementById('res-utilizador');
+  wrap.innerHTML = `<div class="loading"><span class="spinner"></span> A calcular...</div>`;
+
+  try {
+    let docs = await db.queryTudo('documentos');
+    if (utilId) docs = docs.filter(d => d.utilizador_id === utilId);
+    if (de)  docs = docs.filter(d => d.data >= de);
+    if (ate) docs = docs.filter(d => d.data <= ate);
+
+    const utilNome = utilId
+      ? document.getElementById('util-sel').selectedOptions[0]?.text
+      : 'Toda a equipa';
+
+    // Agrupar por utilizador
+    const porUtil = {};
+    docs.forEach(d => {
+      const nome = d.utilizador_nome || 'Desconhecido';
+      if (!porUtil[nome]) porUtil[nome] = { docs:[], totalMZN:0 };
+      porUtil[nome].docs.push(d);
+      porUtil[nome].totalMZN += d.total_mzn || 0;
+    });
+
+    const totalDocs = docs.length;
+    const totalMZN  = docs.reduce((s,d) => s + (d.total_mzn||0), 0);
+
+    if (!totalDocs) {
+      wrap.innerHTML = `<div class="resultado-vazio">Nenhum documento encontrado.</div>`;
+      document.getElementById('btn-imprimir').style.display = 'none';
+      return;
+    }
+
+    const resumoHtml = Object.entries(porUtil)
+      .sort((a,b) => b[1].docs.length - a[1].docs.length)
+      .map(([nome, data]) => `
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">
+            <div style="font-weight:700;font-size:15px;">${nome}</div>
+            <div style="font-family:'Courier Prime';color:var(--amber);">${fmtNum(data.totalMZN)} MZN</div>
+          </div>
+          <div style="display:flex;gap:1rem;font-size:13px;color:var(--steel);">
+            <span>📄 ${data.docs.length} documento(s)</span>
+            <span>📋 ${data.docs.filter(d=>d.tipo==='cotacao').length} cotação(ões)</span>
+            <span>🧾 ${data.docs.filter(d=>d.tipo==='fatura').length} fatura(s)</span>
+          </div>
+          <div class="table-wrap" style="margin-top:0.8rem;">
+            <table style="font-size:12px;">
+              <thead><tr>
+                <th>Nº</th><th>Tipo</th><th>Data</th><th>Cliente</th><th>Total</th>
+              </tr></thead>
+              <tbody>
+                ${data.docs.sort((a,b)=>b.data.localeCompare(a.data)).map(d=>`<tr>
+                  <td style="font-family:'Courier Prime';color:var(--amber);">${d.numero||'-'}</td>
+                  <td><span class="badge badge-${d.tipo}" style="font-size:10px;">${d.tipo==='cotacao'?'Cotação':'Fatura'}</span></td>
+                  <td style="color:var(--steel);">${fmtData(d.data)}</td>
+                  <td>${d.cliente_nome||'-'}</td>
+                  <td style="font-family:'Courier Prime';">${fmtNum(d.total)} ${d.moeda}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`).join('');
+
+    wrap.innerHTML = `
+      <div class="kpi-mini-grid">
+        <div class="kpi-mini"><div class="kpi-mini-val">${totalDocs}</div><div class="kpi-mini-label">Total Documentos</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-val">${docs.filter(d=>d.tipo==='cotacao').length}</div><div class="kpi-mini-label">Cotações</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-val">${docs.filter(d=>d.tipo==='fatura').length}</div><div class="kpi-mini-label">Faturas</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-val" style="font-size:20px;">${fmtNum(totalMZN)}</div><div class="kpi-mini-label">Total MZN</div></div>
+      </div>
+      ${resumoHtml}`;
+
+    ultimoResultado = { titulo:'Relatório por Utilizador', subtitulo:utilNome, docs, porUtil, kpis:[
+      {val:totalDocs,lbl:'Total Documentos'},{val:docs.filter(d=>d.tipo==='cotacao').length,lbl:'Cotações'},
+      {val:docs.filter(d=>d.tipo==='fatura').length,lbl:'Faturas'},{val:fmtNum(totalMZN)+' MZN',lbl:'Total MZN'}
+    ]};
+    document.getElementById('btn-imprimir').style.display = 'inline-flex';
+
+  } catch(err) {
+    wrap.innerHTML = `<div class="resultado-vazio">Erro ao carregar dados.</div>`;
+    console.error(err);
+  }
+}
+
+// ── IMPRIMIR ───────────────────────────────────────────
+function imprimir() {
+  if (!ultimoResultado) return;
+  const r = ultimoResultado;
+
+  const colsMap = {
+    'Relatório por Período':    ['Nº','Tipo','Data','Cliente','Serviço','Total','Elaborado por'],
+    'Relatório por Cliente':    ['Nº','Tipo','Data','Assunto','Total','Elaborado por'],
+    'Relatório por Utilizador': ['Nº','Tipo','Data','Cliente','Total']
+  };
+  const cols = colsMap[r.titulo] || colsMap['Relatório por Período'];
+
+  const linhas = r.titulo === 'Relatório por Utilizador'
+    ? Object.entries(r.porUtil||{}).flatMap(([nome, data]) =>
+        data.docs.map(d => `<tr>
+          <td>${d.numero||'-'}</td>
+          <td>${d.tipo==='cotacao'?'Cotação':'Fatura'}</td>
+          <td>${fmtData(d.data)}</td>
+          <td>${d.cliente_nome||'-'}</td>
+          <td style="text-align:right;">${fmtNum(d.total)} ${d.moeda}</td>
+        </tr>`)
+      ).join('')
+    : r.docs.map(d => `<tr>
+        <td>${d.numero||'-'}</td>
+        <td>${d.tipo==='cotacao'?'Cotação':'Fatura'}</td>
+        <td>${fmtData(d.data)}</td>
+        ${r.titulo==='Relatório por Período'
+          ? `<td>${d.cliente_nome||'-'}</td><td>${{mao:'Mão-de-Obra',material:'Material',misto:'Misto'}[d.servico]||'-'}</td>`
+          : `<td>${d.assunto?d.assunto.substring(0,50)+'...':''}</td>`
+        }
+        <td style="text-align:right;">${fmtNum(d.total)} ${d.moeda}</td>
+        <td>${d.utilizador_nome||'-'}</td>
+      </tr>`).join('');
+
+  document.getElementById('print-area').innerHTML = `
+    <div class="print-header">
+      <div>
+        <div class="print-company">Danmo Service System, Lda</div>
+        <div class="print-company-sub">Porto da Beira · NUIT: 400024022</div>
+      </div>
+      <div>
+        <div class="print-rel-title">${r.titulo}</div>
+        <div class="print-rel-sub">${r.subtitulo} · Gerado em ${new Date().toLocaleDateString('pt-PT')}</div>
+      </div>
+    </div>
+    <div class="print-kpis">
+      ${(r.kpis||[]).map(k=>`<div class="print-kpi"><div class="print-kpi-val">${k.val}</div><div class="print-kpi-lbl">${k.lbl}</div></div>`).join('')}
+    </div>
+    <table class="print-table">
+      <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+      <tbody>${linhas}</tbody>
+    </table>
+    <div class="print-footer">
+      <span>Danmo Service System, Lda · Porto da Beira</span>
+      <span>Documento gerado em ${new Date().toLocaleString('pt-PT')}</span>
+    </div>`;
+
+  window.print();
+}
+
+window.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
+});
+</script>
+</body>
+</html>
