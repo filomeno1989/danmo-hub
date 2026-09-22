@@ -60,10 +60,8 @@
             { label: 'Novo Documento',  href: 'faturacao/editor.html' },
             { label: 'Clientes',        href: 'faturacao/clientes.html' },
             { label: 'Técnicos',        href: 'faturacao/tecnicos.html' },
-            { label: 'Materiais',       href: 'faturacao/materiais.html' },
             { label: 'Tarifas',         href: 'faturacao/tarifas.html' },
-            { label: 'Relatórios',      href: 'faturacao/relatorios.html' },
-            { label: 'Configurações',   href: 'faturacao/configuracoes.html' }
+            { label: 'Relatórios',      href: 'faturacao/relatorios.html' }
           ] }
       ] },
 

@@ -93,6 +93,16 @@
   }
   .total-linha.desconto { color:#f87171; }
   .total-linha.desconto span:first-child { color:#f87171; }
+  /* Elaborado por - preenchido pela sessão do Hub */
+  .elab-box {
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 14px;
+  }
+  .elab-nome  { font-weight:700; color:var(--white); font-size:14px; }
+  .elab-cargo { font-size:12px; color:var(--amber); margin-top:2px; }
+  .elab-hint  { font-size:11px; color:var(--steel2); margin-top:5px; letter-spacing:0.3px; }
 </style>
 </head>
 <body>
@@ -254,12 +264,14 @@
           </div>
         </div>
 
-        <!-- Elaborado por -->
+        <!-- Elaborado por (preenchido automaticamente pela sessão do Hub) -->
         <div class="form-row">
           <label>Elaborado por</label>
-          <select id="sel-utilizador">
-            <option value="">- Selecionar -</option>
-          </select>
+          <div class="elab-box">
+            <div class="elab-nome" id="elab-nome">-</div>
+            <div class="elab-cargo" id="elab-cargo"></div>
+            <div class="elab-hint">Preenchido automaticamente com a pessoa que tem a sessão aberta · sai igual na impressão</div>
+          </div>
         </div>
       </div>
 
@@ -347,7 +359,8 @@ let ivaOn    = false;
 let tipoCliente  = 'interno';
 let descontoTipo = 'fixo'; // 'fixo' ou 'pct'
 let itens    = [];
-let clientes = [], tecnicos = [], utilizadores = [], todosDocumentos = [], tarifas = [], materiais = [];
+let clientes = [], tecnicos = [], todosDocumentos = [], tarifas = [], materiais = [];
+let elabDoc = null; // autor guardado no documento, quando se está a editar
 
 // Unidades disponíveis
 const UNIDADES = ['horas','hora','dias','Und','Litro','Kg','Metro','Par','Caixa','Rolo','Tonelada','m²','ml'];
@@ -358,10 +371,9 @@ if (!auth.pode.criarDocumento()) window.location.href = 'dashboard.html';
 iniciar();
 
 async function iniciar() {
-  [clientes, tecnicos, utilizadores, todosDocumentos, tarifas, materiais] = await Promise.all([
+  [clientes, tecnicos, todosDocumentos, tarifas, materiais] = await Promise.all([
     db.queryTudo('clientes'),
     db.queryTudo('tecnicos'),
-    db.queryTudo('utilizadores', 'select=id,usuario,nome,cargo,nivel,ativo'),
     db.queryTudo('documentos'),
     db.queryTudo('tarifas', 'ativo=eq.true'),
     db.queryTudo('materiais', 'ativo=eq.true')
@@ -370,7 +382,6 @@ async function iniciar() {
   materiais.sort((a,b) => (a.referencia||'').localeCompare(b.referencia||''));
 
   popularClientesSelect();
-  popularUtilizadoresSelect();
   document.getElementById('doc-data').value = hoje();
 
 
@@ -380,7 +391,7 @@ async function iniciar() {
     await carregarDocumento(editId);
   } else {
     document.getElementById('doc-numero').value = proximoNumero('cotacao', todosDocumentos);
-    document.getElementById('sel-utilizador').value = user.id;
+    mostrarElaborado();
     construirTabelaItens();
     adicionarItem();
   }
@@ -429,7 +440,8 @@ async function carregarDocumento(id) {
     document.getElementById('linha-desconto')
       ?.querySelectorAll('.toggle-opt')
       .forEach((b,i) => b.classList.toggle('active', i === descontoIdx));
-    setTimeout(() => { setVal('sel-utilizador', doc.utilizador_id); }, 100);
+    elabDoc = { id: doc.utilizador_id || null, nome: doc.utilizador_nome || '', cargo: doc.utilizador_cargo || '' };
+    mostrarElaborado();
 
     document.getElementById('row-iva-pct').style.display = ivaOn ? 'flex' : 'none';
     document.getElementById('linha-iva').style.display   = ivaOn ? 'flex' : 'none';
@@ -535,13 +547,18 @@ function preencherCliente() {
   setVal('cli-contacto', c.contacto  || '');
 }
 
-function popularUtilizadoresSelect() {
-  const sel = document.getElementById('sel-utilizador');
-  sel.innerHTML = '<option value="">- Selecionar -</option>' +
-    utilizadores.map(u =>
-      `<option value="${u.id}">${u.nome} - ${u.cargo||''}</option>`
-    ).join('');
-  sel.value = user.id;
+/** Autor do documento: a pessoa que tem a sessão aberta no Hub.
+    Ao editar um documento que já tem autor guardado, mantém o autor original. */
+function autorActual() {
+  if (elabDoc && elabDoc.nome) return elabDoc;
+  const s = (typeof verificarSessao === 'function' && verificarSessao()) || user || {};
+  return { id: s.id || null, nome: s.nome || s.usuario || '', cargo: s.cargo || '' };
+}
+
+function mostrarElaborado() {
+  const a = autorActual();
+  document.getElementById('elab-nome').textContent  = a.nome || '-';
+  document.getElementById('elab-cargo').textContent = a.cargo || '';
 }
 
 // ── TABELA DE ITENS ───────────────────────────────────
@@ -848,8 +865,7 @@ async function guardar(silencioso = false) {
   const total       = aposDesconto + ivaAmt;
   const totalMZN    = docMoeda === 'USD' ? total * taxa : total;
 
-  const utilId = getVal('sel-utilizador');
-  const util   = utilizadores.find(u => u.id === utilId);
+  const elab = autorActual();
 
   const docData = {
     tipo:             docTipo,
@@ -875,9 +891,9 @@ async function guardar(silencioso = false) {
     iva_amt:          ivaAmt,
     total,
     total_mzn:        totalMZN,
-    utilizador_id:    utilId || null,
-    utilizador_nome:  util?.nome  || '',
-    utilizador_cargo: util?.cargo || '',
+    utilizador_id:    elab.id || null,
+    utilizador_nome:  elab.nome || '',
+    utilizador_cargo: elab.cargo || '',
     atualizado_em:    new Date().toISOString()
   };
 

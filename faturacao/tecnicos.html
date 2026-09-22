@@ -52,7 +52,10 @@
 <div class="page-body">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
     <h1 class="page-title" style="margin:0;">👷 <span>Técnicos</span></h1>
-    <button class="btn btn-primary" id="btn-novo" onclick="abrirNovo()" style="display:none;">➕ Novo Técnico</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <a href="dashboard.html" class="btn btn-outline btn-sm">← Voltar</a>
+      <button class="btn btn-primary" id="btn-novo" onclick="abrirNovo()" style="display:none;">➕ Novo Técnico</button>
+    </div>
   </div>
   <div class="card">
     <div id="tabela-wrap"><div class="loading"><span class="spinner"></span> A carregar...</div></div>
