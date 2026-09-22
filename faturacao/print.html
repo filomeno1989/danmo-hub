@@ -132,6 +132,10 @@ body {
   break-inside: avoid;
 }
 .doc-assunto strong { color: #0a1628; }
+.doc-assunto p { margin: 0 0 4px 0; }
+.doc-assunto ul, .doc-assunto ol { margin: 4px 0; padding-left: 22px; }
+.doc-assunto li { margin: 2px 0; }
+.doc-assunto u { text-underline-offset: 2px; }
 
 /* Tabela de itens */
 .items-table {
@@ -375,6 +379,14 @@ function ajustarMargensImpressao() {
 }
 window.addEventListener('beforeprint', ajustarMargensImpressao);
 
+// Descrição do Serviço: HTML formatado novo ou texto simples antigo (com \n)
+function renderAssunto(raw) {
+  if (!raw) return '';
+  const s = String(raw);
+  if (/<[a-z][^>]*>/i.test(s)) return sanitizarHTMLRico(s);
+  return escaparHTML(s).replace(/\n/g, '<br>');
+}
+
 
 async function carregarERender() {
   const params = new URLSearchParams(window.location.search);
@@ -555,7 +567,7 @@ async function carregarERender() {
                 ${doc.assunto ? `
                 <div class="doc-assunto">
                   <strong>Assunto:</strong><br>
-                  ${doc.assunto.replace(/\n/g,'<br>')}
+                  ${renderAssunto(doc.assunto)}
                 </div>` : ''}
 
                 <table class="items-table">

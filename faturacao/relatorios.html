@@ -488,7 +488,7 @@ function renderDocumentos() {
       <td><span class="badge badge-${d.tipo}">${d.tipo === 'cotacao' ? 'Cotação' : 'Fatura'}</span></td>
       <td class="cela-steel">${fmtData(d.data)}</td>
       <td>${escaparHTML(d.cliente_nome||'-')}</td>
-      <td class="cela-steel" style="max-width:240px;">${d.assunto ? escaparHTML(String(d.assunto).replace(/\s+/g,' ').substring(0,48)) + (String(d.assunto).length > 48 ? '...' : '') : '-'}</td>
+      <td class="cela-steel" style="max-width:240px;">${(() => { const t = textoSemTags(d.assunto); return t ? escaparHTML(t.substring(0,48)) + (t.length > 48 ? '...' : '') : '-'; })()}</td>
       <td><span class="badge badge-${d.servico}">${TIPO_SERVICO[d.servico]||'-'}</span></td>
       <td class="num">${fmtNum(d.total||0)} ${escaparHTML(d.moeda||'')}</td>
       <td class="num">${fmtNum(d.total_mzn||0)}</td>
@@ -662,7 +662,7 @@ function exportarExcel() {
     'Tipo':          d.tipo === 'cotacao' ? 'Cotação' : 'Fatura',
     'Data':          fmtData(d.data),
     'Cliente':       d.cliente_nome || '',
-    'Assunto':       d.assunto ? String(d.assunto).replace(/\s+/g,' ').trim() : '',
+    'Assunto':       textoSemTags(d.assunto),
     'Serviço':       TIPO_SERVICO[d.servico] || '',
     'Moeda':         d.moeda || '',
     'Subtotal':      d.subtotal || 0,

@@ -660,3 +660,48 @@ function calcularIdade(dataNascimento) {
   if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
   return idade;
 }
+
+/**
+ * Sanitiza HTML rico permitindo apenas etiquetas seguras de formatação
+ * (negrito, itálico, sublinhado, parágrafos, listas) e o estilo
+ * text-align. Remove scripts, atributos e tudo o resto.
+ * Usado pela Descrição do Serviço da Faturação (editor + impressão).
+ */
+function sanitizarHTMLRico(html) {
+  if (!html) return '';
+  var PERMITIDAS = ['B','STRONG','I','EM','U','S','P','DIV','BR','UL','OL','LI','SPAN'];
+  var dt = new DOMParser().parseFromString(String(html), 'text/html');
+  var mudou = true;
+  while (mudou) {
+    mudou = false;
+    dt.body.querySelectorAll('*').forEach(function (el) {
+      if (PERMITIDAS.indexOf(el.tagName) === -1) {
+        var frag = dt.createDocumentFragment();
+        while (el.firstChild) frag.appendChild(el.firstChild);
+        el.replaceWith(frag);
+        mudou = true;
+      }
+    });
+  }
+  dt.body.querySelectorAll('*').forEach(function (el) {
+    Array.prototype.slice.call(el.attributes).forEach(function (a) {
+      // só se mantém um style cujo conteúdo inteiro seja um text-align
+      var ok = a.name === 'style' && /^text-align\s*:\s*[a-z\-]+\s*;?$/i.test(a.value.trim());
+      if (!ok) el.removeAttribute(a.name);
+    });
+  });
+  return dt.body.innerHTML;
+}
+
+/**
+ * Converte HTML rico (ex.: descrição formatada) em texto simples,
+ * sem etiquetas - para listagens, pesquisas e Excel.
+ */
+function textoSemTags(str) {
+  if (!str) return '';
+  var s = String(str);
+  if (!/<[a-z][^>]*>/i.test(s)) return s;
+  var d = document.createElement('div');
+  d.innerHTML = sanitizarHTMLRico(s);
+  return (d.textContent || '').replace(/\s+/g, ' ').trim();
+}

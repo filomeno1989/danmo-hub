@@ -185,7 +185,7 @@ function renderTabela(docs) {
       <td><span class="badge badge-${d.tipo}">${d.tipo === 'cotacao' ? 'Cotação' : 'Fatura'}</span></td>
       <td>
         <div style="font-weight:600;">${d.cliente_nome || '-'}</div>
-        ${d.assunto ? `<div style="font-size:12px;color:var(--steel);margin-top:2px;">${truncar(d.assunto, 50)}</div>` : ''}
+        ${d.assunto && textoSemTags(d.assunto) ? `<div style="font-size:12px;color:var(--steel);margin-top:2px;">${truncar(textoSemTags(d.assunto), 50)}</div>` : ''}
       </td>
       <td><span class="badge ${servicoBadge[d.servico]||''}">${servicoLabel[d.servico]||'-'}</span></td>
       <td style="color:var(--steel);font-size:13px;">${fmtData(d.data)}</td>

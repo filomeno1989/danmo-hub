@@ -103,6 +103,43 @@
   .elab-nome  { font-weight:700; color:var(--white); font-size:14px; }
   .elab-cargo { font-size:12px; color:var(--amber); margin-top:2px; }
   .elab-hint  { font-size:11px; color:var(--steel2); margin-top:5px; letter-spacing:0.3px; }
+  /* Barra de formatação da Descrição do Serviço */
+  .rich-bar {
+    display:flex; align-items:center; gap:2px; flex-wrap:wrap;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border); border-bottom:none;
+    border-radius:8px 8px 0 0;
+    padding:5px 6px;
+  }
+  .rich-btn {
+    min-width:30px; height:28px; padding:0 7px;
+    display:inline-flex; align-items:center; justify-content:center;
+    background:transparent; border:1px solid transparent; border-radius:5px;
+    color:var(--steel); cursor:pointer; font-size:13px; line-height:1;
+    font-family:'Source Sans 3', sans-serif;
+    transition:all 0.15s;
+  }
+  .rich-btn svg { display:block; }
+  .rich-btn:hover { background:rgba(245,158,11,0.12); color:var(--amber); }
+  .rich-btn.activo { background:rgba(245,158,11,0.22); color:var(--amber); border-color:rgba(245,158,11,0.4); }
+  .rich-sep { width:1px; height:18px; background:var(--border); margin:0 5px; }
+  .rich-hint { margin-left:auto; font-size:10px; color:var(--steel2); letter-spacing:0.3px; padding-right:4px; }
+  .rich-editor {
+    min-height:140px; max-height:420px; overflow-y:auto;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--border); border-radius:0 0 8px 8px;
+    padding:10px 12px;
+    font-size:14px; line-height:1.55;
+    color:var(--white); outline:none;
+    font-family:'Source Sans 3', sans-serif;
+  }
+  .rich-editor:focus { border-color:var(--amber); background:rgba(245,158,11,0.05); }
+  .rich-editor.rich-vazio::before {
+    content:attr(data-placeholder);
+    color:var(--steel2); pointer-events:none; display:block;
+  }
+  .rich-editor p { margin:0 0 4px 0; }
+  .rich-editor ul, .rich-editor ol { margin:4px 0; padding-left:24px; }
 </style>
 </head>
 <body>
@@ -192,12 +229,38 @@
         </div>
       </div>
 
-      <!-- DESCRIÇÃO -->
+      <!-- DESCRIÇÃO (com formatação de texto) -->
       <div class="card">
         <div class="card-title">📝 Descrição do Serviço</div>
         <div class="form-row">
           <label>Assunto / Descrição</label>
-          <textarea id="doc-assunto" placeholder="Descreva o serviço a realizar..." style="min-height:110px;"></textarea>
+          <div class="rich-bar" id="rich-bar" role="toolbar" aria-label="Formatação do texto">
+            <button type="button" class="rich-btn" data-cmd="bold" title="Negrito (Ctrl+B)"><b>B</b></button>
+            <button type="button" class="rich-btn" data-cmd="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
+            <button type="button" class="rich-btn" data-cmd="underline" title="Sublinhado (Ctrl+U)"><u>U</u></button>
+            <span class="rich-sep"></span>
+            <button type="button" class="rich-btn" data-cmd="justifyLeft" title="Alinhar à esquerda">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 3.5h7.5M2 8h12M2 12.5h7.5"/></svg>
+            </button>
+            <button type="button" class="rich-btn" data-cmd="justifyCenter" title="Centrar">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3.5 3.5h9M2 8h12M3.5 12.5h9"/></svg>
+            </button>
+            <button type="button" class="rich-btn" data-cmd="justifyRight" title="Alinhar à direita">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6.5 3.5H14M2 8h12M6.5 12.5H14"/></svg>
+            </button>
+            <button type="button" class="rich-btn" data-cmd="justifyFull" title="Justificado">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 3.5h12M2 8h12M2 12.5h12"/></svg>
+            </button>
+            <span class="rich-sep"></span>
+            <button type="button" class="rich-btn" data-cmd="insertUnorderedList" title="Marcas (lista de pontos)">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="3" cy="4" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1" fill="currentColor" stroke="none"/><path d="M6.5 4H14M6.5 8H14M6.5 12H14"/></svg>
+            </button>
+            <button type="button" class="rich-btn" data-cmd="insertOrderedList" title="Numeração (lista numerada)">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><text x="1" y="5.6" font-size="5" fill="currentColor" stroke="none">1.</text><text x="1" y="9.8" font-size="5" fill="currentColor" stroke="none">2.</text><text x="1" y="14" font-size="5" fill="currentColor" stroke="none">3.</text><path d="M7 4H14M7 8H14M7 12H14"/></svg>
+            </button>
+            <span class="rich-hint">A formatação sai na impressão</span>
+          </div>
+          <div id="doc-assunto" class="rich-editor rich-vazio" contenteditable="true" data-placeholder="Descreva o serviço a realizar... Selecione o texto e use os botões acima para formatar." spellcheck="false"></div>
         </div>
       </div>
 
@@ -397,7 +460,58 @@ async function iniciar() {
   }
 }
 
-// ── NAV ───────────────────────────────────────────────
+// ── DESCRIÇÃO RICA (formatação de texto) ─────────────
+const richEd = document.getElementById('doc-assunto');
+
+function initRichBar() {
+  document.querySelectorAll('#rich-bar .rich-btn').forEach(btn => {
+    // mousedown impedido para não perder a selecção do texto
+    btn.addEventListener('mousedown', e => e.preventDefault());
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      richEd.focus();
+      document.execCommand(btn.dataset.cmd, false, null);
+      actualizarRichEstado();
+    });
+  });
+  const sincronizarVazio = () => richEd.classList.toggle('rich-vazio', !richEd.innerText.trim());
+  richEd.addEventListener('input', sincronizarVazio);
+  richEd.addEventListener('blur', sincronizarVazio);
+  document.addEventListener('selectionchange', () => {
+    if (document.activeElement === richEd) actualizarRichEstado();
+  });
+  sincronizarVazio();
+}
+
+function actualizarRichEstado() {
+  ['bold','italic','underline','justifyLeft','justifyCenter','justifyRight','justifyFull','insertUnorderedList','insertOrderedList'].forEach(cmd => {
+    const btn = document.querySelector('#rich-bar .rich-btn[data-cmd="' + cmd + '"]');
+    if (!btn) return;
+    let activo = false;
+    try { activo = document.queryCommandState(cmd); } catch (e) {}
+    btn.classList.toggle('activo', activo);
+  });
+}
+
+// Carrega a descrição guardada: HTML formatado novo ou texto simples antigo
+function carregarDescricao(raw) {
+  if (!raw) { richEd.innerHTML = ''; richEd.classList.add('rich-vazio'); return; }
+  const s = String(raw);
+  if (/<[a-z][^>]*>/i.test(s)) {
+    richEd.innerHTML = sanitizarHTMLRico(s);
+  } else {
+    richEd.innerHTML = escaparHTML(s).replace(/\n/g, '<br>');
+  }
+  richEd.classList.toggle('rich-vazio', !richEd.innerText.trim());
+}
+
+// HTML limpo para guardar (ou vazio se só há espaços)
+function descricaoHTML() {
+  if (!richEd.innerText.trim()) return '';
+  return sanitizarHTMLRico(richEd.innerHTML);
+}
+
+initRichBar();
 
 // ── CARREGAR DOCUMENTO (edição) ───────────────────────
 async function carregarDocumento(id) {
@@ -431,7 +545,7 @@ async function carregarDocumento(id) {
     setVal('cli-contacto', doc.cliente_contacto);
     setVal('cli-env-nome', doc.enviado_nome);
     setVal('cli-env-cargo',doc.enviado_cargo);
-    setVal('doc-assunto',  doc.assunto);
+    carregarDescricao(doc.assunto);
     setVal('taxa-cambio',  doc.taxa_cambio || 64);
     setVal('iva-pct',      doc.iva_pct || 16);
     setVal('desconto-val', doc.desconto_input || 0);
@@ -883,7 +997,7 @@ async function guardar(silencioso = false) {
     cliente_contacto: getVal('cli-contacto'),
     enviado_nome:     getVal('cli-env-nome'),
     enviado_cargo:    getVal('cli-env-cargo'),
-    assunto:          getVal('doc-assunto'),
+    assunto:          descricaoHTML(),
     subtotal,
     desconto:         descontoAmt,
     desconto_tipo:    descontoTipo,
