@@ -191,6 +191,8 @@ body {
 .total-linha .val { font-weight: bold; }
 .total-linha.desconto .lbl,
 .total-linha.desconto .val { color: #c00; }
+.total-linha.nota-iva .lbl { color: #555; }
+.total-linha.nota-iva .val { color: #b45309; font-style: italic; }
 .total-linha.final {
   font-size: 13pt;
   font-weight: bold;
@@ -497,6 +499,11 @@ async function carregarERender() {
       totaisHtml += `<div class="total-linha">
         <span class="lbl">IVA (${doc.iva_pct||16}%)</span>
         <span class="val">${fmtNum(doc.iva_amt||0)} ${doc.moeda}</span>
+      </div>`;
+    } else {
+      totaisHtml += `<div class="total-linha nota-iva">
+        <span class="lbl">IVA</span>
+        <span class="val">Não incluído</span>
       </div>`;
     }
     totaisHtml += `<div class="total-linha final">

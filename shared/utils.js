@@ -125,16 +125,23 @@ function dataHojeISO() {
    ═══════════════════════════════════════════════ */
 
 /**
+ * Agrupa a parte inteira em blocos de 3 com espaço (não quebra linha).
+ * Ex.: 6451 -> '6 451'. O locale pt-MZ só agrupa a partir de 5 dígitos
+ * (mínimo de 2 no primeiro grupo), por isso a agrupagem é feita sempre
+ * manualmente para os valores saírem iguais no ecrã e na impressão.
+ */
+function agruparMilhares(inteiro) {
+  return String(inteiro).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
+}
+
+/**
  * Formata valor numérico como MZN (Meticais).
  * @param {number} valor
  * @returns {string} Ex: '1.250.000,00 MZN'
  */
 function formataMoeda(valor) {
   if (valor === null || valor === undefined || isNaN(valor)) return '0,00 MZN';
-  return Number(valor).toLocaleString('pt-MZ', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }) + ' MZN';
+  return fmtNum(valor) + ' MZN';
 }
 
 /* ═══════════════════════════════════════════════
@@ -464,7 +471,9 @@ function confirmar(msg, callback) { dhConfirmar(msg).then(function (ok) { if (ok
 // Atalho para Formatação de Número Simples (sem MZN)
 function fmtNum(n) {
   if (isNaN(n) || n === null || n === undefined) return '0,00';
-  return Number(n).toLocaleString('pt-MZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const neg = Number(n) < 0;
+  const [int, dec] = Math.abs(Number(n)).toFixed(2).split('.');
+  return (neg ? '-' : '') + agruparMilhares(int) + ',' + dec;
 }
 
 // Extenso corrigido para o Módulo de Faturação
